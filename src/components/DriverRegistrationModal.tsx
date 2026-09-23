@@ -10,7 +10,6 @@ import uaeMulkiyaSampleImg from '../assets/uae-mulkiya-sample.jpg';
 import { 
   X, 
   Check, 
-  CreditCard, 
   ShieldCheck, 
   Truck,
   User, 
@@ -90,17 +89,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [idValidationResult, setIdValidationResult] = useState<EmiratesIdValidationResult | null>(null);
   const [showIdReferenceModal, setShowIdReferenceModal] = useState<boolean>(false);
 
-  // Step 3: Subscription Plan (Unified Plan)
+  // Step 3: Subscription Plan & Ziina Payment
   const [selectedPlan] = useState<SubscriptionPlanId>('unified');
-
-  // Step 4: Payment State
-  const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8912');
-  const [cardHolder, setCardHolder] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('11/28');
-  const [cardCvv, setCardCvv] = useState('841');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDone, setIsDone] = useState(false);
 
+  const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
   const selectedPlanDetails = UNIFIED_SUBSCRIPTION_PLAN;
 
   // Multiple vehicle photos upload handler
@@ -282,54 +275,48 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     setStep(3);
   };
 
-  const handleNextStep3 = () => {
-    setStep(4);
-  };
-
-  const handleCompletePayment = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProceedToPayment = () => {
     setIsProcessing(true);
 
+    const newDriverId = `drv-${Date.now()}`;
+    const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
+    const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : `+971 ${phone.trim()}`;
+
+    const createdDriver: DriverProfile = {
+      id: newDriverId,
+      name: name.trim(),
+      phone: fullCallPhone,
+      whatsappPhone: cleanWhatsapp,
+      callPhone: fullCallPhone,
+      email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
+      password: password.trim() || '123456',
+      avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
+      emirate,
+      vehicleModel: vehicleModel.trim(),
+      vehiclePlate: vehiclePlate.trim(),
+      vehiclePhoto: vehiclePhotos[0] || DEFAULT_VEHICLE_IMG,
+      vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [DEFAULT_VEHICLE_IMG],
+      licensePhoto: drivingLicensePhoto,
+      mulkiyaPhoto,
+      emiratesIdPhoto,
+      rating: 5.0,
+      reviewsCount: 1,
+      completedDeliveries: 0,
+      isVerified: true,
+      subscriptionStatus: 'active',
+      subscriptionPlan: selectedPlan,
+      subscriptionExpiry: '2026-10-31',
+      joinedDate: '2026-09-23',
+      bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
+    };
+
+    // Save driver profile
+    onRegisterSuccess(createdDriver);
+
+    // Direct redirect to Ziina Payment Link
     setTimeout(() => {
-      setIsProcessing(false);
-      setIsDone(true);
-
-      const newDriverId = `drv-${Date.now()}`;
-      const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
-      const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : `+971 ${phone.trim()}`;
-
-      const createdDriver: DriverProfile = {
-        id: newDriverId,
-        name: name.trim(),
-        phone: fullCallPhone,
-        whatsappPhone: cleanWhatsapp,
-        callPhone: fullCallPhone,
-        email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
-        password: password.trim() || '123456',
-        avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
-        emirate,
-        vehicleModel: vehicleModel.trim(),
-        vehiclePlate: vehiclePlate.trim(),
-        vehiclePhoto: vehiclePhotos[0] || DEFAULT_VEHICLE_IMG,
-        vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [DEFAULT_VEHICLE_IMG],
-        licensePhoto: drivingLicensePhoto,
-        mulkiyaPhoto,
-        emiratesIdPhoto,
-        rating: 5.0,
-        reviewsCount: 1,
-        completedDeliveries: 0,
-        isVerified: true,
-        subscriptionStatus: 'active',
-        subscriptionPlan: selectedPlan,
-        subscriptionExpiry: '2026-10-31',
-        joinedDate: '2026-09-23',
-        bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
-      };
-
-      setTimeout(() => {
-        onRegisterSuccess(createdDriver);
-      }, 1500);
-    }, 1800);
+      window.location.href = ZIINA_PAYMENT_URL;
+    }, 400);
   };
 
   return (
@@ -366,50 +353,39 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
           </button>
         </div>
 
-        {/* Wizard Progress Bar */}
-        {!isDone && (
-          <div className="bg-slate-950/60 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-slate-800/80 flex items-center justify-between gap-1 sm:gap-2 text-[11px] sm:text-xs">
-            <div className={`flex items-center gap-1.5 font-bold ${step >= 1 ? 'text-cyan-400' : 'text-slate-500'}`}>
-              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 1 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                1
-              </span>
-              <span className="hidden sm:inline">البيانات والصورة</span>
-            </div>
-
-            <div className={`h-0.5 flex-1 ${step >= 2 ? 'bg-cyan-500' : 'bg-slate-800'}`} />
-
-            <div className={`flex items-center gap-1.5 font-bold ${step >= 2 ? 'text-cyan-400' : 'text-slate-500'}`}>
-              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 2 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                2
-              </span>
-              <span className="hidden sm:inline">المركبة والمستندات</span>
-            </div>
-
-            <div className={`h-0.5 flex-1 ${step >= 3 ? 'bg-cyan-500' : 'bg-slate-800'}`} />
-
-            <div className={`flex items-center gap-1.5 font-bold ${step >= 3 ? 'text-cyan-400' : 'text-slate-500'}`}>
-              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 3 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                3
-              </span>
-              <span className="hidden sm:inline">الاشتراك الموحد</span>
-            </div>
-
-            <div className={`h-0.5 flex-1 ${step >= 4 ? 'bg-cyan-500' : 'bg-slate-800'}`} />
-
-            <div className={`flex items-center gap-1.5 font-bold ${step >= 4 ? 'text-cyan-400' : 'text-slate-500'}`}>
-              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 4 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                4
-              </span>
-              <span className="hidden sm:inline">الدفع والتفعيل</span>
-            </div>
+        {/* Wizard Progress Bar (3 Steps) */}
+        <div className="bg-slate-950/60 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-slate-800/80 flex items-center justify-between gap-1 sm:gap-2 text-[11px] sm:text-xs">
+          <div className={`flex items-center gap-1.5 font-bold ${step >= 1 ? 'text-cyan-400' : 'text-slate-500'}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 1 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              1
+            </span>
+            <span className="hidden sm:inline">البيانات والصورة</span>
           </div>
-        )}
+
+          <div className={`h-0.5 flex-1 ${step >= 2 ? 'bg-cyan-500' : 'bg-slate-800'}`} />
+
+          <div className={`flex items-center gap-1.5 font-bold ${step >= 2 ? 'text-cyan-400' : 'text-slate-500'}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 2 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              2
+            </span>
+            <span className="hidden sm:inline">المركبة والمستندات</span>
+          </div>
+
+          <div className={`h-0.5 flex-1 ${step >= 3 ? 'bg-cyan-500' : 'bg-slate-800'}`} />
+
+          <div className={`flex items-center gap-1.5 font-bold ${step >= 3 ? 'text-cyan-400' : 'text-slate-500'}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs ${step >= 3 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              3
+            </span>
+            <span className="hidden sm:inline">الاشتراك والدفع</span>
+          </div>
+        </div>
 
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 overscroll-contain">
           
           {/* STEP 1: Personal Data & Profile Picture Upload */}
-          {step === 1 && !isDone && (
+          {step === 1 && (
             <form onSubmit={handleNextStep1} className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
               
               {/* Profile Image Upload Section */}
@@ -596,7 +572,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
           )}
 
           {/* STEP 2: Vehicle Photos & 3 Required Official Documents */}
-          {step === 2 && !isDone && (
+          {step === 2 && (
             <form onSubmit={handleNextStep2} className="space-y-5 sm:space-y-6 animate-in fade-in duration-200">
               
               {/* Vehicle Model & Plate Inputs */}
@@ -1061,8 +1037,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
             </form>
           )}
 
-          {/* STEP 3: Unified Subscription Plan & Rating Algorithm Notice */}
-          {step === 3 && !isDone && (
+          {/* STEP 3: Unified Subscription Plan & Direct Ziina Payment */}
+          {step === 3 && (
             <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
               
               {/* Single Unified Plan Card */}
@@ -1098,11 +1074,31 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
               </div>
 
+              {/* Ziina Gateway Secure Notice */}
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-black shadow shrink-0 text-sm">
+                    💳
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
+                      <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.2 rounded border border-emerald-500/30 font-bold">آمن ومشفر</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                  </div>
+                </div>
+                <div className="text-left shrink-0">
+                  <span className="text-base font-black text-cyan-400">{selectedPlanDetails.price} AED</span>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
+                  disabled={isProcessing}
                   onClick={() => setStep(2)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
                 >
                   <ArrowRight className="w-4 h-4" />
                   <span>السابق</span>
@@ -1110,138 +1106,24 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
                 <button
                   type="button"
-                  onClick={handleNextStep3}
-                  className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg shadow-blue-500/25 text-xs sm:text-sm flex items-center gap-2 active:scale-95"
-                >
-                  <span>متابعة للدفع ({selectedPlanDetails.price} AED)</span>
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              </div>
-
-            </div>
-          )}
-
-          {/* STEP 4: Payment Simulation */}
-          {step === 4 && !isDone && (
-            <form onSubmit={handleCompletePayment} className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
-              
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-slate-400 block">الباقة الموحدة:</span>
-                  <span className="text-sm font-black text-white">{selectedPlanDetails.name}</span>
-                </div>
-                <div className="text-left">
-                  <span className="text-xs text-slate-400 block">المبلغ الإجمالي للدفع:</span>
-                  <span className="text-xl font-black text-cyan-400">{selectedPlanDetails.price} AED</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-950/80 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2 font-extrabold text-white text-xs sm:text-sm">
-                    <CreditCard className="w-4 h-4 text-cyan-400" />
-                    <span>بيانات الدفع الإلكتروني الآمن</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
-                    <Lock className="w-3 h-3" />
-                    <span>تشفير آمن 256-bit</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">الاسم على البطاقة</label>
-                  <input
-                    type="text"
-                    required
-                    value={cardHolder || name}
-                    onChange={(e) => setCardHolder(e.target.value)}
-                    placeholder="KHALIFA SAIF"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500 font-mono uppercase"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 mb-1">رقم البطاقة (Visa / Mastercard / Apple Pay)</label>
-                    <input
-                      type="text"
-                      required
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">الانتهاء</label>
-                      <input
-                        type="text"
-                        required
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
-                        placeholder="MM/YY"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-cyan-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">CVV</label>
-                      <input
-                        type="password"
-                        required
-                        maxLength={4}
-                        value={cardCvv}
-                        onChange={(e) => setCardCvv(e.target.value)}
-                        placeholder="123"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-cyan-500 text-center"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
                   disabled={isProcessing}
-                  onClick={() => setStep(3)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  <span>السابق</span>
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isProcessing}
-                  className="flex-1 mr-3 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-2.5 sm:py-3 px-6 rounded-xl shadow-xl shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                  onClick={handleProceedToPayment}
+                  className="flex-1 mr-3 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg shadow-blue-500/25 text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60"
                 >
                   {isProcessing ? (
                     <>
                       <Zap className="w-4 h-4 animate-spin text-white" />
-                      <span>جاري معالجة الدفع وتوثيق الحساب...</span>
+                      <span>جاري التوجيه إلى بوابة الدفع (Ziina)...</span>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="w-4 h-4 text-white" />
-                      <span>دفع وتفعيل اشتراك السائق ({selectedPlanDetails.price} AED)</span>
+                      <span>متابعة للدفع ({selectedPlanDetails.price} AED)</span>
+                      <ArrowLeft className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </div>
 
-            </form>
-          )}
-
-          {/* SUCCESS SCREEN */}
-          {isDone && (
-            <div className="p-6 sm:p-8 text-center flex flex-col items-center justify-center space-y-4 animate-in zoom-in-95 duration-300">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border-2 border-emerald-500/30 animate-bounce shadow-xl shadow-emerald-500/10">
-                <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10" />
-              </div>
-              <h4 className="text-lg sm:text-2xl font-black text-white">مرحباً بك كـ سائق موثّق ومعتمد في منصة واصل! 🎉</h4>
-              <p className="text-slate-300 text-xs sm:text-sm max-w-md leading-relaxed">
-                تم دفع الاشتراك الشهري ورفع مستنداتك وتفعيل حسابك بنجاح. تم فتح لوحة تحكم السائق لك لتقديم العروض واستقبال طلبات التوصيل الفورية!
-              </p>
             </div>
           )}
 
