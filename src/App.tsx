@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification } from './types';
 import { INITIAL_DRIVERS, INITIAL_REQUESTS } from './data/mockData';
+import { dbService } from './services/dbService';
 
 import { Header } from './components/Header';
 import { LandingView } from './components/LandingView';
@@ -72,6 +73,27 @@ export function App() {
     }, 4500);
   };
 
+  // Initial load from Supabase / DB Service
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const [loadedDrivers, loadedRequests] = await Promise.all([
+          dbService.getDrivers(),
+          dbService.getRequests()
+        ]);
+        if (loadedDrivers && loadedDrivers.length > 0) {
+          setDrivers(loadedDrivers);
+        }
+        if (loadedRequests && loadedRequests.length > 0) {
+          setRequests(loadedRequests);
+        }
+      } catch (err) {
+        console.warn('Could not load from DB service:', err);
+      }
+    };
+    loadInitialData();
+  }, []);
+
   const currentDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
 
   // Admin Access Handler
@@ -97,7 +119,7 @@ export function App() {
   };
 
   // Customer creates a new request -> AUTOMATIC BROADCAST TO ALL DRIVERS
-  const handleCreateRequest = (reqData: Omit<DeliveryRequest, 'id' | 'createdAt' | 'offers' | 'status'>) => {
+  const handleCreateRequest = async (reqData: Omit<DeliveryRequest, 'id' | 'createdAt' | 'offers' | 'status'>) => {
     const newId = `req-${Date.now()}`;
     const newReq: DeliveryRequest = {
       ...reqData,
@@ -107,7 +129,7 @@ export function App() {
       offers: []
     };
 
-    // 1. Add new request
+    // 1. Add new request in UI
     setRequests(prev => [newReq, ...prev]);
 
     // 2. Broadcast Instant Notification to all registered drivers
@@ -124,11 +146,14 @@ export function App() {
     setNotifications(prev => [newNotif, ...prev]);
     setIsNewRequestOpen(false);
 
+    // 3. Persist to Supabase Database
+    await dbService.createRequest(newReq);
+
     showToast('📣 تم نشر طلب التوصيل بنجاح وإرسال إشعار فوري لجميع السائقين المسجلين بالموقع!');
   };
 
   // Driver submits an offer with WhatsApp & Call numbers
-  const handleSubmitOffer = (price: number, estimatedDeliveryTime: string, note: string, whatsappPhone: string, callPhone: string) => {
+  const handleSubmitOffer = async (price: number, estimatedDeliveryTime: string, note: string, whatsappPhone: string, callPhone: string) => {
     if (!selectedRequestForOffer) return;
 
     const newOffer: DriverOffer = {
@@ -163,11 +188,15 @@ export function App() {
     }));
 
     setSelectedRequestForOffer(null);
+
+    // Persist offer to Supabase
+    await dbService.submitOffer(newOffer);
+
     showToast('👍 تم إرسال عرضك بنجاح! سينتقل العميل فوراً لمحادثة واتساب معك عند القبول.');
   };
 
   // Customer accepts an offer
-  const handleAcceptOffer = (requestId: string, offerId: string) => {
+  const handleAcceptOffer = async (requestId: string, offerId: string) => {
     setRequests(prev => prev.map(req => {
       if (req.id === requestId) {
         return {
@@ -180,6 +209,7 @@ export function App() {
       return req;
     }));
 
+    await dbService.acceptOffer(requestId, offerId);
     showToast('✅ تم قبول عرض السائق بنجاح! يمكنك الآن التواصل معه فوراً عبر زر الواتساب والمكالمة.');
   };
 
@@ -207,11 +237,15 @@ export function App() {
   };
 
   // New Driver Registration & Activation Success
-  const handleDriverRegisterSuccess = (newDriver: DriverProfile) => {
+  const handleDriverRegisterSuccess = async (newDriver: DriverProfile) => {
     setDrivers(prev => [newDriver, ...prev]);
     setActiveDriverId(newDriver.id);
     setCurrentScreen('driver');
     setIsDriverRegisterOpen(false);
+
+    // Save to database
+    await dbService.registerDriver(newDriver);
+
     showToast(`🎉 مرحباً بك يا ${newDriver.name}! تم تفعيل حسابك واشتراكك بنجاح.`);
   };
 
@@ -223,7 +257,7 @@ export function App() {
   };
 
   // Customer rates a driver after delivery / accepted offer
-  const handleSubmitRating = (requestId: string, driverId: string, ratingValue: number, reviewNote: string) => {
+  const handleSubmitRating = async (requestId: string, driverId: string, ratingValue: number, reviewNote: string) => {
     // 1. Update Driver Profile Rating
     setDrivers(prev => prev.map(d => {
       if (d.id === driverId) {
@@ -272,6 +306,10 @@ export function App() {
     }));
 
     setSelectedRequestForRating(null);
+
+    // Persist rating to Supabase
+    await dbService.rateDriver(requestId, driverId, ratingValue, reviewNote);
+
     showToast(`⭐ شكراً لك! تم تسجيل تقييمك (${ratingValue} نجوم) وتحديث ترتيب السائق.`);
   };
 
