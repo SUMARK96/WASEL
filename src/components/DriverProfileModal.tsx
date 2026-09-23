@@ -28,6 +28,12 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
   const cleanWhatsapp = (whatsappPhone || phone || '').replace(/[^0-9]/g, '');
   const cleanCall = callPhone || phone || '';
 
+  const vehiclePhotos: string[] = 'vehiclePhotos' in driver && Array.isArray(driver.vehiclePhotos) && driver.vehiclePhotos.length > 0
+    ? driver.vehiclePhotos
+    : ('driverVehiclePhotos' in driver && Array.isArray((driver as any).driverVehiclePhotos) && (driver as any).driverVehiclePhotos.length > 0
+        ? (driver as any).driverVehiclePhotos
+        : ('vehiclePhoto' in driver && driver.vehiclePhoto ? [driver.vehiclePhoto] : []));
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
       <div className="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
@@ -77,10 +83,36 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-white mb-1">{name}</h3>
-          <p className="text-xs sm:text-sm text-cyan-300 font-semibold mb-3 flex items-center gap-1">
+          <p className="text-xs sm:text-sm text-cyan-300 font-semibold mb-2.5 flex items-center gap-1">
             <Truck className="w-4 h-4 text-cyan-400" />
             {vehicle}
           </p>
+
+          {/* Vehicle Photos Gallery */}
+          {vehiclePhotos.length > 0 && (
+            <div className="mb-3.5 bg-slate-950/70 p-2.5 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                <span>صور المركبة المعتمدة للتوصيل:</span>
+                <span className="text-[10px] text-cyan-400 font-normal">{vehiclePhotos.length} {vehiclePhotos.length === 1 ? 'صورة' : 'صور'}</span>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {vehiclePhotos.map((photo, pIdx) => (
+                  <div key={pIdx} className="relative rounded-xl overflow-hidden border border-slate-700 aspect-video bg-slate-900 group">
+                    <img
+                      src={photo}
+                      alt={`Vehicle ${pIdx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    {pIdx === 0 && (
+                      <span className="absolute top-1 right-1 bg-blue-600/90 text-white text-[8px] font-black px-1 rounded">
+                        الرئيسية
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Contact Numbers Banner */}
           <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-2 mb-3.5 text-xs">
