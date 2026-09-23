@@ -284,7 +284,6 @@ export function App() {
             requests={requests}
             drivers={drivers}
             onOpenNewRequest={() => setIsNewRequestOpen(true)}
-            onOpenDriverRegister={() => setIsDriverRegisterOpen(true)}
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
           />

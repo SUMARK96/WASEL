@@ -89,11 +89,11 @@ export const Header: React.FC<HeaderProps> = ({
 
                 <button
                   onClick={() => onNavigate('landing')}
-                  className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold px-3 py-2.5 rounded-xl border border-slate-700 text-xs transition-all"
-                  title="العودة للشاشة الرئيسية وتغيير الحساب"
+                  className="flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold px-3 py-2.5 rounded-xl border border-rose-500/20 text-xs transition-all"
+                  title="الخروج والعودة للشاشة الرئيسية"
                 >
-                  <ArrowRight className="w-4 h-4" />
-                  <span className="hidden sm:inline">تبديل الحساب</span>
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">تسجيل خروج</span>
                 </button>
               </>
             )}

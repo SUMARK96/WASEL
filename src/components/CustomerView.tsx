@@ -6,7 +6,6 @@ import {
   Clock, 
   Plus, 
   Star, 
-  Truck, 
   Phone, 
   Eye, 
   ShieldCheck 
@@ -18,7 +17,6 @@ interface CustomerViewProps {
   onOpenNewRequest: () => void;
   onAcceptOffer: (requestId: string, offerId: string) => void;
   onViewDriverProfile: (driver: DriverOffer) => void;
-  onOpenDriverRegister?: () => void;
 }
 
 export const CustomerView: React.FC<CustomerViewProps> = ({
@@ -26,8 +24,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   drivers: _drivers,
   onOpenNewRequest,
   onAcceptOffer,
-  onViewDriverProfile,
-  onOpenDriverRegister
+  onViewDriverProfile
 }) => {
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
 
@@ -52,17 +49,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {onOpenDriverRegister && (
-              <button
-                onClick={onOpenDriverRegister}
-                className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 font-bold px-5 py-4 rounded-2xl shadow-md transition-all text-sm shrink-0"
-              >
-                <Truck className="w-5 h-5 text-amber-400" />
-                <span>انضم كسائق (اشتراك شهري)</span>
-              </button>
-            )}
-
+          <div className="flex items-center gap-3">
             <button
               onClick={onOpenNewRequest}
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-4 rounded-2xl shadow-xl shadow-amber-500/20 transition-all text-sm md:text-base shrink-0 transform active:scale-95"
