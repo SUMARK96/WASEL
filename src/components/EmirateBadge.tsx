@@ -18,7 +18,7 @@ export const EmirateBadge: React.FC<EmirateBadgeProps> = ({
       case 'pickup':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20';
       case 'delivery':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20';
+        return 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25';
       default:
         return 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700';
     }

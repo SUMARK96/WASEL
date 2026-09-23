@@ -64,38 +64,38 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
         </div>
 
         {/* Header Bar */}
-        <div className="bg-slate-950 px-5 sm:px-6 py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+        <div className="bg-slate-950 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-500 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/25">
               <Package className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-black text-white">نشر طلب توصيل طرد</h3>
+              <h3 className="text-sm sm:text-lg font-black text-white">نشر طلب توصيل طرد</h3>
               <p className="text-[11px] sm:text-xs text-slate-400">انشر طلبك وسيصلك عروض أسعار تنافسية من السائقين لاختيار الأنسب</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form Body - Touch Momentum Scrollable Area */}
-        <form id="new-request-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 overscroll-contain touch-pan-y">
+        {/* Form Body */}
+        <form id="new-request-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 overscroll-contain touch-pan-y">
           
           {/* Step 1: Route Selection */}
-          <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-4">
+          <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <div className="flex items-center gap-2 font-bold text-amber-400 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 font-bold text-cyan-400 text-xs sm:text-sm">
                 <MapPin className="w-4 h-4" />
                 <span>1. خط سير الطرد (من إمارة إلى إمارة)</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
               
               {/* Pickup Emirate */}
               <div className="space-y-1.5">
@@ -104,7 +104,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                   <select
                     value={pickupEmirate}
                     onChange={(e) => setPickupEmirate(e.target.value as Emirate)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white font-bold focus:outline-none focus:border-amber-500 appearance-none"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white font-bold focus:outline-none focus:border-cyan-500 appearance-none"
                   >
                     {UAE_EMIRATES.map(e => (
                       <option key={e} value={e}>إمارة {e}</option>
@@ -118,7 +118,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                   placeholder="المنطقة والشارع (مثال: الخالدية - قرب السفير مول)"
                   value={pickupArea}
                   onChange={(e) => setPickupArea(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>
@@ -130,7 +130,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                   <select
                     value={deliveryEmirate}
                     onChange={(e) => setDeliveryEmirate(e.target.value as Emirate)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white font-bold focus:outline-none focus:border-amber-500 appearance-none"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white font-bold focus:outline-none focus:border-cyan-500 appearance-none"
                   >
                     {UAE_EMIRATES.map(e => (
                       <option key={e} value={e}>إمارة {e}</option>
@@ -144,7 +144,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                   placeholder="المنطقة والشارع (مثال: المجاز 2 - شارع البحيرة)"
                   value={deliveryArea}
                   onChange={(e) => setDeliveryArea(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>
@@ -153,20 +153,20 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           </div>
 
           {/* Step 2: Package Type & Weight */}
-          <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex items-center gap-2 font-bold text-amber-400 text-xs sm:text-sm border-b border-slate-800/80 pb-2">
+          <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 font-bold text-cyan-400 text-xs sm:text-sm border-b border-slate-800/80 pb-2">
               <Package className="w-4 h-4" />
               <span>2. مواصفات ونوع الطرد</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">نوع ومحتوى الطرد</label>
                 <div className="relative">
                   <select
                     value={packageType}
                     onChange={(e) => setPackageType(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500 appearance-none"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500 appearance-none"
                   >
                     {PACKAGE_TYPES.map(t => (
                       <option key={t} value={t}>{t}</option>
@@ -183,7 +183,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                   value={packageWeight}
                   onChange={(e) => setPackageWeight(e.target.value)}
                   placeholder="مثال: 5 كجم"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>
@@ -191,8 +191,8 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           </div>
 
           {/* Step 3: Delivery Date & Notes */}
-          <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex items-center gap-2 font-bold text-amber-400 text-xs sm:text-sm border-b border-slate-800/80 pb-2">
+          <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 font-bold text-cyan-400 text-xs sm:text-sm border-b border-slate-800/80 pb-2">
               <Clock className="w-4 h-4" />
               <span>3. موعد التوصيل والملاحظات</span>
             </div>
@@ -204,7 +204,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                 value={deliveryDate}
                 onChange={(e) => setDeliveryDate(e.target.value)}
                 placeholder="مثال: اليوم قبل 8 مساءً"
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500"
                 required
               />
             </div>
@@ -216,7 +216,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="اكتب تعليمات خاصة (طرد قابل للكسر، أوقات الاستلام، إلخ)..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none"
               />
             </div>
           </div>
@@ -228,7 +228,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
           <button
             type="submit"
             form="new-request-form"
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all text-sm flex items-center justify-center gap-2 transform active:scale-95"
+            className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3 sm:py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
           >
             <Sparkles className="w-4 h-4 stroke-[2.5]" />
             <span>نشر الطلب واستقبال عروض السائقين</span>

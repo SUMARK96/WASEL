@@ -39,14 +39,14 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
         </div>
 
         {/* Header */}
-        <div className="bg-slate-950 px-5 sm:px-6 py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+        <div className="bg-slate-950 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="text-base sm:text-lg font-black text-white">تقديم عرض سعر للعميل</h3>
+            <h3 className="text-sm sm:text-lg font-black text-white">تقديم عرض سعر للعميل</h3>
             <p className="text-[11px] sm:text-xs text-slate-400">تواصل مباشر عبر الواتساب والمكالمات عند قبول عرضك</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -64,7 +64,7 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
               <EmirateBadge emirate={request.deliveryEmirate} type="delivery" size="sm" />
             </div>
             <div className="text-xs text-slate-400 pt-1">
-              <span>فئة ونوع الطرد: <strong className="text-amber-400">{request.packageType}</strong></span>
+              <span>فئة ونوع الطرد: <strong className="text-cyan-400">{request.packageType}</strong></span>
             </div>
           </div>
 
@@ -78,17 +78,17 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-lg font-black text-amber-400 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 sm:py-3 text-base sm:text-lg font-black text-cyan-400 focus:outline-none focus:border-cyan-500"
                   min={20}
                   required
                 />
-                <span className="absolute left-4 top-3.5 text-xs text-slate-400 font-bold">AED</span>
+                <span className="absolute left-4 top-3 text-xs text-slate-400 font-bold">AED</span>
               </div>
             </div>
 
             {/* Driver Contact Numbers */}
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-400 border-b border-slate-800/80 pb-2">
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 border-b border-slate-800/80 pb-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>أرقام تواصلك المباشرة مع العميل (فعالة فوراً)</span>
               </div>
@@ -130,7 +130,7 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
                 value={estimatedTime}
                 onChange={(e) => setEstimatedTime(e.target.value)}
                 placeholder="مثال: خلال ساعتين ونصف"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
                 required
               />
             </div>
@@ -142,7 +142,7 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
                 rows={2}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500 resize-none"
                 required
               />
             </div>
@@ -160,7 +160,7 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
           <button
             type="submit"
             form="submit-offer-form"
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all text-sm flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3 sm:py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
           >
             <Send className="w-4 h-4" />
             إرسال العرض للعميل

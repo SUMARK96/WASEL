@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DriverProfile, DeliveryRequest } from '../types';
-import { SUBSCRIPTION_PLANS } from '../data/mockData';
+import { UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import { 
   Package, 
   DollarSign, 
@@ -19,115 +19,104 @@ export const AdminView: React.FC<AdminViewProps> = ({
   requests,
   onToggleVerifyDriver
 }) => {
-  // Calculate total monthly revenue from drivers' subscriptions
-  const totalRevenue = drivers.reduce((acc, drv) => {
-    const plan = SUBSCRIPTION_PLANS.find(p => p.id === drv.subscriptionPlan);
-    return acc + (plan ? plan.price : 0);
-  }, 0);
-
   const activeDriversCount = drivers.filter(d => d.subscriptionStatus === 'active').length;
+  const totalRevenue = activeDriversCount * UNIFIED_SUBSCRIPTION_PLAN.price;
   const totalOffersCount = requests.reduce((acc, r) => acc + r.offers.length, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       
       {/* Hero Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-xl">
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-xl">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 mb-2 inline-block">
+            <span className="text-xs font-bold text-cyan-300 bg-cyan-500/15 px-3 py-1 rounded-full border border-cyan-500/30 mb-2 inline-block">
               لوحة تحكم منصة واصل (WASEL Admin)
             </span>
-            <h1 className="text-2xl font-black text-white">إحصائيات المنصة واشتراكات السائقين المستقلين</h1>
-            <p className="text-xs text-slate-400 mt-1">نموذج الإيرادات: اشتراك شهري ثابت للسائقين للتوصيل بين إمارات الدولة</p>
+            <h1 className="text-xl sm:text-2xl font-black text-white">إحصائيات المنصة واشتراكات السائقين المستقلين</h1>
+            <p className="text-xs text-slate-400 mt-1">نموذج الإيرادات: اشتراك شهري موحد (199 AED) للسائقين للتوصيل بين إمارات الدولة</p>
           </div>
 
-          <div className="text-left bg-slate-950 px-5 py-3 rounded-2xl border border-slate-800">
+          <div className="text-left bg-slate-950/80 px-5 py-3 rounded-2xl border border-slate-800">
             <span className="text-xs text-slate-400 font-semibold block">إجمالي الدخل الشهري المتوقع</span>
-            <span className="text-2xl font-black text-amber-400">{totalRevenue.toLocaleString()} AED</span>
+            <span className="text-xl sm:text-2xl font-black text-cyan-400">{totalRevenue.toLocaleString()} AED</span>
           </div>
         </div>
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         
-        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2">
+        <div className="bg-slate-900/80 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold">إجمالي إيراد الاشتراكات</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-white">{totalRevenue} AED</div>
-          <span className="text-[10px] text-emerald-400 font-bold block">↑ +18.4% مقارنة بالشهر السابق</span>
+          <div className="text-xl sm:text-2xl font-black text-white">{totalRevenue} AED</div>
+          <span className="text-[10px] text-emerald-400 font-bold block">↑ اشتراكات شهرية موحدة نشطة</span>
         </div>
 
-        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2">
+        <div className="bg-slate-900/80 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold">السائقين المشتركين والنشطين</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
               <Truck className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-white">{activeDriversCount} سائقين</div>
+          <div className="text-xl sm:text-2xl font-black text-white">{activeDriversCount} سائقين</div>
           <span className="text-[10px] text-slate-400 font-bold block">100% تم التوثيق برخصة الإمارات</span>
         </div>
 
-        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2">
+        <div className="bg-slate-900/80 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold">طلبات التوصيل المنشورة</span>
             <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
               <Package className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-white">{requests.length} طلبات</div>
+          <div className="text-xl sm:text-2xl font-black text-white">{requests.length} طلبات</div>
           <span className="text-[10px] text-slate-400 font-bold block">بين أبوظبي، دبي، الشارقة وباقي الإمارات</span>
         </div>
 
-        <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2">
+        <div className="bg-slate-900/80 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold">عروض الأسعار المقدمة</span>
             <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-white">{totalOffersCount} عروض</div>
-          <span className="text-[10px] text-slate-400 font-bold block">معدل 3 عروض لكل طلب</span>
+          <div className="text-xl sm:text-2xl font-black text-white">{totalOffersCount} عروض</div>
+          <span className="text-[10px] text-slate-400 font-bold block">متوسط العروض المتوفرة</span>
         </div>
 
       </div>
 
-      {/* Subscription Tiers Revenue breakdown */}
-      <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 space-y-4">
-        <h3 className="font-black text-white text-base">توزيع الاشتراكات الشهرية حسب الباقة</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {SUBSCRIPTION_PLANS.map((plan) => {
-            const count = drivers.filter(d => d.subscriptionPlan === plan.id).length;
-            const revenue = count * plan.price;
-
-            return (
-              <div key={plan.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-white text-sm">{plan.name}</span>
-                  <span className="text-xs font-bold text-amber-400">{plan.price} AED/شهر</span>
-                </div>
-
-                <div className="flex items-baseline justify-between pt-2">
-                  <span className="text-xs text-slate-400">{count} سائقين مشتركين</span>
-                  <span className="text-sm font-black text-emerald-400">{revenue} AED</span>
-                </div>
-              </div>
-            );
-          })}
+      {/* Subscription Tier Overview */}
+      <div className="bg-slate-900/90 p-5 sm:p-6 rounded-3xl border border-slate-800 space-y-3">
+        <h3 className="font-black text-white text-base">الباقة الموحدة للسائقين</h3>
+        <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-white text-sm sm:text-base">{UNIFIED_SUBSCRIPTION_PLAN.name}</span>
+              <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
+                199 AED/شهر
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">باقة واحدة موحدة للجميع مع نظام الأولوية بالتقييم</p>
+          </div>
+          <div className="text-left sm:text-right">
+            <span className="text-xs text-slate-400 block">السائقين المشتركين:</span>
+            <span className="text-lg font-black text-emerald-400">{activeDriversCount} كباتن نشطين</span>
+          </div>
         </div>
       </div>
 
       {/* Drivers Registry Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-black text-white text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
+          <h3 className="font-black text-white text-base sm:text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
           <span className="text-xs text-slate-400">إجمالي الحسابات: {drivers.length}</span>
         </div>
 
@@ -138,8 +127,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <th className="p-3">السائق</th>
                 <th className="p-3">الإمارة</th>
                 <th className="p-3">السيارة واللوحة</th>
-                <th className="p-3">الباقة الشهرية</th>
-                <th className="p-3">الرحلات والتوصيل</th>
+                <th className="p-3">الاشتراك</th>
+                <th className="p-3">الرحلات</th>
                 <th className="p-3 text-center">حالة التوثيق</th>
               </tr>
             </thead>
@@ -158,12 +147,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                   <td className="p-3">
                     <div className="font-bold text-slate-200">{drv.vehicleModel}</div>
-                    <div className="text-[10px] text-amber-400">{drv.vehiclePlate}</div>
+                    <div className="text-[10px] text-cyan-400 font-mono">{drv.vehiclePlate}</div>
                   </td>
 
                   <td className="p-3">
-                    <span className="bg-amber-500/10 text-amber-400 font-extrabold px-2.5 py-1 rounded-lg border border-amber-500/20">
-                      {drv.subscriptionPlan.toUpperCase()} (نشط)
+                    <span className="bg-cyan-500/10 text-cyan-300 font-extrabold px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                      موحد (199 AED)
                     </span>
                   </td>
 
@@ -172,7 +161,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <td className="p-3 text-center">
                     <button
                       onClick={() => onToggleVerifyDriver(drv.id)}
-                      className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                      className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 ${
                         drv.isVerified
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'

@@ -42,14 +42,12 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
       );
 
       if (found) {
-        // If driver has a password configured, check it or accept default
         if (found.password && found.password !== cleanPass && cleanPass !== '123456') {
           setErrorMessage('كلمة المرور غير صحيحة. كلمة المرور الافتراضية هي 123456');
           return;
         }
         onLoginSuccess(found);
       } else {
-        // If not found in mock list, allow logging in with any email for seamless preview
         const firstDriver = drivers[0];
         if (firstDriver) {
           onLoginSuccess({
@@ -71,30 +69,30 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
   };
 
   return (
-    <div className="min-h-[75vh] flex flex-col justify-center py-6 sm:py-10 max-w-xl mx-auto w-full">
+    <div className="min-h-[75vh] flex flex-col justify-center py-4 sm:py-10 max-w-xl mx-auto w-full px-2 sm:px-4">
       
       {/* Back Button */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between">
         <button
           onClick={onBackToPortal}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-4 py-2.5 rounded-2xl border border-slate-800 text-xs font-bold transition-all"
+          className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 sm:py-2.5 rounded-2xl border border-slate-800 text-xs font-bold transition-all active:scale-95 shadow-md"
         >
           <ArrowRight className="w-4 h-4" />
           <span>الرجوع لبوابة السائقين</span>
         </button>
 
-        <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+        <span className="text-xs text-teal-300 font-bold bg-teal-500/15 px-3 py-1 rounded-full border border-teal-500/30">
           تسجيل دخول السائق
         </span>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full filter blur-2xl pointer-events-none" />
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/10 rounded-full filter blur-2xl pointer-events-none" />
 
         {/* Header */}
         <div className="text-center space-y-2 relative z-10">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-slate-950 flex items-center justify-center font-black mx-auto shadow-lg shadow-emerald-500/20">
-            <LogIn className="w-7 h-7 stroke-[2.5]" />
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white flex items-center justify-center font-black mx-auto shadow-lg shadow-teal-500/25">
+            <LogIn className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.5]" />
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white">تسجيل الدخول إلى حساب السائق</h2>
           <p className="text-slate-400 text-xs">أدخل بياناتك للانتقال إلى واجهة متابعة وتقديم العروض للعملاء</p>
@@ -102,7 +100,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3.5 rounded-2xl text-xs flex items-center gap-2.5">
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3 rounded-2xl text-xs flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -112,7 +110,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
         <form onSubmit={handleLogin} className="space-y-4 relative z-10">
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-emerald-400" />
+              <Mail className="w-3.5 h-3.5 text-teal-400" />
               <span>البريد الإلكتروني أو رقم الهاتف</span>
             </label>
             <input
@@ -121,13 +119,13 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="مثال: m.saeed@wasel.ae"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-teal-500 font-medium transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-emerald-400" />
+              <Lock className="w-3.5 h-3.5 text-teal-400" />
               <span>كلمة المرور</span>
             </label>
             <input
@@ -136,14 +134,14 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-teal-500 font-medium transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black py-3.5 px-6 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-black py-3.5 px-6 rounded-2xl shadow-xl shadow-teal-600/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
           >
             {isLoading ? (
               <span>جاري التحقق والدخول...</span>
@@ -160,7 +158,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
         <div className="pt-4 border-t border-slate-800/80 space-y-3">
           <div className="flex items-center justify-between text-[11px] text-slate-400">
             <span className="font-bold text-slate-300 flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
               <span>حسابات تجريبية سريعة للسائقين المسجلين:</span>
             </span>
           </div>
@@ -171,7 +169,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
                 key={drv.id}
                 type="button"
                 onClick={() => handleQuickLogin(drv)}
-                className="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 p-2.5 rounded-xl text-right transition-all flex items-center gap-2.5 group"
+                className="bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 p-2.5 rounded-xl text-right transition-all flex items-center gap-2.5 group active:scale-95"
               >
                 <img
                   src={drv.avatar}
@@ -179,7 +177,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
                   className="w-8 h-8 rounded-lg object-cover border border-slate-700 shrink-0"
                 />
                 <div className="truncate flex-1">
-                  <div className="text-xs font-bold text-white group-hover:text-amber-400 truncate">{drv.name}</div>
+                  <div className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors truncate">{drv.name}</div>
                   <div className="text-[10px] text-slate-400 truncate">{drv.emirate} • {drv.vehicleModel.split(' ')[0]}</div>
                 </div>
               </button>
@@ -193,7 +191,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
             ليس لديك حساب سائق بعد؟{' '}
             <button
               onClick={onGoToRegister}
-              className="text-amber-400 hover:text-amber-300 font-extrabold underline underline-offset-4 mr-1"
+              className="text-cyan-400 hover:text-cyan-300 font-extrabold underline underline-offset-4 mr-1 active:scale-95"
             >
               سجل الآن وادفع الاشتراك
             </button>

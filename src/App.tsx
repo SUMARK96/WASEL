@@ -17,8 +17,9 @@ import { DriverProfileModal } from './components/DriverProfileModal';
 import { AdminPasswordModal } from './components/AdminPasswordModal';
 import { DriverRegistrationModal } from './components/DriverRegistrationModal';
 import { RateDriverModal } from './components/RateDriverModal';
+import { Logo } from './components/Logo';
 
-import { Truck, Lock, LogOut, Bell } from 'lucide-react';
+import { Lock, LogOut, Bell } from 'lucide-react';
 
 export function App() {
   // Primary Screen State (Default is Landing with 2 options: Customer or Driver)
@@ -281,13 +282,13 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-slate-950">
       
       {/* Toast Notification Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-6 z-50 bg-slate-900 border-2 border-amber-500 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom duration-300">
-          <Bell className="w-5 h-5 text-amber-400 shrink-0 animate-bounce" />
-          <span className="text-sm font-bold">{toastMessage}</span>
+        <div className="fixed bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-auto z-50 bg-slate-900 border-2 border-cyan-500 text-white px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom duration-300">
+          <Bell className="w-5 h-5 text-cyan-400 shrink-0 animate-bounce" />
+          <span className="text-xs sm:text-sm font-bold">{toastMessage}</span>
         </div>
       )}
 
@@ -301,7 +302,7 @@ export function App() {
       />
 
       {/* Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         
         {/* 1. Landing Screen (2 options only: Customer or Driver) */}
         {currentScreen === 'landing' && (
@@ -363,7 +364,7 @@ export function App() {
             <div className="flex justify-end">
               <button
                 onClick={handleAdminLogout}
-                className="flex items-center gap-1.5 text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 px-3 py-1.5 rounded-xl border border-rose-500/20 text-xs"
+                className="flex items-center gap-1.5 text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 px-3 py-1.5 rounded-xl border border-rose-500/20 text-xs active:scale-95"
               >
                 <LogOut className="w-4 h-4" />
                 خروج من الإدارة
@@ -380,45 +381,46 @@ export function App() {
       </main>
 
       {/* Footer with Protected Admin Entrance */}
-      <footer className="bg-slate-900 border-t border-slate-800/80 py-10 text-xs text-slate-500">
+      <footer className="bg-slate-900 border-t border-slate-800/80 py-8 sm:py-10 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 space-y-6">
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
             <div 
-              className="flex items-center gap-2 font-bold text-slate-300 cursor-pointer"
+              className="flex items-center cursor-pointer"
               onClick={() => setCurrentScreen('landing')}
             >
-              <Truck className="w-5 h-5 text-amber-500" />
-              <span className="text-sm font-extrabold text-white">منصة واصل © 2026</span>
+              <Logo size="sm" />
             </div>
 
-            <div className="flex gap-4 font-semibold text-slate-400">
-              <span className="hover:text-amber-400 cursor-pointer">أبوظبي</span>
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 font-semibold text-slate-400 text-[11px] sm:text-xs">
+              <span className="hover:text-cyan-400 cursor-pointer">أبوظبي</span>
               <span>•</span>
-              <span className="hover:text-amber-400 cursor-pointer">دبي</span>
+              <span className="hover:text-cyan-400 cursor-pointer">دبي</span>
               <span>•</span>
-              <span className="hover:text-amber-400 cursor-pointer">الشارقة</span>
+              <span className="hover:text-cyan-400 cursor-pointer">الشارقة</span>
               <span>•</span>
-              <span className="hover:text-amber-400 cursor-pointer">عجمان</span>
+              <span className="hover:text-cyan-400 cursor-pointer">عجمان</span>
               <span>•</span>
-              <span className="hover:text-amber-400 cursor-pointer">أم القيوين</span>
+              <span className="hover:text-cyan-400 cursor-pointer">أم القيوين</span>
               <span>•</span>
-              <span className="hover:text-amber-400 cursor-pointer">رأس الخيمة</span>
+              <span className="hover:text-cyan-400 cursor-pointer">رأس الخيمة</span>
               <span>•</span>
-              <span className="hover:text-amber-400 cursor-pointer">الفجيرة</span>
+              <span className="hover:text-cyan-400 cursor-pointer">الفجيرة</span>
             </div>
           </div>
 
           {/* Admin Dashboard Entrance at bottom of footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-            <p className="text-slate-500">جميع الحقوق محفوظة لمنصة واصل • توصيل الطرود والرسائل باشتراك شهري للسائقين</p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+            <p className="text-slate-500 text-center sm:text-right text-[11px] sm:text-xs">
+              جميع الحقوق محفوظة لمنصة واصل (WASEL) © 2026 • خدمة توصيل الطرود بين إمارات الدولة
+            </p>
             
             <button
               onClick={handleOpenAdmin}
-              className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl border border-slate-800 transition-all font-bold shadow-md hover:border-amber-500/40"
+              className="flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 transition-all font-bold shadow-md hover:border-cyan-500/40 active:scale-95 text-xs"
             >
-              <Lock className="w-3.5 h-3.5 text-amber-400" />
-              <span>لوحة تحكم الإدارة (محمية بكلمة سر)</span>
+              <Lock className="w-3.5 h-3.5 text-cyan-400" />
+              <span>لوحة تحكم الإدارة (محمية)</span>
             </button>
           </div>
 
