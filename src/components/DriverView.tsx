@@ -115,13 +115,27 @@ export const DriverView: React.FC<DriverViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 flex-1 md:flex-initial">
-              <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            {/* Rating Widget */}
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-amber-500/30 flex items-center gap-3 flex-1 md:flex-initial">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center font-black">
+                ⭐
+              </div>
               <div>
-                <div className="text-[10px] text-slate-400">حالة الاشتراك الشهري</div>
+                <div className="text-[10px] text-slate-400">تقييمك لدى العملاء</div>
+                <div className="text-xs font-black text-amber-400">
+                  {driver.rating} / 5.0 ({driver.reviewsCount} تقييم)
+                </div>
+              </div>
+            </div>
+
+            {/* Unified Subscription Widget */}
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 flex-1 md:flex-initial">
+              <Sparkles className="w-6 h-6 text-emerald-400 shrink-0" />
+              <div>
+                <div className="text-[10px] text-slate-400">الاشتراك الشهري الموحد</div>
                 <div className="text-xs font-black text-emerald-400">
-                  خطة {driver.subscriptionPlan.toUpperCase()} (نشط حتى {driver.subscriptionExpiry})
+                  نشط حتى {driver.subscriptionExpiry}
                 </div>
               </div>
             </div>
@@ -130,10 +144,18 @@ export const DriverView: React.FC<DriverViewProps> = ({
               onClick={onOpenSubscription}
               className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-3.5 rounded-2xl text-xs transition-all shadow-lg shadow-amber-500/10 shrink-0"
             >
-              تعديل / تجديد
+              تجديد الاشتراك
             </button>
           </div>
 
+        </div>
+
+        {/* Priority Explanation Banner */}
+        <div className="mt-5 pt-3.5 border-t border-slate-800/80 flex items-center gap-2 text-xs text-amber-300/90 font-medium">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            <strong>نظام أولوية الظهور:</strong> كلما ارتفع تقييمك من العملاء ({driver.rating} ⭐)، زادت فرص ظهور عروضك في المرتبة الأولى للعميل مع شارة "الأعلى تقييماً 🏆".
+          </span>
         </div>
       </div>
 

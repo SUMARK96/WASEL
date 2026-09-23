@@ -16,6 +16,7 @@ import { SubmitOfferModal } from './components/SubmitOfferModal';
 import { DriverProfileModal } from './components/DriverProfileModal';
 import { AdminPasswordModal } from './components/AdminPasswordModal';
 import { DriverRegistrationModal } from './components/DriverRegistrationModal';
+import { RateDriverModal } from './components/RateDriverModal';
 
 import { Truck, Lock, LogOut, Bell } from 'lucide-react';
 
@@ -58,6 +59,7 @@ export function App() {
   
   const [selectedDriverForProfile, setSelectedDriverForProfile] = useState<DriverProfile | DriverOffer | null>(null);
   const [selectedRequestForOffer, setSelectedRequestForOffer] = useState<DeliveryRequest | null>(null);
+  const [selectedRequestForRating, setSelectedRequestForRating] = useState<{ request: DeliveryRequest; offer: DriverOffer } | null>(null);
 
   // Toast Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -219,6 +221,59 @@ export function App() {
     showToast(`👋 مرحباً بعودتك يا ${driver.name}! تم تسجيل الدخول بنجاح.`);
   };
 
+  // Customer rates a driver after delivery / accepted offer
+  const handleSubmitRating = (requestId: string, driverId: string, ratingValue: number, reviewNote: string) => {
+    // 1. Update Driver Profile Rating
+    setDrivers(prev => prev.map(d => {
+      if (d.id === driverId) {
+        const newReviewsCount = d.reviewsCount + 1;
+        const newRating = Math.round((((d.rating * d.reviewsCount) + ratingValue) / newReviewsCount) * 100) / 100;
+        return {
+          ...d,
+          rating: newRating,
+          reviewsCount: newReviewsCount
+        };
+      }
+      return d;
+    }));
+
+    // 2. Update offers across requests & mark current request as rated
+    setRequests(prev => prev.map(req => {
+      const updatedOffers = req.offers.map(off => {
+        if (off.driverId === driverId) {
+          const targetDriver = drivers.find(d => d.id === driverId);
+          const currentCount = targetDriver?.reviewsCount || 1;
+          const currentRating = targetDriver?.rating || 4.8;
+          const newReviewsCount = currentCount + 1;
+          const newRating = Math.round((((currentRating * currentCount) + ratingValue) / newReviewsCount) * 100) / 100;
+          return {
+            ...off,
+            driverRating: newRating
+          };
+        }
+        return off;
+      });
+
+      if (req.id === requestId) {
+        return {
+          ...req,
+          isCustomerRated: true,
+          customerRating: ratingValue,
+          customerReviewNote: reviewNote,
+          offers: updatedOffers
+        };
+      }
+
+      return {
+        ...req,
+        offers: updatedOffers
+      };
+    }));
+
+    setSelectedRequestForRating(null);
+    showToast(`⭐ شكراً لك! تم تسجيل تقييمك (${ratingValue} نجوم) وتحديث ترتيب السائق.`);
+  };
+
   // Admin toggles verification
   const handleToggleVerifyDriver = (driverId: string) => {
     setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, isVerified: !d.isVerified } : d));
@@ -286,6 +341,7 @@ export function App() {
             onOpenNewRequest={() => setIsNewRequestOpen(true)}
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
+            onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
           />
         )}
 
@@ -412,6 +468,15 @@ export function App() {
         <DriverRegistrationModal
           onClose={() => setIsDriverRegisterOpen(false)}
           onRegisterSuccess={handleDriverRegisterSuccess}
+        />
+      )}
+
+      {selectedRequestForRating && (
+        <RateDriverModal
+          request={selectedRequestForRating.request}
+          driverOffer={selectedRequestForRating.offer}
+          onClose={() => setSelectedRequestForRating(null)}
+          onSubmitRating={handleSubmitRating}
         />
       )}
 

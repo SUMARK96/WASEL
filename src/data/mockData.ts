@@ -27,43 +27,23 @@ export const VEHICLE_TRANSLATIONS = {
   pickup: 'بيك أب (Pickup)'
 };
 
+export const UNIFIED_SUBSCRIPTION_PLAN: SubscriptionPlan = {
+  id: 'unified',
+  name: 'باقة واصل الموحدة للسائقين',
+  price: 199,
+  features: [
+    'عمولة 0% على جميع طلبات التوصيل',
+    'تقديم عروض أسعار غير محدودة لجميع العملاء',
+    'تواصل مباشر وفوري عبر الواتساب والمكالمات الهاتفية',
+    'إشعارات فورية بكل طلب توصيل جديد في كافة الإمارات',
+    'الأولوية في تصدر العروض لدى العميل وفقاً لتقييمك المرتفع ⭐',
+    'توثيق الهوية ورخصة القيادة وشارة "سائق معتمد"'
+  ],
+  recommended: true
+};
+
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
-  {
-    id: 'starter',
-    name: 'الباقة الأساسية',
-    price: 149,
-    features: [
-      'تقديم حتى 20 عرض شهرياً',
-      'توثيق رخصة القيادة والهوية',
-      'تفعيل خيار الواتساب والمكالمات المباشرة',
-      'تنبيهات بالطلبات الجديدة'
-    ]
-  },
-  {
-    id: 'pro',
-    name: 'الباقة الاحترافية',
-    price: 249,
-    features: [
-      'تقديم عروض لا محدودة',
-      'شارة "سائق موثوق" الذهبية',
-      'تواصل واتساب ومكالمات مباشر مع العملاء',
-      'إشعارات فورية للطلبات العاجلة',
-      'دعم فني مخصص على مدار الساعة'
-    ],
-    recommended: true
-  },
-  {
-    id: 'unlimited',
-    name: 'الباقة الذهبية الممتازة',
-    price: 399,
-    features: [
-      'جميع ميزات الباقة الاحترافية',
-      'الأولوية الأولى لعروضك لدى العملاء',
-      'عمولة 0% على جميع الطلبات',
-      'تقرير شهري بالإحصائيات والتقييمات',
-      'تغطية تأمينية أساسية للطرود'
-    ]
-  }
+  UNIFIED_SUBSCRIPTION_PLAN
 ];
 
 export const INITIAL_DRIVERS: DriverProfile[] = [
@@ -80,12 +60,12 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'pickup',
     vehicleModel: 'تويوتا هيلوكس 2023',
     vehiclePlate: 'دبي X 84920',
-    rating: 4.9,
-    reviewsCount: 54,
+    rating: 4.95,
+    reviewsCount: 84,
     completedDeliveries: 128,
     isVerified: true,
     subscriptionStatus: 'active',
-    subscriptionPlan: 'pro',
+    subscriptionPlan: 'unified',
     subscriptionExpiry: '2026-10-15',
     joinedDate: '2025-01-10',
     bio: 'سائق محترف متخصص في نقل الطرود بين دبي وأبوظبي والشارقة. الالتزام بالوقت وسلامة الطرد أولويتي.'
@@ -103,12 +83,12 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'suv',
     vehicleModel: 'نيسان باترول 2022',
     vehiclePlate: 'أبوظبي 12-4910',
-    rating: 4.8,
-    reviewsCount: 39,
-    completedDeliveries: 87,
+    rating: 4.88,
+    reviewsCount: 62,
+    completedDeliveries: 95,
     isVerified: true,
     subscriptionStatus: 'active',
-    subscriptionPlan: 'unlimited',
+    subscriptionPlan: 'unified',
     subscriptionExpiry: '2026-11-01',
     joinedDate: '2025-02-15',
     bio: 'توصيل سريع وآمن بين جميع إمارات الدولة. خبرة 5 سنوات في التوصيل بين أبوظبي والإمارات الشمالية.'
@@ -126,12 +106,12 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'van',
     vehicleModel: 'تويوتا هايس مغلقة 2024',
     vehiclePlate: 'الشارقة 5 77123',
-    rating: 4.95,
-    reviewsCount: 82,
+    rating: 4.98,
+    reviewsCount: 110,
     completedDeliveries: 210,
     isVerified: true,
     subscriptionStatus: 'active',
-    subscriptionPlan: 'pro',
+    subscriptionPlan: 'unified',
     subscriptionExpiry: '2026-10-01',
     joinedDate: '2024-11-01',
     bio: 'فان نقل مغلق ومكيف للطرود الحساسة والأجهزة والأثاث. رحلات يومية بين الشارقة وعجمان ودبي ورأس الخيمة.'
@@ -149,12 +129,12 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'sedan',
     vehicleModel: 'كامري 2023',
     vehiclePlate: 'عجمان B 3910',
-    rating: 4.7,
-    reviewsCount: 21,
+    rating: 4.75,
+    reviewsCount: 38,
     completedDeliveries: 45,
     isVerified: true,
     subscriptionStatus: 'active',
-    subscriptionPlan: 'starter',
+    subscriptionPlan: 'unified',
     subscriptionExpiry: '2026-09-30',
     joinedDate: '2025-05-12',
     bio: 'توصيل المستندات والطرود الصغيرة والسريعة بين الإمارات.'

@@ -55,8 +55,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [vehicleModel, setVehicleModel] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
 
-  // Step 3: Subscription Plan
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanId>('pro');
+  // Step 3: Subscription Plan (Unified for all drivers)
+  const [selectedPlan] = useState<SubscriptionPlanId>('unified');
 
   // Step 4: Payment State
   const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8912');
@@ -492,55 +492,37 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
               </div>
 
-              {/* Plans Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {SUBSCRIPTION_PLANS.map((plan) => {
-                  const isSelected = selectedPlan === plan.id;
-                  return (
-                    <div
-                      key={plan.id}
-                      onClick={() => setSelectedPlan(plan.id)}
-                      className={`relative cursor-pointer rounded-2xl p-4 border transition-all flex flex-col justify-between ${
-                        isSelected
-                          ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/20 shadow-lg shadow-amber-500/10'
-                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      {plan.recommended && (
-                        <span className="absolute -top-3 right-4 bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md">
-                          الأكثر اختياراً ⭐
-                        </span>
-                      )}
+              {/* Single Unified Plan Card */}
+              <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 rounded-2xl border-2 border-amber-500/50 shadow-xl relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                  <div>
+                    <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mb-1 shadow-sm">
+                      الباقة الموحدة لجميع السائقين ⭐
+                    </span>
+                    <h4 className="font-black text-white text-base sm:text-lg">{selectedPlanDetails.name}</h4>
+                  </div>
 
-                      <div>
-                        <h4 className="font-extrabold text-white text-sm mb-1">{plan.name}</h4>
-                        <div className="flex items-baseline gap-1 my-2">
-                          <span className="text-2xl font-black text-amber-400">{plan.price}</span>
-                          <span className="text-[11px] text-slate-400 font-semibold">درهم / شهرياً</span>
-                        </div>
+                  <div className="text-right sm:text-left">
+                    <span className="text-2xl sm:text-3xl font-black text-amber-400">{selectedPlanDetails.price}</span>
+                    <span className="text-xs text-slate-400 font-semibold mr-1">درهم / شهرياً</span>
+                  </div>
+                </div>
 
-                        <ul className="space-y-1.5 text-xs text-slate-300 mb-4">
-                          {plan.features.map((feat, idx) => (
-                            <li key={idx} className="flex items-start gap-1.5">
-                              <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                              <span>{feat}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div
-                        className={`w-full py-2 rounded-xl text-center font-bold text-xs transition-colors ${
-                          isSelected
-                            ? 'bg-amber-500 text-slate-950'
-                            : 'bg-slate-800 text-slate-300'
-                        }`}
-                      >
-                        {isSelected ? 'الباقة المحددة' : 'اختيار الباقة'}
-                      </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-800 text-xs text-slate-300">
+                  {selectedPlanDetails.features.map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <span>{feat}</span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-800 bg-amber-500/10 p-3 rounded-xl flex items-center gap-2.5 text-xs text-amber-300 font-semibold">
+                  <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                  <span>
+                    <strong>ملاحظة نظام التقييم:</strong> كلما حصلت على تقييمات إيجابية أعلى من العملاء بعد إتمام التوصيل، تظهر عروضك في المرتبة الأولى تلقائياً!
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-2">

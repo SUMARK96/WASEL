@@ -20,7 +20,7 @@ export type AppScreen =
 
 export type VehicleType = 'sedan' | 'suv' | 'van' | 'pickup';
 
-export type SubscriptionPlanId = 'starter' | 'pro' | 'unlimited';
+export type SubscriptionPlanId = 'unified' | 'starter' | 'pro' | 'unlimited';
 
 export interface SubscriptionPlan {
   id: SubscriptionPlanId;
@@ -93,6 +93,9 @@ export interface DeliveryRequest {
   status: 'open' | 'assigned' | 'in_transit' | 'delivered' | 'cancelled';
   createdAt: string;
   selectedOfferId?: string;
+  isCustomerRated?: boolean;
+  customerRating?: number;
+  customerReviewNote?: string;
   offers: DriverOffer[];
 }
 
