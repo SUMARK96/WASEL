@@ -28,13 +28,19 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
   const [deliveryEmirate, setDeliveryEmirate] = useState<Emirate>('الشارقة');
   const [deliveryArea, setDeliveryArea] = useState('منطقة المجاز 2');
   const [packageType, setPackageType] = useState(PACKAGE_TYPES[0]);
+  const [customPackageType, setCustomPackageType] = useState('');
   const [packageWeight, setPackageWeight] = useState('5 كجم');
   const [deliveryDate, setDeliveryDate] = useState('اليوم - خلال المساء');
   const [notes, setNotes] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalTitle = `توصيل ${packageType} من ${pickupEmirate} إلى ${deliveryEmirate}`;
+    
+    const effectivePackageType = packageType === 'أخرى'
+      ? (customPackageType.trim() || 'طرد مخصص (أخرى)')
+      : packageType;
+
+    const finalTitle = `توصيل ${effectivePackageType} من ${pickupEmirate} إلى ${deliveryEmirate}`;
     onSubmit({
       title: finalTitle,
       customerName,
@@ -43,7 +49,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
       pickupArea,
       deliveryEmirate,
       deliveryArea,
-      packageType,
+      packageType: effectivePackageType,
       packageSize,
       packageWeight,
       deliveryDate,
@@ -171,9 +177,27 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                     {PACKAGE_TYPES.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
+                    <option value="أخرى">أخرى (تحديد نوع آخر)...</option>
                   </select>
                   <ChevronDown className="absolute left-3 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
+
+                {packageType === 'أخرى' && (
+                  <div className="mt-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="block text-[11px] font-bold text-cyan-300 mb-1">
+                      يرجى كتابة نوع ومحتوى الطرد بالتفصيل *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={customPackageType}
+                      onChange={(e) => setCustomPackageType(e.target.value)}
+                      placeholder="مثال: لوحات فنية، زهور ونباتات، معدات طبية..."
+                      className="w-full bg-slate-900 border-2 border-cyan-500/60 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-medium"
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
