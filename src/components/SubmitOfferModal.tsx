@@ -20,13 +20,13 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
   const [estimatedTime, setEstimatedTime] = useState('خلال 3 ساعات من الآن');
   const [note, setNote] = useState(`أنا جاهز لنقل الطرد بسيارتي الـ ${driver.vehicleModel}. الالتزام بالوقت وسلامة الطرد مضمونين.`);
   
-  // Driver Numbers
-  const [whatsappPhone, setWhatsappPhone] = useState(driver.whatsappPhone || '971501234567');
-  const [callPhone, setCallPhone] = useState(driver.callPhone || driver.phone || '+971 50 123 4567');
+  // Driver Numbers from registered account
+  const [whatsappPhone, setWhatsappPhone] = useState(driver.whatsappPhone || driver.phone || '');
+  const [callPhone, setCallPhone] = useState(driver.callPhone || driver.phone || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmitOffer(price, estimatedTime, note, whatsappPhone, callPhone);
+    onSubmitOffer(price, estimatedTime, note, whatsappPhone || driver.whatsappPhone || driver.phone, callPhone || driver.callPhone || driver.phone);
   };
 
   return (
