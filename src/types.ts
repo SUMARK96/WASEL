@@ -40,10 +40,11 @@ export interface DriverProfile {
   password?: string;
   avatar: string;
   emirate: Emirate;
-  vehicleType: VehicleType;
+  vehicleType?: VehicleType;
   vehicleModel: string;
   vehiclePlate: string;
   vehiclePhoto?: string;
+  vehiclePhotos?: string[];
   licensePhoto?: string;
   mulkiyaPhoto?: string;
   emiratesIdPhoto?: string;
@@ -66,7 +67,8 @@ export interface DriverOffer {
   driverAvatar: string;
   driverRating: number;
   driverVehicle: string;
-  driverVehicleType: VehicleType;
+  driverVehicleType?: VehicleType;
+  driverVehiclePhotos?: string[];
   driverPhone: string;
   driverWhatsappPhone: string;
   driverCallPhone: string;

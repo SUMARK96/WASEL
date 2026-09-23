@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { DriverProfile, Emirate, SubscriptionPlanId, VehicleType } from '../types';
-import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES, VEHICLE_TRANSLATIONS } from '../data/mockData';
+import type { DriverProfile, Emirate, SubscriptionPlanId } from '../types';
+import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
 import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
 import { validateDrivingLicenseImage, type DrivingLicenseValidationResult } from '../utils/drivingLicenseValidator';
 import { validateMulkiyaImage, type MulkiyaValidationResult } from '../utils/mulkiyaValidator';
@@ -12,7 +12,7 @@ import {
   Check, 
   CreditCard, 
   ShieldCheck, 
-  Truck, 
+  Truck,
   User, 
   Phone, 
   Mail, 
@@ -62,13 +62,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [bio, setBio] = useState('');
 
   // Step 2: Vehicle & License Details + Real Photo & 3 Required Official Documents
-  const [vehicleType, setVehicleType] = useState<VehicleType>('pickup');
   const [vehicleModel, setVehicleModel] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
   
-  // Real Photos Upload States
-  const [vehiclePhoto, setVehiclePhoto] = useState<string>(DEFAULT_VEHICLE_IMG);
-  const [vehiclePhotoName, setVehiclePhotoName] = useState<string>('vehicle_photo.jpg');
+  // Real Multiple Vehicle Photos Upload States
+  const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([DEFAULT_VEHICLE_IMG]);
 
   const [drivingLicensePhoto, setDrivingLicensePhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [drivingLicenseName, setDrivingLicenseName] = useState<string>('uae_driving_license.jpg');
@@ -104,6 +102,39 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [isDone, setIsDone] = useState(false);
 
   const selectedPlanDetails = UNIFIED_SUBSCRIPTION_PLAN;
+
+  // Multiple vehicle photos upload handler
+  const handleMultipleVehiclePhotosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newPhotos: string[] = [];
+    let processed = 0;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          newPhotos.push(reader.result);
+        }
+        processed++;
+        if (processed === files.length) {
+          setVehiclePhotos(prev => {
+            const filtered = prev.filter(p => p !== DEFAULT_VEHICLE_IMG);
+            return [...filtered, ...newPhotos];
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveVehiclePhoto = (indexToRemove: number) => {
+    setVehiclePhotos(prev => {
+      const updated = prev.filter((_, idx) => idx !== indexToRemove);
+      return updated.length > 0 ? updated : [DEFAULT_VEHICLE_IMG];
+    });
+  };
 
   // File to base64 helper
   const handleFileUpload = (
@@ -277,10 +308,10 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         password: password.trim() || '123456',
         avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
         emirate,
-        vehicleType,
         vehicleModel: vehicleModel.trim(),
         vehiclePlate: vehiclePlate.trim(),
-        vehiclePhoto,
+        vehiclePhoto: vehiclePhotos[0] || DEFAULT_VEHICLE_IMG,
+        vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [DEFAULT_VEHICLE_IMG],
         licensePhoto: drivingLicensePhoto,
         mulkiyaPhoto,
         emiratesIdPhoto,
@@ -568,30 +599,6 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
           {step === 2 && !isDone && (
             <form onSubmit={handleNextStep2} className="space-y-5 sm:space-y-6 animate-in fade-in duration-200">
               
-              {/* Vehicle Type Selection */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-2">نوع المركبة المعتمدة للتوصيل *</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-                  {(Object.keys(VEHICLE_TRANSLATIONS) as VehicleType[]).map((type) => {
-                    const isSel = vehicleType === type;
-                    return (
-                      <div
-                        key={type}
-                        onClick={() => setVehicleType(type)}
-                        className={`cursor-pointer p-3 sm:p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-2 active:scale-95 ${
-                          isSel
-                            ? 'bg-gradient-to-b from-blue-600/20 to-cyan-500/20 border-cyan-500 text-cyan-300 font-black shadow-md'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                      >
-                        <Truck className={`w-5 h-5 sm:w-6 sm:h-6 ${isSel ? 'text-cyan-400' : 'text-slate-500'}`} />
-                        <span className="text-xs">{VEHICLE_TRANSLATIONS[type]}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Vehicle Model & Plate Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 <div>
@@ -619,49 +626,71 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
               </div>
 
-              {/* 1. Real Vehicle Photo Upload */}
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+              {/* 1. Multiple Real Vehicle Photos Upload & Gallery */}
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-white flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-cyan-400" />
-                    <span>إدراج صورة حقيقية للمركبة المعتمدة للتوصيل *</span>
+                    <span>إدراج صور حقيقية للمركبة المعتمدة للتوصيل (يمكنك رفع عدة صور) *</span>
                   </label>
                   <span className="text-[10px] text-cyan-300 font-bold bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-500/30">
-                    مطلوب للتوثيق
+                    {vehiclePhotos.length} {vehiclePhotos.length === 1 ? 'صورة' : 'صور'}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <div className="relative shrink-0">
-                    <img
-                      src={vehiclePhoto}
-                      alt="Vehicle"
-                      className="w-24 h-18 sm:w-28 sm:h-20 rounded-xl object-cover border-2 border-slate-700 shadow-md"
-                    />
-                  </div>
+                {/* Upload Button */}
+                <div>
+                  <input
+                    type="file"
+                    id="multiple-vehicle-photos-upload"
+                    multiple
+                    accept="image/*"
+                    onChange={handleMultipleVehiclePhotosUpload}
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor="multiple-vehicle-photos-upload"
+                    className="cursor-pointer w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900/40 via-slate-900 to-cyan-900/40 hover:from-blue-900/60 hover:to-cyan-900/60 text-cyan-400 font-bold px-4 py-3 rounded-xl border border-dashed border-cyan-500/50 hover:border-cyan-400 text-xs transition-all active:scale-95 shadow-inner"
+                  >
+                    <Upload className="w-4 h-4 text-cyan-400" />
+                    <span>+ رفع صور جديدة لمركبتك (اضغط لتحديد صورة أو عدة صور)</span>
+                  </label>
+                </div>
 
-                  <div className="flex-1 w-full space-y-1.5">
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id="vehicle-photo-upload"
-                        accept="image/*"
-                        onChange={(e) => handleFileUpload(e, setVehiclePhoto, setVehiclePhotoName)}
-                        className="sr-only"
+                {/* Photos Grid Gallery */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  {vehiclePhotos.map((photoUrl, idx) => (
+                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-700 aspect-video bg-slate-900 shadow-md">
+                      <img
+                        src={photoUrl}
+                        alt={`Vehicle ${idx + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
-                      <label
-                        htmlFor="vehicle-photo-upload"
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold px-4 py-2.5 rounded-xl border border-dashed border-cyan-500/50 hover:border-cyan-500 text-xs transition-all active:scale-95"
-                      >
-                        <Upload className="w-4 h-4" />
-                        <span>تحميل صورة حقيقية لسيارتك</span>
-                      </label>
+                      {idx === 0 && (
+                        <div className="absolute top-1.5 right-1.5 bg-blue-600/90 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
+                          الرئيسية
+                        </div>
+                      )}
+                      {vehiclePhotos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVehiclePhoto(idx)}
+                          className="absolute top-1.5 left-1.5 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded-full shadow transition-all opacity-90 group-hover:opacity-100"
+                          title="حذف الصورة"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 bg-slate-950/75 py-0.5 text-center text-[9px] text-slate-300">
+                        صورة {idx + 1}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span className="truncate max-w-[200px]">الملف: {vehiclePhotoName}</span>
-                      <span className="text-emerald-400 font-bold">جاهزة للعرض ✓</span>
-                    </div>
-                  </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                  <span>💡 يُفضل رفع صور واضحة للمركبة من الأمام والخلف والجانب</span>
+                  <span className="text-emerald-400 font-bold">جاهزة للعرض ✓</span>
                 </div>
               </div>
 
