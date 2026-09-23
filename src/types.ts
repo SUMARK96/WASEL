@@ -43,6 +43,10 @@ export interface DriverProfile {
   vehicleType: VehicleType;
   vehicleModel: string;
   vehiclePlate: string;
+  vehiclePhoto?: string;
+  licensePhoto?: string;
+  mulkiyaPhoto?: string;
+  emiratesIdPhoto?: string;
   rating: number;
   reviewsCount: number;
   completedDeliveries: number;

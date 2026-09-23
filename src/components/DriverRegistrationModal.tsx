@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import type { DriverProfile, Emirate, SubscriptionPlanId, VehicleType } from '../types';
-import { SUBSCRIPTION_PLANS, UAE_EMIRATES, VEHICLE_TRANSLATIONS } from '../data/mockData';
+import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES, VEHICLE_TRANSLATIONS } from '../data/mockData';
 import { 
   X, 
   Check, 
-  Sparkles, 
   CreditCard, 
   ShieldCheck, 
   Truck, 
@@ -14,11 +13,13 @@ import {
   MapPin, 
   FileText, 
   Zap, 
-  CheckCircle2, 
   ArrowLeft, 
   ArrowRight,
   Star,
-  Lock
+  Lock,
+  Upload,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface DriverRegistrationModalProps {
@@ -34,13 +35,17 @@ const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200'
 ];
 
+// Sample default placeholders for documents if user wants instant demo
+const DEFAULT_VEHICLE_IMG = 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=400';
+const DEFAULT_DOC_IMG = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=300';
+
 export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = ({
   onClose,
   onRegisterSuccess
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
-  // Step 1: Personal & Contact Details
+  // Step 1: Personal & Contact Details + Avatar Upload
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('+971 50 ');
   const [whatsappPhone, setWhatsappPhone] = useState('97150');
@@ -48,14 +53,28 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [password, setPassword] = useState('');
   const [emirate, setEmirate] = useState<Emirate>('دبي');
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
+  const [customAvatarUploaded, setCustomAvatarUploaded] = useState(false);
   const [bio, setBio] = useState('');
 
-  // Step 2: Vehicle & License Details
+  // Step 2: Vehicle & License Details + Real Photo & 3 Required Official Documents
   const [vehicleType, setVehicleType] = useState<VehicleType>('pickup');
   const [vehicleModel, setVehicleModel] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
+  
+  // Real Photos Upload States
+  const [vehiclePhoto, setVehiclePhoto] = useState<string>(DEFAULT_VEHICLE_IMG);
+  const [vehiclePhotoName, setVehiclePhotoName] = useState<string>('vehicle_photo.jpg');
 
-  // Step 3: Subscription Plan (Unified for all drivers)
+  const [drivingLicensePhoto, setDrivingLicensePhoto] = useState<string>(DEFAULT_DOC_IMG);
+  const [drivingLicenseName, setDrivingLicenseName] = useState<string>('uae_driving_license.jpg');
+
+  const [mulkiyaPhoto, setMulkiyaPhoto] = useState<string>(DEFAULT_DOC_IMG);
+  const [mulkiyaName, setMulkiyaName] = useState<string>('vehicle_mulkiya.jpg');
+
+  const [emiratesIdPhoto, setEmiratesIdPhoto] = useState<string>(DEFAULT_DOC_IMG);
+  const [emiratesIdName, setEmiratesIdName] = useState<string>('emirates_id.jpg');
+
+  // Step 3: Subscription Plan (Unified Plan)
   const [selectedPlan] = useState<SubscriptionPlanId>('unified');
 
   // Step 4: Payment State
@@ -66,11 +85,30 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
 
-  const selectedPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan) || SUBSCRIPTION_PLANS[1];
+  const selectedPlanDetails = UNIFIED_SUBSCRIPTION_PLAN;
+
+  // File to base64 helper
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setImageState: (url: string) => void,
+    setNameState?: (name: string) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (setNameState) setNameState(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setImageState(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleNextStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim() || !whatsappPhone.trim()) {
+    if (!name.trim() || !phone.trim() || !whatsappPhone.trim() || !email.trim() || !password.trim()) {
       alert('يرجى ملء جميع البيانات الأساسية المطلوبة.');
       return;
     }
@@ -80,7 +118,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const handleNextStep2 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!vehicleModel.trim() || !vehiclePlate.trim()) {
-      alert('يرجى إدخال بيانات المركبة ورقم اللوحة.');
+      alert('يرجى إدخال بيانات موديل ورقم لوحة المركبة.');
       return;
     }
     setStep(3);
@@ -115,6 +153,10 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         vehicleType,
         vehicleModel: vehicleModel.trim(),
         vehiclePlate: vehiclePlate.trim(),
+        vehiclePhoto,
+        licensePhoto: drivingLicensePhoto,
+        mulkiyaPhoto,
+        emiratesIdPhoto,
         rating: 5.0,
         reviewsCount: 1,
         completedDeliveries: 0,
@@ -149,12 +191,12 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-black text-white">تسجيل سائق جديد والاشتراك الشهري</h3>
+                <h3 className="text-base sm:text-lg font-black text-white">تسجيل سائق جديد وتوثيق الحساب</h3>
                 <span className="bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/20">
                   عمولة 0%
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-400">انضم لشبكة واصل، استقبل الطلبات وتواصل مباشرة مع العملاء</p>
+              <p className="text-[11px] sm:text-xs text-slate-400">انضم لشبكة واصل، وثق مستنداتك واستقبل الطلبات فوراً</p>
             </div>
           </div>
 
@@ -173,7 +215,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 1 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
                 1
               </span>
-              <span className="hidden sm:inline">البيانات الشخصية</span>
+              <span className="hidden sm:inline">البيانات الشخصية والصورة</span>
             </div>
 
             <div className={`h-0.5 flex-1 ${step >= 2 ? 'bg-amber-500' : 'bg-slate-800'}`} />
@@ -182,7 +224,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
                 2
               </span>
-              <span className="hidden sm:inline">المركبة والترخيص</span>
+              <span className="hidden sm:inline">المركبة والمستندات</span>
             </div>
 
             <div className={`h-0.5 flex-1 ${step >= 3 ? 'bg-amber-500' : 'bg-slate-800'}`} />
@@ -191,7 +233,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 3 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
                 3
               </span>
-              <span className="hidden sm:inline">باقة الاشتراك</span>
+              <span className="hidden sm:inline">الاشتراك الموحد</span>
             </div>
 
             <div className={`h-0.5 flex-1 ${step >= 4 ? 'bg-amber-500' : 'bg-slate-800'}`} />
@@ -208,31 +250,80 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 overscroll-contain">
           
-          {/* STEP 1: Personal Data Form */}
+          {/* STEP 1: Personal Data & Profile Picture Upload */}
           {step === 1 && !isDone && (
             <form onSubmit={handleNextStep1} className="space-y-5 animate-in fade-in duration-200">
-              <div className="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-2xl flex items-center gap-3 text-xs text-amber-300">
-                <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
-                <span>
-                  أدخل بياناتك بدقة لتظهر للعملاء بشكل موثوق عند تقديم عروض التوصيل على طلباتهم.
-                </span>
-              </div>
+              
+              {/* Profile Image Upload Section */}
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <label className="block text-xs font-bold text-slate-200 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-amber-400" />
+                    <span>الصورة الشخصية لحساب السائق *</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">تظهر للعملاء في كرت العرض والملف</span>
+                </label>
 
-              {/* Avatar Picker */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-2">اختر الصورة الشخصية للملف:</label>
-                <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                  {AVATAR_PRESETS.map((pic, idx) => (
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  {/* Current Selected Avatar Preview */}
+                  <div className="relative group shrink-0">
                     <img
-                      key={idx}
-                      src={pic}
-                      alt="Preset"
-                      onClick={() => setAvatar(pic)}
-                      className={`w-14 h-14 rounded-2xl object-cover cursor-pointer border-2 transition-all shrink-0 ${
-                        avatar === pic ? 'border-amber-500 ring-2 ring-amber-500/30 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'
-                      }`}
+                      src={avatar}
+                      alt="Driver Avatar"
+                      className="w-20 h-20 rounded-2xl object-cover border-2 border-amber-500 shadow-xl"
                     />
-                  ))}
+                    {customAvatarUploaded && (
+                      <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-slate-950 text-[10px] font-black p-1 rounded-full shadow-md">
+                        <Check className="w-3 h-3" />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Device File Upload Button */}
+                  <div className="flex-1 w-full space-y-2">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id="avatar-upload"
+                        accept="image/*"
+                        onChange={(e) => {
+                          handleFileUpload(e, (url) => {
+                            setAvatar(url);
+                            setCustomAvatarUploaded(true);
+                          });
+                        }}
+                        className="sr-only"
+                      />
+                      <label
+                        htmlFor="avatar-upload"
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold px-4 py-3 rounded-xl border border-amber-500/40 hover:border-amber-500 text-xs transition-all shadow-md"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>تحميل صورة شخصية من جهازك</span>
+                      </label>
+                    </div>
+
+                    {/* Presets alternative */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-[10px] text-slate-400 shrink-0">أو اختر صورة جاهزة:</span>
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                        {AVATAR_PRESETS.map((pic, idx) => (
+                          <img
+                            key={idx}
+                            src={pic}
+                            alt="Preset"
+                            onClick={() => {
+                              setAvatar(pic);
+                              setCustomAvatarUploaded(false);
+                            }}
+                            className={`w-8 h-8 rounded-lg object-cover cursor-pointer border transition-all shrink-0 ${
+                              avatar === pic ? 'border-amber-500 ring-2 ring-amber-500/40 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -298,7 +389,6 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     placeholder="971501234567"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-emerald-400 font-mono focus:outline-none focus:border-amber-500 dir-ltr text-right"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">يُستخدم للتواصل الفوري المباشر مع العملاء عند قبول عرضك</p>
                 </div>
 
                 <div>
@@ -351,19 +441,20 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   type="submit"
                   className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20 text-xs sm:text-sm flex items-center justify-center gap-2"
                 >
-                  <span>متابعة لبيانات المركبة والترخيص</span>
+                  <span>متابعة لصور المركبة والوثائق</span>
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
             </form>
           )}
 
-          {/* STEP 2: Vehicle & License Form */}
+          {/* STEP 2: Vehicle Photos & 3 Required Official Documents */}
           {step === 2 && !isDone && (
-            <form onSubmit={handleNextStep2} className="space-y-5 animate-in fade-in duration-200">
+            <form onSubmit={handleNextStep2} className="space-y-6 animate-in fade-in duration-200">
               
+              {/* Vehicle Type Selection */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-2">نوع المركبة المعتمدة للتوصيل:</label>
+                <label className="block text-xs font-bold text-slate-300 mb-2">نوع المركبة المعتمدة للتوصيل *</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {(Object.keys(VEHICLE_TRANSLATIONS) as VehicleType[]).map((type) => {
                     const isSel = vehicleType === type;
@@ -385,6 +476,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
               </div>
 
+              {/* Vehicle Model & Plate Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">موديل وسنة صنع المركبة *</label>
@@ -411,36 +503,175 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
               </div>
 
-              {/* Document Upload Simulation */}
-              <div className="space-y-3 pt-2">
-                <label className="block text-xs font-bold text-slate-300">توثيق المستندات الرسمية (للحصول على شارة سائق معتمد):</label>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">رخصة القيادة الإماراتية</div>
-                        <div className="text-[10px] text-emerald-400">تم التحقق والرفع بنجاح</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded-lg">مرفقة</span>
+              {/* 1. Real Vehicle Photo Upload */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-amber-400" />
+                    <span>إدراج صورة حقيقية للمركبة المعتمدة للتوصيل *</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    مطلوب للتوثيق
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative shrink-0">
+                    <img
+                      src={vehiclePhoto}
+                      alt="Vehicle"
+                      className="w-28 h-20 rounded-xl object-cover border-2 border-slate-700 shadow-md"
+                    />
                   </div>
 
-                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
+                  <div className="flex-1 w-full space-y-1.5">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id="vehicle-photo-upload"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, setVehiclePhoto, setVehiclePhotoName)}
+                        className="sr-only"
+                      />
+                      <label
+                        htmlFor="vehicle-photo-upload"
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold px-4 py-2.5 rounded-xl border border-dashed border-amber-500/50 hover:border-amber-500 text-xs transition-all"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>تحميل صورة حقيقية لسيارتك</span>
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span className="truncate max-w-[200px]">الملف: {vehiclePhotoName}</span>
+                      <span className="text-emerald-400 font-bold">جاهزة للعرض ✓</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Three Required Official Verification Documents */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>إدراج المستندات الرسمية الثلاثة لتفعيل الحساب وتوثيقه:</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">سرية وآمنة 100%</span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  
+                  {/* DOC 1: UAE Driving License */}
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 hover:border-amber-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={drivingLicensePhoto}
+                        alt="Driving License"
+                        className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
+                      />
                       <div>
-                        <div className="text-xs font-bold text-white">الهوية الإماراتية / ملكية المركبة</div>
-                        <div className="text-[10px] text-emerald-400">جاهز للتفعيل المباشر</div>
+                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
+                          <span>1. رخصة القيادة الإماراتية</span>
+                          <span className="text-emerald-400 text-[10px]">✓</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
+                          {drivingLicenseName}
+                        </div>
                       </div>
                     </div>
-                    <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded-lg">مرفقة</span>
+
+                    <div className="relative shrink-0">
+                      <input
+                        type="file"
+                        id="license-upload"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileUpload(e, setDrivingLicensePhoto, setDrivingLicenseName)}
+                        className="sr-only"
+                      />
+                      <label
+                        htmlFor="license-upload"
+                        className="cursor-pointer flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                        <span>تغيير / إرفاق الرخصة</span>
+                      </label>
+                    </div>
                   </div>
+
+                  {/* DOC 2: Vehicle Mulkiya (ملكية المركبة) */}
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 hover:border-amber-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={mulkiyaPhoto}
+                        alt="Mulkiya"
+                        className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
+                      />
+                      <div>
+                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
+                          <span>2. ملكية المركبة (Mulkiya)</span>
+                          <span className="text-emerald-400 text-[10px]">✓</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
+                          {mulkiyaName}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative shrink-0">
+                      <input
+                        type="file"
+                        id="mulkiya-upload"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileUpload(e, setMulkiyaPhoto, setMulkiyaName)}
+                        className="sr-only"
+                      />
+                      <label
+                        htmlFor="mulkiya-upload"
+                        className="cursor-pointer flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                        <span>تغيير / إرفاق الملكية</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* DOC 3: Emirates ID (الهوية الإماراتية) */}
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 hover:border-amber-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={emiratesIdPhoto}
+                        alt="Emirates ID"
+                        className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
+                      />
+                      <div>
+                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
+                          <span>3. الهوية الإماراتية للسائق</span>
+                          <span className="text-emerald-400 text-[10px]">✓</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
+                          {emiratesIdName}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative shrink-0">
+                      <input
+                        type="file"
+                        id="emiratesid-upload"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileUpload(e, setEmiratesIdPhoto, setEmiratesIdName)}
+                        className="sr-only"
+                      />
+                      <label
+                        htmlFor="emiratesid-upload"
+                        className="cursor-pointer flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                        <span>تغيير / إرفاق الهوية</span>
+                      </label>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
@@ -458,7 +689,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   type="submit"
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20 text-xs sm:text-sm flex items-center gap-2"
                 >
-                  <span>متابعة لاختيار باقة الاشتراك</span>
+                  <span>متابعة للاشتراك الموحد والتفعيل</span>
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
@@ -466,40 +697,18 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
             </form>
           )}
 
-          {/* STEP 3: Subscription Plans & Benefits */}
+          {/* STEP 3: Unified Subscription Plan & Rating Algorithm Notice */}
           {step === 3 && !isDone && (
             <div className="space-y-5 animate-in fade-in duration-200">
               
-              {/* Platform Benefits Highlight */}
-              <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 rounded-2xl border border-amber-500/30">
-                <h4 className="text-xs font-black text-amber-400 mb-2 flex items-center gap-1.5">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <span>مزايا الاشتراك في منصة واصل:</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300">
-                  <div className="flex items-center gap-1.5 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>عمولة 0% على جميع رحلاتك</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>تواصل واتساب ومكالمة مباشر</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>إشعارات فورية بكل طلب جديد</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Single Unified Plan Card */}
-              <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 rounded-2xl border-2 border-amber-500/50 shadow-xl relative overflow-hidden">
+              <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 sm:p-6 rounded-2xl border-2 border-amber-500/50 shadow-xl relative overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                   <div>
                     <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mb-1 shadow-sm">
                       الباقة الموحدة لجميع السائقين ⭐
                     </span>
-                    <h4 className="font-black text-white text-base sm:text-lg">{selectedPlanDetails.name}</h4>
+                    <h4 className="font-black text-white text-base sm:text-xl">{selectedPlanDetails.name}</h4>
                   </div>
 
                   <div className="text-right sm:text-left">
@@ -520,7 +729,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 <div className="mt-4 pt-3 border-t border-slate-800 bg-amber-500/10 p-3 rounded-xl flex items-center gap-2.5 text-xs text-amber-300 font-semibold">
                   <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
                   <span>
-                    <strong>ملاحظة نظام التقييم:</strong> كلما حصلت على تقييمات إيجابية أعلى من العملاء بعد إتمام التوصيل، تظهر عروضك في المرتبة الأولى تلقائياً!
+                    <strong>نظام أولوية التقييم:</strong> كلما حصلت على تقييمات إيجابية أعلى من العملاء بعد إتمام التوصيل، تظهر عروضك في المرتبة الأولى تلقائياً وتتصدر شاشة العميل!
                   </span>
                 </div>
               </div>
@@ -540,7 +749,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   onClick={handleNextStep3}
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20 text-xs sm:text-sm flex items-center gap-2"
                 >
-                  <span>متابعة للدفع والتفعيل ({selectedPlanDetails.price} AED)</span>
+                  <span>متابعة للدفع وتفعيل الحساب ({selectedPlanDetails.price} AED)</span>
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
@@ -554,7 +763,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               
               <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-slate-400 block">الباقة المختارة:</span>
+                  <span className="text-xs text-slate-400 block">الباقة الموحدة:</span>
                   <span className="text-sm font-black text-white">{selectedPlanDetails.name}</span>
                 </div>
                 <div className="text-left">
@@ -645,7 +854,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   {isProcessing ? (
                     <>
                       <Zap className="w-4 h-4 animate-spin text-slate-950" />
-                      <span>جاري معالجة الدفع وتوثيق الحساب...</span>
+                      <span>جاري معالجة الدفع وتوثيق الحساب والمستندات...</span>
                     </>
                   ) : (
                     <>
@@ -665,9 +874,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border-2 border-emerald-500/30 animate-bounce shadow-xl shadow-emerald-500/10">
                 <ShieldCheck className="w-10 h-10" />
               </div>
-              <h4 className="text-xl sm:text-2xl font-black text-white">مرحباً بك كـ سائق معتمد في منصة واصل! 🎉</h4>
+              <h4 className="text-xl sm:text-2xl font-black text-white">مرحباً بك كـ سائق موثّق ومعتمد في منصة واصل! 🎉</h4>
               <p className="text-slate-300 text-xs sm:text-sm max-w-md leading-relaxed">
-                تم دفع الاشتراك وتفعيل حسابك بنجاح على خطة <strong className="text-amber-400">{selectedPlanDetails.name}</strong>. تم فتح لوحة تحكم السائق لك لتقديم العروض واستقبال طلبات التوصيل الفورية!
+                تم دفع الاشتراك الشهري ورفع مستنداتك وتفعيل حسابك بنجاح. تم فتح لوحة تحكم السائق لك لتقديم العروض واستقبال طلبات التوصيل الفورية!
               </p>
             </div>
           )}
