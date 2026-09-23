@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import type { UserRole, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification } from './types';
+import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification } from './types';
 import { INITIAL_DRIVERS, INITIAL_REQUESTS } from './data/mockData';
 
 import { Header } from './components/Header';
+import { LandingView } from './components/LandingView';
+import { DriverPortalGate } from './components/DriverPortalGate';
+import { DriverLoginView } from './components/DriverLoginView';
 import { CustomerView } from './components/CustomerView';
 import { DriverView } from './components/DriverView';
 import { AdminView } from './components/AdminView';
@@ -17,7 +20,9 @@ import { DriverRegistrationModal } from './components/DriverRegistrationModal';
 import { Truck, Lock, LogOut, Bell } from 'lucide-react';
 
 export function App() {
-  const [currentRole, setCurrentRole] = useState<UserRole>('customer');
+  // Primary Screen State (Default is Landing with 2 options: Customer or Driver)
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing');
+  
   const [drivers, setDrivers] = useState<DriverProfile[]>(INITIAL_DRIVERS);
   const [activeDriverId, setActiveDriverId] = useState<string>(INITIAL_DRIVERS[0].id);
   const [requests, setRequests] = useState<DeliveryRequest[]>(INITIAL_REQUESTS);
@@ -66,10 +71,10 @@ export function App() {
 
   const currentDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
 
-  // Attempt Admin Access
+  // Admin Access Handler
   const handleOpenAdmin = () => {
     if (isAdminAuthenticated) {
-      setCurrentRole('admin');
+      setCurrentScreen('admin');
     } else {
       setIsAdminPasswordOpen(true);
     }
@@ -78,13 +83,13 @@ export function App() {
   const handleAdminSuccess = () => {
     setIsAdminAuthenticated(true);
     setIsAdminPasswordOpen(false);
-    setCurrentRole('admin');
+    setCurrentScreen('admin');
     showToast('🔓 تم تأكيد كلمة السر والدخول إلى لوحة الإدارة بنجاح');
   };
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false);
-    setCurrentRole('customer');
+    setCurrentScreen('landing');
     showToast('🔒 تم إغلاق لوحة الإدارة وتأمين الحساب');
   };
 
@@ -198,13 +203,20 @@ export function App() {
     showToast(`🌟 تم تجديد اشتراك السائق لخطة ${planId.toUpperCase()} بنجاح!`);
   };
 
-  // New Driver Registration & Activation
+  // New Driver Registration & Activation Success
   const handleDriverRegisterSuccess = (newDriver: DriverProfile) => {
     setDrivers(prev => [newDriver, ...prev]);
     setActiveDriverId(newDriver.id);
-    setCurrentRole('driver');
+    setCurrentScreen('driver');
     setIsDriverRegisterOpen(false);
-    showToast(`🎉 مرحباً بك يا ${newDriver.name}! تم تفعيل اشتراكك بحساب سائق نشط بنجاح.`);
+    showToast(`🎉 مرحباً بك يا ${newDriver.name}! تم تفعيل حسابك واشتراكك بنجاح.`);
+  };
+
+  // Driver Login Success
+  const handleDriverLoginSuccess = (driver: DriverProfile) => {
+    setActiveDriverId(driver.id);
+    setCurrentScreen('driver');
+    showToast(`👋 مرحباً بعودتك يا ${driver.name}! تم تسجيل الدخول بنجاح.`);
   };
 
   // Admin toggles verification
@@ -226,17 +238,48 @@ export function App() {
 
       {/* Main Header Component */}
       <Header
-        currentRole={currentRole}
-        onRoleChange={setCurrentRole}
+        currentScreen={currentScreen}
+        onNavigate={setCurrentScreen}
         onOpenNewRequest={() => setIsNewRequestOpen(true)}
         onOpenSubscription={() => setIsSubscriptionOpen(true)}
-        onOpenDriverRegister={() => setIsDriverRegisterOpen(true)}
         currentDriver={currentDriver}
       />
 
       {/* Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentRole === 'customer' && (
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        
+        {/* 1. Landing Screen (2 options only: Customer or Driver) */}
+        {currentScreen === 'landing' && (
+          <LandingView
+            onSelectCustomer={() => setCurrentScreen('customer')}
+            onSelectDriver={() => setCurrentScreen('driver_portal')}
+          />
+        )}
+
+        {/* 2. Driver Portal Gate (2 options: New Driver or I Have an Account) */}
+        {currentScreen === 'driver_portal' && (
+          <DriverPortalGate
+            onSelectNewDriver={() => setIsDriverRegisterOpen(true)}
+            onSelectExistingDriver={() => setCurrentScreen('driver_login')}
+            onBackToLanding={() => setCurrentScreen('landing')}
+          />
+        )}
+
+        {/* 3. Driver Login View (Email & Password) */}
+        {currentScreen === 'driver_login' && (
+          <DriverLoginView
+            drivers={drivers}
+            onLoginSuccess={handleDriverLoginSuccess}
+            onGoToRegister={() => {
+              setCurrentScreen('driver_portal');
+              setIsDriverRegisterOpen(true);
+            }}
+            onBackToPortal={() => setCurrentScreen('driver_portal')}
+          />
+        )}
+
+        {/* 4. Customer View */}
+        {currentScreen === 'customer' && (
           <CustomerView
             requests={requests}
             drivers={drivers}
@@ -247,7 +290,8 @@ export function App() {
           />
         )}
 
-        {currentRole === 'driver' && (
+        {/* 5. Driver View */}
+        {currentScreen === 'driver' && (
           <DriverView
             driver={currentDriver}
             requests={requests}
@@ -258,7 +302,8 @@ export function App() {
           />
         )}
 
-        {currentRole === 'admin' && (
+        {/* 6. Protected Admin View */}
+        {currentScreen === 'admin' && (
           <div className="space-y-4">
             <div className="flex justify-end">
               <button
@@ -276,6 +321,7 @@ export function App() {
             />
           </div>
         )}
+
       </main>
 
       {/* Footer with Protected Admin Entrance */}
@@ -283,7 +329,10 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 space-y-6">
           
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
-            <div className="flex items-center gap-2 font-bold text-slate-300">
+            <div 
+              className="flex items-center gap-2 font-bold text-slate-300 cursor-pointer"
+              onClick={() => setCurrentScreen('landing')}
+            >
               <Truck className="w-5 h-5 text-amber-500" />
               <span className="text-sm font-extrabold text-white">منصة واصل © 2026</span>
             </div>
@@ -321,7 +370,7 @@ export function App() {
         </div>
       </footer>
 
-      {/* Modals Render */}
+      {/* Modals */}
       {isNewRequestOpen && (
         <NewRequestModal
           onClose={() => setIsNewRequestOpen(false)}

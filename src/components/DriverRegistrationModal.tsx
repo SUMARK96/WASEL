@@ -45,6 +45,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [phone, setPhone] = useState('+971 50 ');
   const [whatsappPhone, setWhatsappPhone] = useState('97150');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [emirate, setEmirate] = useState<Emirate>('دبي');
   const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
   const [bio, setBio] = useState('');
@@ -108,6 +109,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         whatsappPhone: cleanWhatsapp,
         callPhone: fullCallPhone,
         email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
+        password: password.trim() || '123456',
         avatar,
         emirate,
         vehicleType,
@@ -299,16 +301,32 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   <p className="text-[10px] text-slate-500 mt-1">يُستخدم للتواصل الفوري المباشر مع العملاء عند قبول عرضك</p>
                 </div>
 
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-amber-400" />
-                    <span>البريد الإلكتروني (اختياري)</span>
+                    <span>البريد الإلكتروني (لتسجيل الدخول) *</span>
                   </label>
                   <input
                     type="email"
+                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="driver@example.com"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>كلمة المرور للحساب *</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>

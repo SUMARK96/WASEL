@@ -9,6 +9,15 @@ export type Emirate =
 
 export type UserRole = 'customer' | 'driver' | 'admin';
 
+export type AppScreen = 
+  | 'landing' 
+  | 'customer' 
+  | 'driver_portal' 
+  | 'driver_register' 
+  | 'driver_login' 
+  | 'driver' 
+  | 'admin';
+
 export type VehicleType = 'sedan' | 'suv' | 'van' | 'pickup';
 
 export type SubscriptionPlanId = 'starter' | 'pro' | 'unlimited';
@@ -28,6 +37,7 @@ export interface DriverProfile {
   whatsappPhone: string;
   callPhone: string;
   email: string;
+  password?: string;
   avatar: string;
   emirate: Emirate;
   vehicleType: VehicleType;
