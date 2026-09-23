@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { DriverProfile, Emirate, SubscriptionPlanId, VehicleType } from '../types';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES, VEHICLE_TRANSLATIONS } from '../data/mockData';
+import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
+import uaeIdSampleImg from '../assets/uae-id-sample.jpg';
 import { 
   X, 
   Check, 
@@ -19,7 +21,11 @@ import {
   Lock,
   Upload,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CheckCircle2,
+  AlertTriangle,
+  Scan,
+  Eye
 } from 'lucide-react';
 
 interface DriverRegistrationModalProps {
@@ -68,6 +74,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
   const [emiratesIdPhoto, setEmiratesIdPhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [emiratesIdName, setEmiratesIdName] = useState<string>('emirates_id.jpg');
+  const [emiratesIdNumber, setEmiratesIdNumber] = useState<string>('784-1990-1234567-1');
+  const [isScanningId, setIsScanningId] = useState<boolean>(false);
+  const [idScanError, setIdScanError] = useState<string | null>(null);
+  const [idValidationResult, setIdValidationResult] = useState<EmiratesIdValidationResult | null>(null);
+  const [showIdReferenceModal, setShowIdReferenceModal] = useState<boolean>(false);
 
   // Step 3: Subscription Plan (Unified Plan)
   const [selectedPlan] = useState<SubscriptionPlanId>('unified');
@@ -101,6 +112,37 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     }
   };
 
+  // Dedicated Smart Emirates ID Scanner & Design Validation Handler
+  const handleEmiratesIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setEmiratesIdName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      if (typeof reader.result === 'string') {
+        const base64 = reader.result;
+        setEmiratesIdPhoto(base64);
+        setIsScanningId(true);
+        setIdScanError(null);
+
+        // Visual AI Scanning effect
+        setTimeout(async () => {
+          const result = await validateEmiratesIdImage(base64);
+          setIsScanningId(false);
+          setIdValidationResult(result);
+
+          if (!result.isValid) {
+            setIdScanError(result.message);
+          } else {
+            setIdScanError(null);
+          }
+        }, 1100);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleNextStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !whatsappPhone.trim() || !email.trim() || !password.trim()) {
@@ -116,6 +158,12 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
       alert('يرجى إدخال بيانات موديل ورقم لوحة المركبة.');
       return;
     }
+
+    if (idValidationResult && !idValidationResult.isValid) {
+      alert('⚠️ تنبيه: صورة الهوية الإماراتية المرفقة لا تطابق تصميم وأبعاد بطاقة الهوية الإماراتية الرسمية. يرجى إرفاق الهوية المعتمدة للمتابعة.');
+      return;
+    }
+
     setStep(3);
   };
 
@@ -619,41 +667,124 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
                   </div>
 
-                  {/* DOC 3: Emirates ID (الهوية الإماراتية) */}
-                  <div className="bg-slate-950 p-3 sm:p-3.5 rounded-2xl border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={emiratesIdPhoto}
-                        alt="Emirates ID"
-                        className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                          <span>3. الهوية الإماراتية للسائق</span>
-                          <span className="text-emerald-400 text-[10px]">✓</span>
+                  {/* DOC 3: Smart Validated Emirates ID (الهوية الإماراتية الذكية) */}
+                  <div className="bg-slate-950 p-3.5 sm:p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <img
+                            src={emiratesIdPhoto}
+                            alt="Emirates ID"
+                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-slate-700 shadow-md"
+                          />
+                          {idValidationResult?.isValid && (
+                            <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-slate-950 rounded-full p-0.5 shadow-md">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
-                          {emiratesIdName}
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>3. بطاقة الهوية الإماراتية (الوجه الأمامي)</span>
+                            <span className="text-cyan-400 font-normal text-[10px] bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                              فحص آلي وتدقيق
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
+                            {emiratesIdName}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowIdReferenceModal(true)}
+                          className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-colors active:scale-95"
+                          title="معاينة شكل الهوية المعتمدة"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>معاينة النموذج المعتمد</span>
+                        </button>
+
+                        <div className="relative shrink-0">
+                          <input
+                            type="file"
+                            id="emiratesid-upload"
+                            accept="image/*"
+                            onChange={handleEmiratesIdUpload}
+                            className="sr-only"
+                          />
+                          <label
+                            htmlFor="emiratesid-upload"
+                            className="cursor-pointer flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md shadow-blue-500/20 active:scale-95"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>تحميل صورة الهوية</span>
+                          </label>
                         </div>
                       </div>
                     </div>
 
-                    <div className="relative shrink-0">
-                      <input
-                        type="file"
-                        id="emiratesid-upload"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileUpload(e, setEmiratesIdPhoto, setEmiratesIdName)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="emiratesid-upload"
-                        className="cursor-pointer flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all active:scale-95"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>تغيير / إرفاق الهوية</span>
-                      </label>
-                    </div>
+                    {/* Scanning In Progress State */}
+                    {isScanningId && (
+                      <div className="bg-cyan-950/40 border border-cyan-500/40 rounded-xl p-3 flex items-center gap-3 animate-pulse">
+                        <Scan className="w-5 h-5 text-cyan-400 animate-spin" />
+                        <div className="text-xs">
+                          <div className="font-bold text-cyan-300">جاري مسح وتدقيق الهوية الإماراتية آلياً...</div>
+                          <div className="text-[10px] text-slate-400">التحقق من تطابق الأبعاد، شعار الصقر، علم الإمارات، وهيكل البيانات الرسمي</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Passed Badge */}
+                    {!isScanningId && idValidationResult?.isValid && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 space-y-2 text-xs">
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>تم التحقق: تصميم الهوية مطابق للمواصفات الرسمية للهيئة الاتحادية للهوية والجنسية ✓</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                              رقم الهوية الموحد (15 رقماً):
+                            </label>
+                            <input
+                              type="text"
+                              value={emiratesIdNumber}
+                              onChange={(e) => setEmiratesIdNumber(formatEmiratesIdNumber(e.target.value))}
+                              placeholder="784-1990-1234567-1"
+                              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-emerald-400 font-mono font-bold dir-ltr focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                          <div className="flex items-center text-[10px] text-slate-400 pt-3">
+                            <span>نسبة المطابقة البصرية: <strong className="text-emerald-400 font-bold">{idValidationResult.score}%</strong></span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Failed Error Banner */}
+                    {!isScanningId && idScanError && (
+                      <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 text-rose-400 font-bold">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>تنبيه: الصورة المرفقة لا تطابق تصميم بطاقة الهوية الإماراتية المعتمدة</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px]">
+                          يجب أن تكون الصورة المرفقة لبطاقة الهوية الإماراتية الصادرة من الهيئة الاتحادية للهوية والجنسية (المحتوية على الشعار والعلم والرقم الموحد 784).
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowIdReferenceModal(true)}
+                          className="text-cyan-400 underline hover:text-cyan-300 text-[11px] font-bold inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3 h-3" />
+                          اضغط هنا لرؤية النموذج المعتمد المطلوب
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -868,6 +999,73 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         </div>
 
       </div>
+
+      {/* UAE Emirates ID Official Reference Sample Modal */}
+      {showIdReferenceModal && (
+        <div className="fixed inset-0 z-60 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-slate-950 px-4 sm:px-6 py-3.5 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h4 className="text-sm sm:text-base font-bold text-white">النموذج المعتمد لبطاقة الهوية الإماراتية</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowIdReferenceModal(false)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                يقوم النظام بالتحقق آلياً من تطابق صورة الهوية مع التصميم والشكل المعتمد الصادر من <strong className="text-cyan-400">الهيئة الاتحادية للهوية والجنسية</strong>:
+              </p>
+
+              {/* Sample Card Image */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-cyan-500/50 shadow-xl bg-slate-950">
+                <img
+                  src={uaeIdSampleImg}
+                  alt="UAE Emirates ID Standard Sample"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+
+              {/* Required Layout Landmarks */}
+              <div className="space-y-2 text-xs bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                <div className="font-bold text-cyan-300 text-xs mb-1.5">المعايير البصرية المطلوبة للقبول الفوري:</div>
+                <div className="space-y-1.5 text-slate-300 text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الترويسة:</strong> ظهور اسم الهيئة باللغتين العربية والإنجليزية.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الشعار والعلم:</strong> وجود شعار صقر الإمارات وعلم الدولة بالأعلى.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>رقم الهوية:</strong> رقم الهوية الموحد المكون من 15 خانة يبدأ بـ 784.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الصورة والوضوح:</strong> ظهور صورة حامل البطاقة وخلفية الزخرفة الأمنية.</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowIdReferenceModal(false)}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-2.5 rounded-xl text-xs"
+              >
+                فهمت ذلك، العودة لإرفاق الهوية
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
