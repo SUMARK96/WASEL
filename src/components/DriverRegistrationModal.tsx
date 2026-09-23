@@ -27,13 +27,8 @@ interface DriverRegistrationModalProps {
   onRegisterSuccess: (newDriver: DriverProfile) => void;
 }
 
-const AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
-  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200'
-];
+// Default avatar placeholder if not uploaded yet
+const DEFAULT_AVATAR_PLACEHOLDER = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200';
 
 // Sample default placeholders for documents if user wants instant demo
 const DEFAULT_VEHICLE_IMG = 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?auto=format&fit=crop&q=80&w=400';
@@ -52,7 +47,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emirate, setEmirate] = useState<Emirate>('دبي');
-  const [avatar, setAvatar] = useState(AVATAR_PRESETS[0]);
+  const [avatar, setAvatar] = useState<string>('');
   const [customAvatarUploaded, setCustomAvatarUploaded] = useState(false);
   const [bio, setBio] = useState('');
 
@@ -148,7 +143,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         callPhone: fullCallPhone,
         email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
         password: password.trim() || '123456',
-        avatar,
+        avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
         emirate,
         vehicleType,
         vehicleModel: vehicleModel.trim(),
@@ -267,11 +262,18 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   {/* Current Selected Avatar Preview */}
                   <div className="relative group shrink-0">
-                    <img
-                      src={avatar}
-                      alt="Driver Avatar"
-                      className="w-20 h-20 rounded-2xl object-cover border-2 border-amber-500 shadow-xl"
-                    />
+                    {avatar ? (
+                      <img
+                        src={avatar}
+                        alt="Driver Avatar"
+                        className="w-20 h-20 rounded-2xl object-cover border-2 border-amber-500 shadow-xl"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl bg-slate-900 border-2 border-dashed border-amber-500/40 flex flex-col items-center justify-center text-slate-500">
+                        <User className="w-8 h-8 text-amber-500/60" />
+                        <span className="text-[9px] text-slate-400 mt-1 font-medium">لا توجد صورة</span>
+                      </div>
+                    )}
                     {customAvatarUploaded && (
                       <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-slate-950 text-[10px] font-black p-1 rounded-full shadow-md">
                         <Check className="w-3 h-3" />
@@ -296,33 +298,15 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       />
                       <label
                         htmlFor="avatar-upload"
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold px-4 py-3 rounded-xl border border-amber-500/40 hover:border-amber-500 text-xs transition-all shadow-md"
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500/10 to-amber-600/20 hover:from-amber-500/20 hover:to-amber-600/30 text-amber-400 hover:text-amber-300 font-bold px-4 py-3 rounded-xl border border-amber-500/40 hover:border-amber-500 text-xs transition-all shadow-md active:scale-95"
                       >
                         <Upload className="w-4 h-4" />
-                        <span>تحميل صورة شخصية من جهازك</span>
+                        <span>{customAvatarUploaded ? 'تغيير الصورة الشخصية' : 'تحميل صورة شخصية من جهازك'}</span>
                       </label>
                     </div>
-
-                    {/* Presets alternative */}
-                    <div className="flex items-center gap-2 pt-1">
-                      <span className="text-[10px] text-slate-400 shrink-0">أو اختر صورة جاهزة:</span>
-                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                        {AVATAR_PRESETS.map((pic, idx) => (
-                          <img
-                            key={idx}
-                            src={pic}
-                            alt="Preset"
-                            onClick={() => {
-                              setAvatar(pic);
-                              setCustomAvatarUploaded(false);
-                            }}
-                            className={`w-8 h-8 rounded-lg object-cover cursor-pointer border transition-all shrink-0 ${
-                              avatar === pic ? 'border-amber-500 ring-2 ring-amber-500/40 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    <p className="text-[11px] text-slate-400 text-center sm:text-right">
+                      {customAvatarUploaded ? '✓ تم رفع صورتك الشخصية بنجاح' : 'يرجى اختيار صورة واضحة لوجه السائق (JPG أو PNG)'}
+                    </p>
                   </div>
                 </div>
               </div>
