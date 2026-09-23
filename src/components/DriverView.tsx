@@ -12,7 +12,11 @@ import {
   Phone, 
   Bell, 
   ArrowRight,
-  Star
+  Star,
+  ChevronDown,
+  Package,
+  Clock,
+  FileText
 } from 'lucide-react';
 
 interface DriverViewProps {
@@ -35,6 +39,16 @@ export const DriverView: React.FC<DriverViewProps> = ({
   const [filterPickup, setFilterPickup] = useState<string>('all');
   const [filterDelivery, setFilterDelivery] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'available' | 'my_bids' | 'active_jobs' | 'notifications'>('available');
+  
+  // State for toggling expanded details on each request card
+  const [expandedRequestIds, setExpandedRequestIds] = useState<Record<string, boolean>>({});
+
+  const toggleRequestExpand = (id: string) => {
+    setExpandedRequestIds(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   const openRequests = requests.filter(r => r.status === 'open');
 
@@ -324,79 +338,214 @@ export const DriverView: React.FC<DriverViewProps> = ({
         </div>
       )}
 
-      {/* Available Requests Feed */}
+      {/* Available Requests Feed - Sentence Accordion Design */}
       {activeTab === 'available' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-3.5">
           {filteredRequests.length === 0 ? (
-            <div className="col-span-1 md:col-span-2 bg-slate-900/40 rounded-3xl p-8 sm:p-12 text-center border border-slate-800">
+            <div className="bg-slate-900/40 rounded-3xl p-8 sm:p-12 text-center border border-slate-800">
               <Truck className="w-14 h-14 sm:w-16 sm:h-16 text-slate-600 mx-auto mb-3" />
               <h3 className="text-base sm:text-lg font-bold text-white mb-1">لا توجد طلبات توصيل تطابق التصفية الحالية</h3>
               <p className="text-slate-400 text-xs">جرب تغيير إمارات الانطلاق أو الوصول لاستعراض باقي الطلبات.</p>
             </div>
           ) : (
             filteredRequests.map((req) => {
+              const isExpanded = !!expandedRequestIds[req.id];
               const alreadyBid = req.offers.some(o => o.driverId === driver.id);
+              
+              // Exactly formatted title sentence as requested by user
+              const displaySentence = `توصيل ${req.packageType} من ${req.pickupEmirate} إلى ${req.deliveryEmirate}`;
 
               return (
                 <div
                   key={req.id}
-                  className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-lg hover:border-slate-700 transition-all flex flex-col justify-between space-y-4"
+                  className={`bg-slate-900/90 rounded-2xl border transition-all duration-300 overflow-hidden shadow-lg ${
+                    isExpanded 
+                      ? 'border-cyan-500/80 ring-2 ring-cyan-500/20 shadow-cyan-500/10' 
+                      : 'border-slate-800 hover:border-cyan-500/40 hover:bg-slate-900'
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xs font-bold text-cyan-300 bg-cyan-500/15 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
-                        {req.packageType}
+                  {/* The Clickable Sentence Header */}
+                  <div
+                    onClick={() => toggleRequestExpand(req.id)}
+                    className="p-4 sm:p-5 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 select-none active:scale-[0.99] transition-transform"
+                    title="انقر لفتح البطاقة وعرض كامل التفاصيل وتقديم العرض"
+                  >
+                    <div className="flex items-start sm:items-center gap-3.5 flex-1">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold shrink-0 shadow-md shadow-blue-500/20 mt-0.5 sm:mt-0">
+                        <Package className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] text-cyan-300 font-extrabold bg-cyan-500/15 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+                            {req.packageType}
+                          </span>
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {req.createdAt}
+                          </span>
+                          {alreadyBid && (
+                            <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                              تم تقديم عرضك ✓
+                            </span>
+                          )}
+                        </div>
+
+                        {/* The Key Sentence */}
+                        <h3 className="text-sm sm:text-base font-black text-white hover:text-cyan-300 transition-colors leading-snug">
+                          {displaySentence}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
+                      <span className="text-[11px] font-bold text-cyan-400 sm:hidden">
+                        {isExpanded ? 'إخفاء التفاصيل' : 'اضغط لعرض التفاصيل وتقديم عرضك'}
                       </span>
-                      <span className="text-xs text-slate-400">{req.createdAt}</span>
-                    </div>
-
-                    <h3 className="text-base font-black text-white mb-3">{req.title}</h3>
-
-                    {/* Route Strip */}
-                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 mb-3 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">الاستلام:</span>
-                        <div className="flex items-center gap-1">
-                          <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
-                          <span className="text-slate-300 font-medium">({req.pickupArea})</span>
+                      <div className="flex items-center gap-2 mr-auto sm:mr-0">
+                        <span className="hidden sm:inline-block text-xs font-bold text-cyan-400 bg-blue-950/60 px-3 py-1.5 rounded-xl border border-cyan-500/30">
+                          {isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل وتقديم العرض'}
+                        </span>
+                        <div className={`w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-cyan-500 text-slate-950 font-bold' : ''}`}>
+                          <ChevronDown className="w-4 h-4" />
                         </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">التسليم:</span>
-                        <div className="flex items-center gap-1">
-                          <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
-                          <span className="text-slate-300 font-medium">({req.deliveryArea})</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs bg-slate-950/40 p-3 rounded-xl">
-                      <div>
-                        <span className="text-slate-400 block">نوع الطرد</span>
-                        <span className="text-cyan-300 font-bold">{req.packageType}</span>
-                      </div>
-                      <div className="text-left">
-                        <span className="text-slate-400 block">الموعد المطلوب</span>
-                        <span className="text-white font-bold">{req.deliveryDate}</span>
                       </div>
                     </div>
                   </div>
 
-                  {alreadyBid ? (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl text-center text-xs font-bold text-emerald-400 flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" />
-                      لقد قدمت عرضك لهذا الطلب بنجاح
+                  {/* Expanded Details Body */}
+                  {isExpanded && (
+                    <div className="p-4 sm:p-6 bg-slate-950/80 border-t border-slate-800/80 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      
+                      {/* Detailed Route Strip */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/80 p-3.5 sm:p-4 rounded-2xl border border-slate-800 text-xs">
+                        <div className="space-y-1">
+                          <span className="text-slate-400 block font-semibold">📍 مكان الاستلام بالتفصيل (من):</span>
+                          <div className="flex items-center gap-1.5 font-bold text-white">
+                            <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                            <span className="text-slate-200">({req.pickupArea})</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-slate-400 block font-semibold">🏁 مكان التسليم بالتفصيل (إلى):</span>
+                          <div className="flex items-center gap-1.5 font-bold text-white">
+                            <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                            <span className="text-slate-200">({req.deliveryArea})</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Package Specifications & Delivery Date */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-900/60 p-3.5 sm:p-4 rounded-2xl border border-slate-800 text-xs">
+                        <div>
+                          <span className="text-slate-400 block mb-1">نوع ومحتوى الطرد:</span>
+                          <span className="font-extrabold text-cyan-300 text-sm">{req.packageType}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-400 block mb-1">الوزن التقديري:</span>
+                          <span className="font-bold text-white">{req.packageWeight}</span>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-400 block mb-1">الموعد المطلوب للتوصيل:</span>
+                          <span className="font-bold text-white">📅 {req.deliveryDate}</span>
+                        </div>
+                      </div>
+
+                      {/* Customer Notes */}
+                      {req.notes && (
+                        <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1">
+                          <span className="text-cyan-300 font-bold flex items-center gap-1">
+                            <FileText className="w-3.5 h-3.5" />
+                            ملاحظات وتعليمات العميل:
+                          </span>
+                          <p className="text-slate-300 leading-relaxed">{req.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Action Submission Footer in Expanded Card */}
+                      <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="text-xs text-slate-400 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                          <span>الطلب متاح الآن لاستقبال عروض السائقين المعتمدين</span>
+                        </div>
+
+                        {alreadyBid ? (
+                          <div className="w-full sm:w-auto bg-emerald-500/15 border border-emerald-500/30 px-5 py-3 rounded-xl text-center text-xs font-bold text-emerald-300 flex items-center justify-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>لقد قمت بتقديم عرض سعر على هذا الطلب بنجاح</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => onOpenSubmitOffer(req)}
+                            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                          >
+                            <Send className="w-4 h-4" />
+                            <span>تقديم عرض سعر على هذا الطلب</span>
+                          </button>
+                        )}
+                      </div>
+
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => onOpenSubmitOffer(req)}
-                      className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all text-xs flex items-center justify-center gap-2 active:scale-95"
-                    >
-                      <Send className="w-4 h-4" />
-                      تقديم عرض سعر على هذا الطلب
-                    </button>
                   )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* My Bids Tab */}
+      {activeTab === 'my_bids' && (
+        <div className="space-y-3.5">
+          {myBids.length === 0 ? (
+            <div className="bg-slate-900/40 rounded-3xl p-8 sm:p-12 text-center border border-slate-800">
+              <Package className="w-14 h-14 sm:w-16 sm:h-16 text-slate-600 mx-auto mb-3" />
+              <h3 className="text-base sm:text-lg font-bold text-white mb-1">لم تقدم أي عروض بعد</h3>
+              <p className="text-slate-400 text-xs">تصفح سوق الطلبات المتاحة وقدم عروض أسعارك للعملاء.</p>
+            </div>
+          ) : (
+            myBids.map((req) => {
+              const myOffer = req.offers.find(o => o.driverId === driver.id);
+              const isAccepted = req.selectedOfferId === myOffer?.id;
+
+              return (
+                <div key={req.id} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                      <span className="text-[10px] text-cyan-300 font-extrabold bg-cyan-500/15 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
+                        {req.packageType}
+                      </span>
+                      <h4 className="font-extrabold text-white text-sm sm:text-base mt-1">{req.title}</h4>
+                    </div>
+                    <div>
+                      {isAccepted ? (
+                        <span className="bg-emerald-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full">
+                          تم قبول عرضك 🎉
+                        </span>
+                      ) : (
+                        <span className="bg-cyan-500/10 text-cyan-300 font-bold text-xs px-3 py-1 rounded-full border border-cyan-500/20">
+                          قيد مراجعة العميل
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2 bg-slate-950/60 p-3 rounded-xl">
+                    <div>
+                      <span className="text-slate-400">سعر عرضك:</span> <strong className="text-cyan-400 font-black">{myOffer?.price} AED</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">وقت التوصيل:</span> <strong className="text-white">{myOffer?.estimatedDeliveryTime}</strong>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                      <span>⬅️</span>
+                      <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                    </div>
+                  </div>
                 </div>
               );
             })
