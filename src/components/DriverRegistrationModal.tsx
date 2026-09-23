@@ -3,8 +3,10 @@ import type { DriverProfile, Emirate, SubscriptionPlanId, VehicleType } from '..
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES, VEHICLE_TRANSLATIONS } from '../data/mockData';
 import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
 import { validateDrivingLicenseImage, type DrivingLicenseValidationResult } from '../utils/drivingLicenseValidator';
+import { validateMulkiyaImage, type MulkiyaValidationResult } from '../utils/mulkiyaValidator';
 import uaeIdSampleImg from '../assets/uae-id-sample.jpg';
 import uaeLicenseSampleImg from '../assets/uae-license-sample.webp';
+import uaeMulkiyaSampleImg from '../assets/uae-mulkiya-sample.jpg';
 import { 
   X, 
   Check, 
@@ -77,6 +79,10 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
   const [mulkiyaPhoto, setMulkiyaPhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [mulkiyaName, setMulkiyaName] = useState<string>('vehicle_mulkiya.jpg');
+  const [isScanningMulkiya, setIsScanningMulkiya] = useState<boolean>(false);
+  const [mulkiyaScanError, setMulkiyaScanError] = useState<string | null>(null);
+  const [mulkiyaValidationResult, setMulkiyaValidationResult] = useState<MulkiyaValidationResult | null>(null);
+  const [showMulkiyaReferenceModal, setShowMulkiyaReferenceModal] = useState<boolean>(false);
 
   const [emiratesIdPhoto, setEmiratesIdPhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [emiratesIdName, setEmiratesIdName] = useState<string>('emirates_id.jpg');
@@ -149,6 +155,37 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     reader.readAsDataURL(file);
   };
 
+  // Dedicated Smart UAE Vehicle Mulkiya Scanner & Design Validation Handler
+  const handleMulkiyaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setMulkiyaName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      if (typeof reader.result === 'string') {
+        const base64 = reader.result;
+        setMulkiyaPhoto(base64);
+        setIsScanningMulkiya(true);
+        setMulkiyaScanError(null);
+
+        // Visual AI Scanning effect
+        setTimeout(async () => {
+          const result = await validateMulkiyaImage(base64);
+          setIsScanningMulkiya(false);
+          setMulkiyaValidationResult(result);
+
+          if (!result.isValid) {
+            setMulkiyaScanError(result.message);
+          } else {
+            setMulkiyaScanError(null);
+          }
+        }, 1100);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Dedicated Smart Emirates ID Scanner & Design Validation Handler
   const handleEmiratesIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,12 +233,17 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
       return;
     }
 
-    if (licenseValidationResult && !licenseValidationResult.isValid) {
+    if (drivingLicensePhoto && licenseValidationResult && !licenseValidationResult.isValid) {
       alert('⚠️ تنبيه: صورة رخصة القيادة المرفقة لا تطابق تصميم وشكل رخصة القيادة الإماراتية الرسمية. يرجى إدراج الرخصة المعتمدة للمتابعة.');
       return;
     }
 
-    if (idValidationResult && !idValidationResult.isValid) {
+    if (mulkiyaPhoto && mulkiyaValidationResult && !mulkiyaValidationResult.isValid) {
+      alert('⚠️ تنبيه: صورة ملكية المركبة المرفقة لا تطابق تصميم وشكل ملكية المركبة (رخصة مركبة) الإماراتية الرسمية. يرجى إدراج الملكية المعتمدة للمتابعة.');
+      return;
+    }
+
+    if (emiratesIdPhoto && idValidationResult && !idValidationResult.isValid) {
       alert('⚠️ تنبيه: صورة الهوية الإماراتية المرفقة لا تطابق تصميم وأبعاد بطاقة الهوية الإماراتية الرسمية. يرجى إرفاق الهوية المعتمدة للمتابعة.');
       return;
     }
@@ -740,41 +782,109 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     )}
                   </div>
 
-                  {/* DOC 2: Vehicle Mulkiya (ملكية المركبة) */}
-                  <div className="bg-slate-950 p-3 sm:p-3.5 rounded-2xl border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={mulkiyaPhoto}
-                        alt="Mulkiya"
-                        className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                          <span>2. ملكية المركبة (Mulkiya)</span>
-                          <span className="text-emerald-400 text-[10px]">✓</span>
+                  {/* DOC 2: Smart Validated UAE Mulkiya (ملكية المركبة الذكية) */}
+                  <div className="bg-slate-950 p-3.5 sm:p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <img
+                            src={mulkiyaPhoto}
+                            alt="Mulkiya"
+                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-slate-700 shadow-md"
+                          />
+                          {mulkiyaValidationResult?.isValid && (
+                            <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-slate-950 rounded-full p-0.5 shadow-md">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
-                          {mulkiyaName}
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>2. ملكية المركبة (رخصة مركبة - الوجه الأمامي)</span>
+                            <span className="text-cyan-400 font-normal text-[10px] bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                              فحص آلي وتدقيق
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
+                            {mulkiyaName}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowMulkiyaReferenceModal(true)}
+                          className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-colors active:scale-95"
+                          title="معاينة شكل ملكية المركبة المعتمدة"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>معاينة النموذج المعتمد</span>
+                        </button>
+
+                        <div className="relative shrink-0">
+                          <input
+                            type="file"
+                            id="mulkiya-upload"
+                            accept="image/*"
+                            onChange={handleMulkiyaUpload}
+                            className="sr-only"
+                          />
+                          <label
+                            htmlFor="mulkiya-upload"
+                            className="cursor-pointer flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md shadow-blue-500/20 active:scale-95"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>تحميل صورة الملكية</span>
+                          </label>
                         </div>
                       </div>
                     </div>
 
-                    <div className="relative shrink-0">
-                      <input
-                        type="file"
-                        id="mulkiya-upload"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileUpload(e, setMulkiyaPhoto, setMulkiyaName)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="mulkiya-upload"
-                        className="cursor-pointer flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all active:scale-95"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>تغيير / إرفاق الملكية</span>
-                      </label>
-                    </div>
+                    {/* Scanning In Progress State */}
+                    {isScanningMulkiya && (
+                      <div className="bg-cyan-950/40 border border-cyan-500/40 rounded-xl p-3 flex items-center gap-3 animate-pulse">
+                        <Scan className="w-5 h-5 text-cyan-400 animate-spin" />
+                        <div className="text-xs">
+                          <div className="font-bold text-cyan-300">جاري مسح وتدقيق ملكية المركبة الإماراتية آلياً...</div>
+                          <div className="text-[10px] text-slate-400">التحقق من الخلفية الذهبية الأمنية، شعار صقر الإمارات المركزي، والجدول المعتمد لرخصة المركبة</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Passed Badge */}
+                    {!isScanningMulkiya && mulkiyaValidationResult?.isValid && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 space-y-1.5 text-xs">
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>تم التحقق: تصميم ملكية المركبة مطابق للنموذج والجدول الذهبي المعتمد رسمياً في دولة الإمارات ✓</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          نسبة المطابقة البصرية: <strong className="text-emerald-400 font-bold">{mulkiyaValidationResult.score}%</strong> (تم تدقيق الخلفية الذهبية وشعار الصقر المركزي وجدول الترخيص).
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Failed Error Banner */}
+                    {!isScanningMulkiya && mulkiyaScanError && (
+                      <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 text-rose-400 font-bold">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>تنبيه: تم رفض الصورة - لا تطابق تصميم ملكية المركبة (رخصة مركبة) المعتمدة</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px]">
+                          يجب أن تكون الصورة المرفقة لملكية المركبة الإماراتية الرسمية (المحتوية على الخلفية الذهبية، شعار الصقر المركزي، ترويسة رخصة مركبة، وجدول البيانات).
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowMulkiyaReferenceModal(true)}
+                          className="text-cyan-400 underline hover:text-cyan-300 text-[11px] font-bold inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          اضغط هنا لرؤية النموذج المعتمد المطلوب لملكية المركبة
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* DOC 3: Smart Validated Emirates ID (الهوية الإماراتية الذكية) */}
@@ -1238,6 +1348,73 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-2.5 rounded-xl text-xs"
               >
                 فهمت ذلك، العودة لإرفاق الرخصة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UAE Mulkiya Official Reference Sample Modal */}
+      {showMulkiyaReferenceModal && (
+        <div className="fixed inset-0 z-60 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-slate-950 px-4 sm:px-6 py-3.5 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h4 className="text-sm sm:text-base font-bold text-white">النموذج المعتمد لملكية المركبة (رخصة مركبة)</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMulkiyaReferenceModal(false)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                يقوم النظام بالتحقق آلياً من تطابق صورة ملكية المركبة مع التصميم الذهبي والجدول المعتمد رسمياً في <strong className="text-cyan-400">دولة الإمارات العربية المتحدة</strong>:
+              </p>
+
+              {/* Sample Card Image */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-cyan-500/50 shadow-xl bg-slate-950">
+                <img
+                  src={uaeMulkiyaSampleImg}
+                  alt="UAE Vehicle License (Mulkiya) Standard Sample"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+
+              {/* Required Layout Landmarks */}
+              <div className="space-y-2 text-xs bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                <div className="font-bold text-cyan-300 text-xs mb-1.5">المعايير البصرية المطلوبة للقبول الفوري:</div>
+                <div className="space-y-1.5 text-slate-300 text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>اللون الذهبي والزخرفة:</strong> الخلفية الذهبية الأمنية المميزة لملكية المركبات.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الشعار المركزي:</strong> وجود شعار صقر الإمارات وعلم الدولة في أعلى المنتصف.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الترويسة:</strong> ظهور عبارة "UAE Vehicle License / رخصة مركبة".</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>جدول الترخيص:</strong> شبكة الجدول الشامل لبيانات اللوحة، المالك، وتواريخ التأمين.</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowMulkiyaReferenceModal(false)}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-2.5 rounded-xl text-xs"
+              >
+                فهمت ذلك، العودة لإرفاق الملكية
               </button>
             </div>
           </div>
