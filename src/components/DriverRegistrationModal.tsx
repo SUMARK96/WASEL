@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import type { DriverProfile, Emirate, SubscriptionPlanId, VehicleType } from '../types';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES, VEHICLE_TRANSLATIONS } from '../data/mockData';
 import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
+import { validateDrivingLicenseImage, type DrivingLicenseValidationResult } from '../utils/drivingLicenseValidator';
 import uaeIdSampleImg from '../assets/uae-id-sample.jpg';
+import uaeLicenseSampleImg from '../assets/uae-license-sample.webp';
 import { 
   X, 
   Check, 
@@ -68,6 +70,10 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
   const [drivingLicensePhoto, setDrivingLicensePhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [drivingLicenseName, setDrivingLicenseName] = useState<string>('uae_driving_license.jpg');
+  const [isScanningLicense, setIsScanningLicense] = useState<boolean>(false);
+  const [licenseScanError, setLicenseScanError] = useState<string | null>(null);
+  const [licenseValidationResult, setLicenseValidationResult] = useState<DrivingLicenseValidationResult | null>(null);
+  const [showLicenseReferenceModal, setShowLicenseReferenceModal] = useState<boolean>(false);
 
   const [mulkiyaPhoto, setMulkiyaPhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [mulkiyaName, setMulkiyaName] = useState<string>('vehicle_mulkiya.jpg');
@@ -110,6 +116,37 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Dedicated Smart UAE Driving License Scanner & Design Validation Handler
+  const handleDrivingLicenseUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setDrivingLicenseName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      if (typeof reader.result === 'string') {
+        const base64 = reader.result;
+        setDrivingLicensePhoto(base64);
+        setIsScanningLicense(true);
+        setLicenseScanError(null);
+
+        // Visual AI Scanning effect
+        setTimeout(async () => {
+          const result = await validateDrivingLicenseImage(base64);
+          setIsScanningLicense(false);
+          setLicenseValidationResult(result);
+
+          if (!result.isValid) {
+            setLicenseScanError(result.message);
+          } else {
+            setLicenseScanError(null);
+          }
+        }, 1100);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Dedicated Smart Emirates ID Scanner & Design Validation Handler
@@ -156,6 +193,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     e.preventDefault();
     if (!vehicleModel.trim() || !vehiclePlate.trim()) {
       alert('يرجى إدخال بيانات موديل ورقم لوحة المركبة.');
+      return;
+    }
+
+    if (licenseValidationResult && !licenseValidationResult.isValid) {
+      alert('⚠️ تنبيه: صورة رخصة القيادة المرفقة لا تطابق تصميم وشكل رخصة القيادة الإماراتية الرسمية. يرجى إدراج الرخصة المعتمدة للمتابعة.');
       return;
     }
 
@@ -593,41 +635,109 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
                 <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
                   
-                  {/* DOC 1: UAE Driving License */}
-                  <div className="bg-slate-950 p-3 sm:p-3.5 rounded-2xl border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={drivingLicensePhoto}
-                        alt="Driving License"
-                        className="w-12 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
-                      />
-                      <div>
-                        <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                          <span>1. رخصة القيادة الإماراتية</span>
-                          <span className="text-emerald-400 text-[10px]">✓</span>
+                  {/* DOC 1: Smart Validated UAE Driving License (رخصة القيادة الإماراتية الذكية) */}
+                  <div className="bg-slate-950 p-3.5 sm:p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <img
+                            src={drivingLicensePhoto}
+                            alt="Driving License"
+                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-slate-700 shadow-md"
+                          />
+                          {licenseValidationResult?.isValid && (
+                            <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-slate-950 rounded-full p-0.5 shadow-md">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
-                          {drivingLicenseName}
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>1. رخصة القيادة الإماراتية الرسمية</span>
+                            <span className="text-cyan-400 font-normal text-[10px] bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                              فحص آلي وتدقيق
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">
+                            {drivingLicenseName}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowLicenseReferenceModal(true)}
+                          className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-cyan-400 font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-colors active:scale-95"
+                          title="معاينة شكل رخصة القيادة المعتمدة"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>معاينة النموذج المعتمد</span>
+                        </button>
+
+                        <div className="relative shrink-0">
+                          <input
+                            type="file"
+                            id="license-upload"
+                            accept="image/*"
+                            onChange={handleDrivingLicenseUpload}
+                            className="sr-only"
+                          />
+                          <label
+                            htmlFor="license-upload"
+                            className="cursor-pointer flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md shadow-blue-500/20 active:scale-95"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>تحميل صورة الرخصة</span>
+                          </label>
                         </div>
                       </div>
                     </div>
 
-                    <div className="relative shrink-0">
-                      <input
-                        type="file"
-                        id="license-upload"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileUpload(e, setDrivingLicensePhoto, setDrivingLicenseName)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="license-upload"
-                        className="cursor-pointer flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all active:scale-95"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>تغيير / إرفاق الرخصة</span>
-                      </label>
-                    </div>
+                    {/* Scanning In Progress State */}
+                    {isScanningLicense && (
+                      <div className="bg-cyan-950/40 border border-cyan-500/40 rounded-xl p-3 flex items-center gap-3 animate-pulse">
+                        <Scan className="w-5 h-5 text-cyan-400 animate-spin" />
+                        <div className="text-xs">
+                          <div className="font-bold text-cyan-300">جاري مسح وتدقيق رخصة القيادة الإماراتية آلياً...</div>
+                          <div className="text-[10px] text-slate-400">التحقق من تطابق شعار صقر الإمارات، جدول بيانات الرخصة، والترويسة الرسمية باللون الأحمر</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Passed Badge */}
+                    {!isScanningLicense && licenseValidationResult?.isValid && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 space-y-1.5 text-xs">
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          <span>تم التحقق: تصميم رخصة القيادة مطابق للشكل والجدول المعتمد رسمياً في دولة الإمارات ✓</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          نسبة المطابقة البصرية: <strong className="text-emerald-400 font-bold">{licenseValidationResult.score}%</strong> (تم تدقيق جدول البيانات وشعار الصقر وعنوان رخصة القيادة).
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Failed Error Banner */}
+                    {!isScanningLicense && licenseScanError && (
+                      <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 text-rose-400 font-bold">
+                          <AlertTriangle className="w-4 h-4 shrink-0" />
+                          <span>تنبيه: تم رفض الصورة - لا تطابق تصميم رخصة القيادة الإماراتية المعتمدة</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px]">
+                          يجب أن تكون الصورة المرفقة لرخصة القيادة الإماراتية الرسمية (المحتوية على شعار صقر الإمارات، الترويسة باللغتين وعنوان رخصة القيادة، والجدول المعتمد).
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setShowLicenseReferenceModal(true)}
+                          className="text-cyan-400 underline hover:text-cyan-300 text-[11px] font-bold inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3 h-3" />
+                          اضغط هنا لرؤية النموذج المعتمد المطلوب لرخصة القيادة
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* DOC 2: Vehicle Mulkiya (ملكية المركبة) */}
@@ -1061,6 +1171,73 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-2.5 rounded-xl text-xs"
               >
                 فهمت ذلك، العودة لإرفاق الهوية
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UAE Driving License Official Reference Sample Modal */}
+      {showLicenseReferenceModal && (
+        <div className="fixed inset-0 z-60 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-slate-950 px-4 sm:px-6 py-3.5 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h4 className="text-sm sm:text-base font-bold text-white">النموذج المعتمد لرخصة القيادة الإماراتية</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLicenseReferenceModal(false)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                يقوم النظام بالتحقق آلياً من تطابق صورة رخصة القيادة مع التصميم والجدول المعتمد رسمياً في <strong className="text-cyan-400">دولة الإمارات العربية المتحدة</strong>:
+              </p>
+
+              {/* Sample Card Image */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-cyan-500/50 shadow-xl bg-slate-950">
+                <img
+                  src={uaeLicenseSampleImg}
+                  alt="UAE Driving License Standard Sample"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+
+              {/* Required Layout Landmarks */}
+              <div className="space-y-2 text-xs bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                <div className="font-bold text-cyan-300 text-xs mb-1.5">المعايير البصرية المطلوبة للقبول الفوري:</div>
+                <div className="space-y-1.5 text-slate-300 text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الترويسة:</strong> ترويسة الإمارات وعنوان "Driving License / رخصة قيادة" باللون الأحمر.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الشعارات:</strong> وجود شعار صقر الإمارات وشعار المرور بالزوايا العلوية.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>جدول البيانات:</strong> الجدول الموحد للبيانات (رقم الرخصة، الاسم، الجنسية، التواريخ).</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>الصورة والوضوح:</strong> ظهور صورة السائق واضحة بالجانب الأيسر.</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowLicenseReferenceModal(false)}
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-2.5 rounded-xl text-xs"
+              >
+                فهمت ذلك، العودة لإرفاق الرخصة
               </button>
             </div>
           </div>
