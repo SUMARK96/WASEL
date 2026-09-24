@@ -450,6 +450,10 @@ export function App() {
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
             onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
+            onLogout={() => {
+              setCurrentScreen('landing');
+              showToast('👋 تم تسجيل الخروج بنجاح');
+            }}
           />
         )}
 
@@ -462,6 +466,10 @@ export function App() {
             onOpenSubscription={() => setIsSubscriptionOpen(true)}
             onOpenSubmitOffer={(req) => setSelectedRequestForOffer(req)}
             onMarkNotificationRead={handleMarkNotificationRead}
+            onLogout={() => {
+              setCurrentScreen('landing');
+              showToast('👋 تم تسجيل الخروج بنجاح');
+            }}
           />
         )}
 
