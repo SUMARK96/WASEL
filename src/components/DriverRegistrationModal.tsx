@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import type { DriverProfile, Emirate, SubscriptionPlanId } from '../types';
+import type { DriverProfile, Emirate, SubscriptionPlanId, SubscriptionInvoice } from '../types';
+import { createSubscriptionInvoice, calculateOneMonthExpiry, getWhatsAppInvoiceUrl } from '../utils/subscriptionUtils';
+import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
 import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
 import { validateDrivingLicenseImage, type DrivingLicenseValidationResult } from '../utils/drivingLicenseValidator';
@@ -10,7 +12,9 @@ import uaeMulkiyaSampleImg from '../assets/uae-mulkiya-sample.jpg';
 import {
   X,
   ExternalLink,
-  RotateCw, 
+  RotateCw,
+  Share2,
+  Bell,
   Check, 
   ShieldCheck, 
   Truck,
@@ -97,6 +101,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [transactionRef, setTransactionRef] = useState<string>('');
   const [createdActiveDriver, setCreatedActiveDriver] = useState<DriverProfile | null>(null);
+  const [generatedInvoice, setGeneratedInvoice] = useState<SubscriptionInvoice | null>(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
 
   const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
   const selectedPlanDetails = UNIFIED_SUBSCRIPTION_PLAN;
@@ -113,9 +119,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
     // Simulate strict live verification with Ziina payment gateway
     setTimeout(() => {
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-      const formattedExpiry = expiryDate.toISOString().split('T')[0];
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const formattedExpiry = calculateOneMonthExpiry(now);
 
       const newDriverId = `drv-${Date.now()}`;
       const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
@@ -145,10 +151,18 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         subscriptionStatus: 'active',
         subscriptionPlan: selectedPlan,
         subscriptionExpiry: formattedExpiry,
-        joinedDate: new Date().toISOString().split('T')[0],
+        joinedDate: todayStr,
         bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
       };
 
+      const invoice = createSubscriptionInvoice(
+        activatedDriver,
+        transactionRef || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
+        todayStr,
+        formattedExpiry
+      );
+
+      setGeneratedInvoice(invoice);
       setCreatedActiveDriver(activatedDriver);
       setPaymentStage('success');
     }, 2000);
@@ -1069,26 +1083,29 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               
               {/* STAGE: SUCCESS */}
               {paymentStage === 'success' && createdActiveDriver && (
-                <div className="p-5 sm:p-8 text-center flex flex-col items-center justify-center space-y-4 bg-slate-950/90 rounded-2xl border-2 border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-200">
-                  <div className="w-18 h-18 sm:w-20 sm:h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border-2 border-emerald-500/40 shadow-xl shadow-emerald-500/10">
-                    <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
+                <div className="p-4 sm:p-6 text-center flex flex-col items-center justify-center space-y-4 bg-slate-950/90 rounded-2xl border-2 border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-200">
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border-2 border-emerald-500/40 shadow-xl shadow-emerald-500/10">
+                    <CheckCircle2 className="w-9 h-9 sm:w-10 sm:h-10" />
                   </div>
                   
                   <div className="space-y-1">
                     <span className="bg-emerald-500/15 text-emerald-400 text-xs font-black px-3 py-1 rounded-full border border-emerald-500/30">
-                      تم تأكيد الدفع بنجاح عبر زينة ✓
+                      تم تأكيد الدفع بنجاح عبر زينة وإصدار الفاتورة الرسمية ✓
                     </span>
                     <h4 className="text-lg sm:text-2xl font-black text-white pt-1">🎉 مبارك يا {createdActiveDriver.name}!</h4>
                     <p className="text-emerald-400 font-bold text-xs sm:text-sm">
-                      تم تفعيل حسابك كـ "سائق معتمد" واشتراكك الموحد لمدة شهر كامل (30 يوماً).
+                      تم تفعيل حسابك كـ "سائق معتمد" واشتراكك الموحد لمدة شهر كامل بالظبط (حتى {createdActiveDriver.subscriptionExpiry}).
                     </p>
                   </div>
 
+                  {/* Summary & Invoice Info Box */}
                   <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 w-full text-right text-xs space-y-2.5">
-                    <div className="flex items-center justify-between text-slate-300">
-                      <span>الاسم:</span>
-                      <span className="font-bold text-white">{createdActiveDriver.name}</span>
-                    </div>
+                    {generatedInvoice && (
+                      <div className="flex items-center justify-between text-slate-300 pb-1.5 border-b border-slate-800/80">
+                        <span>رقم الفاتورة الصادرة:</span>
+                        <span className="font-bold text-white font-mono">{generatedInvoice.invoiceNumber}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between text-slate-300">
                       <span>المركبة واللوحة:</span>
                       <span className="font-bold text-white">{createdActiveDriver.vehicleModel} ({createdActiveDriver.vehiclePlate})</span>
@@ -1098,12 +1115,48 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <span className="font-bold text-cyan-400">{selectedPlanDetails.name} (199 AED)</span>
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
+                      <span>تاريخ انتهاء الاشتراك:</span>
+                      <span className="font-bold text-cyan-300">{createdActiveDriver.subscriptionExpiry} (شهر بالظبط)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300 border-t border-slate-800/80 pt-2">
                       <span>حالة الحساب:</span>
                       <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                         مفعل ونشط 🟢
                       </span>
                     </div>
                   </div>
+
+                  {/* 5-Day Automated Expiry Reminder Notice */}
+                  <div className="bg-blue-950/40 border border-cyan-500/30 p-3 rounded-xl text-right text-[11px] text-cyan-300 flex items-start gap-2.5 w-full">
+                    <Bell className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>تنبيه التجديد التلقائي:</strong> سيقوم نظام واصل بإرسال رسالة تذكير لرقم هاتفك ({createdActiveDriver.phone}) قبل انتهاء اشتراكك بـ 5 أيام لضمان استمرار ظهور عروضك دون انقطاع.
+                    </span>
+                  </div>
+
+                  {/* Invoice Actions */}
+                  {generatedInvoice && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowInvoiceModal(true)}
+                        className="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold py-2.5 px-4 rounded-xl text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-colors active:scale-95"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>عرض وتحميل الفاتورة الرسمية</span>
+                      </button>
+
+                      <a
+                        href={getWhatsAppInvoiceUrl(generatedInvoice)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        <span>إرسال الفاتورة لواتساب السائق</span>
+                      </a>
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -1540,6 +1593,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
             </div>
           </div>
         </div>
+      )}
+      {/* Official Invoice Modal */}
+      {showInvoiceModal && generatedInvoice && (
+        <InvoiceModal
+          invoice={generatedInvoice}
+          onClose={() => setShowInvoiceModal(false)}
+        />
       )}
     </div>
   );

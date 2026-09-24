@@ -107,12 +107,33 @@ export interface DeliveryRequest {
 
 export interface DriverNotification {
   id: string;
-  requestId: string;
+  requestId?: string;
   title: string;
-  pickupEmirate: Emirate;
-  deliveryEmirate: Emirate;
+  pickupEmirate?: Emirate;
+  deliveryEmirate?: Emirate;
   timestamp: string;
   isRead: boolean;
+  type?: 'request' | 'expiry_reminder' | 'invoice';
+  message?: string;
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  invoiceNumber: string;
+  driverId: string;
+  driverName: string;
+  driverPhone: string;
+  driverEmail: string;
+  driverEmirate: Emirate;
+  driverVehicle: string;
+  planName: string;
+  amount: number;
+  issueDate: string;
+  startDate: string;
+  expiryDate: string;
+  paymentMethod: string;
+  paymentRef: string;
+  status: 'paid';
 }
 
 export interface ChatMessage {
@@ -124,4 +145,3 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
 }
-

@@ -1,11 +1,16 @@
 import React from 'react';
-import type { DriverProfile, DeliveryRequest } from '../types';
+import type { DriverProfile, DeliveryRequest, SubscriptionInvoice } from '../types';
+import { createSubscriptionInvoice, getDaysUntilExpiry, getWhatsAppReminderUrl } from '../utils/subscriptionUtils';
+import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import { 
   Package, 
   DollarSign, 
   Sparkles, 
-  Truck
+  Truck,
+  FileText,
+  Bell,
+  Share2
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -19,6 +24,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   requests,
   onToggleVerifyDriver
 }) => {
+  const [selectedInvoice, setSelectedInvoice] = React.useState<SubscriptionInvoice | null>(null);
   const activeDriversCount = drivers.filter(d => d.subscriptionStatus === 'active').length;
   const totalRevenue = activeDriversCount * UNIFIED_SUBSCRIPTION_PLAN.price;
   const totalOffersCount = requests.reduce((acc, r) => acc + r.offers.length, 0);
@@ -127,7 +133,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <th className="p-3">السائق</th>
                 <th className="p-3">الإمارة</th>
                 <th className="p-3">السيارة واللوحة</th>
-                <th className="p-3">الاشتراك</th>
+                <th className="p-3">الاشتراك وصلاحية الشهر</th>
+                <th className="p-3">الفاتورة والتذكير</th>
                 <th className="p-3">الرحلات</th>
                 <th className="p-3 text-center">حالة التوثيق</th>
               </tr>
@@ -150,17 +157,62 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <div className="text-[10px] text-cyan-400 font-mono">{drv.vehiclePlate}</div>
                   </td>
 
-                  <td className="p-3">
-                    {drv.subscriptionStatus === 'active' ? (
-                      <span className="bg-emerald-500/10 text-emerald-400 font-extrabold px-2.5 py-1 rounded-lg border border-emerald-500/30 flex items-center gap-1 w-fit">
-                        <span>مفعل (تم الدفع في زينة) ✓</span>
-                      </span>
-                    ) : (
-                      <span className="bg-rose-500/10 text-rose-400 font-extrabold px-2.5 py-1 rounded-lg border border-rose-500/30 flex items-center gap-1 w-fit">
-                        <span>غير مفعل / بانتظار الدفع ⏳</span>
-                      </span>
-                    )}
-                  </td>
+                  {(() => {
+                    const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
+                    const isExpiring = daysRemaining <= 5 && daysRemaining >= 0;
+                    const inv = createSubscriptionInvoice(drv, `ZIN-${drv.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`, drv.joinedDate, drv.subscriptionExpiry);
+
+                    return (
+                      <>
+                        <td className="p-3">
+                          {drv.subscriptionStatus === 'active' ? (
+                            <div className="space-y-1">
+                              <span className="bg-emerald-500/10 text-emerald-400 font-extrabold px-2.5 py-0.5 rounded-lg border border-emerald-500/30 inline-flex items-center gap-1">
+                                <span>مفعل (زينة 199 AED) ✓</span>
+                              </span>
+                              <div className="text-[10px] text-slate-400">
+                                ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
+                              </div>
+                              {isExpiring && (
+                                <span className="bg-amber-500/15 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-1 w-fit animate-pulse">
+                                  <Bell className="w-2.5 h-2.5" />
+                                  <span>تذكير 5 أيام (متبقي {daysRemaining} يوم)</span>
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="bg-rose-500/10 text-rose-400 font-extrabold px-2.5 py-1 rounded-lg border border-rose-500/30 flex items-center gap-1 w-fit">
+                              <span>غير مفعل / بانتظار الدفع ⏳</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="p-3">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInvoice(inv)}
+                              className="bg-slate-800 hover:bg-slate-700 text-cyan-400 p-1.5 rounded-lg border border-slate-700 transition-colors"
+                              title="عرض الفاتورة الرسمية"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                            {isExpiring && (
+                              <a
+                                href={getWhatsAppReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white p-1.5 rounded-lg border border-emerald-500/30 transition-all"
+                                title="إرسال تذكير التجديد بالواتساب"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </>
+                    );
+                  })()}
 
                   <td className="p-3 font-bold text-slate-200">{drv.completedDeliveries} توصيلة</td>
 
@@ -183,6 +235,13 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
       </div>
 
+      {/* Admin Invoice Preview Modal */}
+      {selectedInvoice && (
+        <InvoiceModal
+          invoice={selectedInvoice}
+          onClose={() => setSelectedInvoice(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { DeliveryRequest, DriverProfile, DriverNotification } from '../types';
 import { UAE_EMIRATES } from '../data/mockData';
+import { getDaysUntilExpiry, formatArabicDate, getWhatsAppReminderUrl, createSubscriptionInvoice } from '../utils/subscriptionUtils';
+import { InvoiceModal } from './InvoiceModal';
 import { EmirateBadge } from './EmirateBadge';
 import { 
   Truck, 
@@ -16,7 +18,9 @@ import {
   ChevronDown,
   Package,
   Clock,
-  FileText
+  FileText,
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 
 interface DriverViewProps {
@@ -42,6 +46,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
   
   // State for toggling expanded details on each request card
   const [expandedRequestIds, setExpandedRequestIds] = useState<Record<string, boolean>>({});
+  const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
 
   const toggleRequestExpand = (id: string) => {
     setExpandedRequestIds(prev => ({
@@ -58,6 +63,18 @@ export const DriverView: React.FC<DriverViewProps> = ({
     }
     onOpenSubmitOffer(req);
   };
+
+  const daysRemaining = getDaysUntilExpiry(driver.subscriptionExpiry);
+  const isExpiring = daysRemaining <= 5 && daysRemaining >= 0;
+  const isExpired = daysRemaining < 0 || driver.subscriptionStatus !== 'active';
+
+  // Driver current invoice object
+  const currentInvoice = createSubscriptionInvoice(
+    driver,
+    `ZIN-${driver.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
+    driver.joinedDate || '2026-09-01',
+    driver.subscriptionExpiry
+  );
 
   const openRequests = requests.filter(r => r.status === 'open');
 
@@ -76,19 +93,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
   return (
     <div className="space-y-6 sm:space-y-8">
       
-      {/* Inactive / Unpaid Account Warning Banner */}
-      {driver.subscriptionStatus !== 'active' && (
-        <div className="bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/50 text-white p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+      {/* 1. Inactive / Expired Account Warning Banner */}
+      {isExpired && (
+        <div className="bg-gradient-to-r from-rose-950/90 via-slate-900 to-rose-950/90 border-2 border-rose-500/60 text-white p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold shrink-0 border border-rose-500/30">
+            <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold shrink-0 border border-rose-500/40">
               <ShieldCheck className="w-6 h-6 text-rose-400" />
             </div>
             <div>
               <div className="flex items-center gap-2 font-black text-sm sm:text-base text-rose-300">
-                <span>⚠️ تنبيه: حساب السائق غير مفعل (بانتظار تأكيد الدفع عبر زينة)</span>
+                <span>⚠️ تنبيه: حساب السائق غير مفعل أو انتهت فترة الاشتراك</span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                وفقاً لسياسة المنصة، لا يمكنك تقديم عروض أسعار للعملاء حتى يتم سداد رسوم الاشتراك الموحد وتأكيدها بنجاح عبر رابط زينة.
+                وفقاً لسياسة المنصة، لا يمكنك تقديم عروض أسعار للعملاء حتى يتم سداد رسوم الاشتراك وتأكيدها بنجاح عبر رابط زينة.
               </p>
             </div>
           </div>
@@ -100,6 +117,59 @@ export const DriverView: React.FC<DriverViewProps> = ({
             <span>سداد وتفعيل الاشتراك عبر زينة (199 AED)</span>
             <ArrowRight className="w-4 h-4 rotate-180" />
           </button>
+        </div>
+      )}
+
+      {/* 2. Urgent 5-Day Expiry Reminder Banner */}
+      {!isExpired && isExpiring && (
+        <div className="bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/90 border-2 border-amber-500/60 text-white p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0 border border-amber-500/40 animate-pulse">
+              <Bell className="w-6 h-6 text-amber-400" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-sm sm:text-base text-amber-300">
+                  ⏰ تنبيه قرب انتهاء الاشتراك (يتبقى {daysRemaining === 0 ? 'أقل من 24 ساعة' : daysRemaining === 1 ? 'يوم واحد' : `${daysRemaining} أيام`})
+                </span>
+                <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                  تذكير تلقائي عبر الهاتف
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                ينتهي اشتراكك بتاريخ <strong className="text-white">{formatArabicDate(driver.subscriptionExpiry)}</strong>. تم إرسال إشعار لرقم هاتفك المدرج ({driver.phone}). يرجى تجديد الاشتراك لضمان استمرار ظهور عروضك دون انقطاع.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0">
+            <a
+              href={getWhatsAppReminderUrl(driver.phone, driver.name, daysRemaining, driver.subscriptionExpiry)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+              title="إرسال نص التذكير الرسمي للواتساب"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>رسالة التذكير (واتساب)</span>
+            </a>
+
+            <button
+              onClick={() => setShowInvoiceModal(true)}
+              className="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold px-3.5 py-2.5 rounded-xl text-xs border border-slate-700 flex items-center gap-1.5 transition-colors active:scale-95"
+            >
+              <FileText className="w-4 h-4" />
+              <span>فاتورة الاشتراك</span>
+            </button>
+
+            <button
+              onClick={onOpenSubscription}
+              className="bg-gradient-to-r from-amber-500 via-amber-400 to-orange-400 hover:from-amber-400 hover:to-orange-300 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/25 flex items-center gap-1.5 transition-all active:scale-95"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>تجديد الآن عبر زينة</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -191,12 +261,23 @@ export const DriverView: React.FC<DriverViewProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={onOpenSubscription}
-              className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold px-4 py-3 sm:py-3.5 rounded-2xl text-xs transition-all shadow-lg shadow-blue-500/20 shrink-0 active:scale-95"
-            >
-              تجديد الاشتراك
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowInvoiceModal(true)}
+                className="bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold px-3.5 py-3 sm:py-3.5 rounded-2xl text-xs border border-slate-700 transition-colors flex items-center gap-1.5 active:scale-95"
+                title="عرض وتحميل فاتورة الاشتراك الرسمية"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden sm:inline">فاتورة اشتراكي</span>
+              </button>
+
+              <button
+                onClick={onOpenSubscription}
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold px-4 py-3 sm:py-3.5 rounded-2xl text-xs transition-all shadow-lg shadow-blue-500/20 shrink-0 active:scale-95"
+              >
+                تجديد الاشتراك
+              </button>
+            </div>
           </div>
 
         </div>
@@ -329,6 +410,35 @@ export const DriverView: React.FC<DriverViewProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
+              {/* High Priority Expiration Alert Card if within 5 days */}
+              {isExpiring && (
+                <div className="p-4 sm:p-5 rounded-2xl border bg-amber-950/40 border-amber-500/50 shadow-lg shadow-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 animate-in fade-in">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+                        تنبيه انتهاء الاشتراك (متبقي ${daysRemaining} أيام) ⚠️
+                      </span>
+                      <span className="text-xs text-slate-400">تذكير تلقائي</span>
+                    </div>
+                    <h4 className="font-extrabold text-white text-sm">
+                      ينتهي اشتراكك في باقة واصل الموحدة بتاريخ ${driver.subscriptionExpiry}
+                    </h4>
+                    <p className="text-xs text-slate-300">
+                      يرجى تجديد الاشتراك قبل الموعد لضمان عدم توقف عروضك واستمرار تلقي الإشعارات الفورية.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={onOpenSubscription}
+                      className="flex-1 sm:flex-initial bg-gradient-to-r from-amber-500 to-orange-400 hover:from-amber-400 hover:to-orange-300 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-amber-500/20 shrink-0 active:scale-95"
+                    >
+                      تجديد الاشتراك الآن
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {notifications.map((notif) => {
                 const targetReq = requests.find(r => r.id === notif.requestId);
                 return (
@@ -348,11 +458,13 @@ export const DriverView: React.FC<DriverViewProps> = ({
                         <span className="text-xs text-slate-400">{notif.timestamp}</span>
                       </div>
                       <h4 className="font-extrabold text-white text-sm">{notif.title}</h4>
-                      <div className="flex items-center gap-2 text-xs text-slate-300">
-                        <EmirateBadge emirate={notif.pickupEmirate} type="pickup" size="sm" />
-                        <span>⬅️</span>
-                        <EmirateBadge emirate={notif.deliveryEmirate} type="delivery" size="sm" />
-                      </div>
+                      {notif.pickupEmirate && notif.deliveryEmirate && (
+                        <div className="flex items-center gap-2 text-xs text-slate-300">
+                          <EmirateBadge emirate={notif.pickupEmirate} type="pickup" size="sm" />
+                          <span>⬅️</span>
+                          <EmirateBadge emirate={notif.deliveryEmirate} type="delivery" size="sm" />
+                        </div>
+                      )}
                     </div>
 
                     {targetReq && (
@@ -633,6 +745,13 @@ export const DriverView: React.FC<DriverViewProps> = ({
         </div>
       )}
 
+      {/* Official Subscription Invoice Modal */}
+      {showInvoiceModal && (
+        <InvoiceModal
+          invoice={currentInvoice}
+          onClose={() => setShowInvoiceModal(false)}
+        />
+      )}
     </div>
   );
 };
