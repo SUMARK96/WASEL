@@ -60,21 +60,19 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
 
   return (
     <>
-      <div className="bg-gradient-to-r from-blue-950/80 via-slate-900 to-cyan-950/80 border border-cyan-500/30 rounded-2xl p-3.5 sm:p-4 shadow-xl backdrop-blur-md relative overflow-hidden animate-in fade-in duration-300">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full filter blur-2xl pointer-events-none" />
-
+      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-xl relative overflow-hidden animate-in fade-in duration-300">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative z-10">
           
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
               permission === 'granted' 
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
-                : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 animate-pulse'
+                ? 'bg-white/10 text-white border-white/30' 
+                : 'bg-zinc-900 text-white border-zinc-700 animate-pulse'
             }`}>
               {permission === 'granted' ? (
-                <BellRing className="w-5 h-5 text-emerald-400" />
+                <BellRing className="w-5 h-5 text-white" />
               ) : (
-                <Bell className="w-5 h-5 text-cyan-300" />
+                <Bell className="w-5 h-5 text-zinc-300" />
               )}
             </div>
 
@@ -88,12 +86,12 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
                     : 'إشعارات الهاتف وتطبيق واصل'}
                 </span>
                 {permission === 'granted' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700">
                     <CheckCircle2 className="w-3 h-3" /> مفعلة
                   </span>
                 )}
               </div>
-              <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5 max-w-xl leading-relaxed">
+              <p className="text-zinc-400 text-[11px] sm:text-xs mt-0.5 max-w-xl leading-relaxed">
                 {userRole === 'driver'
                   ? 'فعّل الإشعارات لتصلك تنبيهات صوتية ومباشرة على شاشة هاتفك فور نشر أي عميل لطلب توصيل جديد.'
                   : 'فعّل الإشعارات وثبت التطبيق على هاتفك لتصلك عروض السائقين كإشعارات انستقرام وفيسبوك.'}
@@ -105,7 +103,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
             {permission !== 'granted' && (
               <button
                 onClick={handleEnableNotifications}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs shadow-md transition-all active:scale-95"
               >
                 <BellRing className="w-3.5 h-3.5" />
                 <span>تفعيل الإشعارات</span>
@@ -115,17 +113,17 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
             {!isInstalled && (
               <button
                 onClick={handleInstallClick}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold px-3 py-2 rounded-xl border border-slate-700 text-xs transition-all active:scale-95"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-3 py-2 rounded-xl border border-zinc-700 text-xs transition-all active:scale-95"
                 title="إضافة واصل للشاشة الرئيسية لهاتفك"
               >
-                <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                <Smartphone className="w-3.5 h-3.5 text-zinc-300" />
                 <span>إضافة للشاشة الرئيسية</span>
               </button>
             )}
 
             <button
               onClick={() => setIsDismissed(true)}
-              className="p-1.5 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800/60 transition-colors"
+              className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
               title="إخفاء مؤقت"
             >
               <X className="w-4 h-4" />
@@ -137,50 +135,50 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
 
       {/* PWA Home Screen Installation Guide Modal */}
       {showPwaGuide && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-cyan-500/30 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
             <button
               onClick={() => setShowPwaGuide(false)}
-              className="absolute top-4 left-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800"
+              className="absolute top-4 left-4 text-zinc-400 hover:text-white p-2 rounded-full hover:bg-zinc-900"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-center mb-5">
-              <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto mb-3 border border-cyan-500/40">
+              <div className="w-14 h-14 rounded-2xl bg-white text-black flex items-center justify-center mx-auto mb-3">
                 <Smartphone className="w-7 h-7" />
               </div>
               <h3 className="text-lg font-black text-white">
                 تثبيت منصة واصل على شاشة هاتفك
               </h3>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-zinc-400 mt-1">
                 لتصلك إشعارات الطلبات والعروض كإشعارات التطبيقات تماماً
               </p>
             </div>
 
-            <div className="space-y-3.5 text-xs text-slate-200 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <div className="space-y-3.5 text-xs text-zinc-200 bg-black p-4 rounded-2xl border border-zinc-800">
               
               {/* iPhone (iOS) */}
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="font-bold text-cyan-400 mb-1 flex items-center gap-1.5">
+              <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+                <div className="font-bold text-white mb-1 flex items-center gap-1.5">
                   <span>📱 لأجهزة آيفون (Safari):</span>
                 </div>
-                <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                <ol className="list-decimal list-inside space-y-1 text-zinc-300">
                   <li>اضغط على زر المشاركة <span className="font-bold text-white">Share (الأيقونة في الأسفل)</span>.</li>
-                  <li>اختر <span className="font-bold text-cyan-300">"إضافة إلى الصفحة الرئيسية" (Add to Home Screen)</span>.</li>
-                  <li>اضغط <span className="font-bold text-emerald-400">"إضافة" (Add)</span>.</li>
+                  <li>اختر <span className="font-bold text-white">"إضافة إلى الصفحة الرئيسية" (Add to Home Screen)</span>.</li>
+                  <li>اضغط <span className="font-bold text-white">"إضافة" (Add)</span>.</li>
                 </ol>
               </div>
 
               {/* Android */}
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="font-bold text-blue-400 mb-1 flex items-center gap-1.5">
+              <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+                <div className="font-bold text-white mb-1 flex items-center gap-1.5">
                   <span>🤖 لأجهزة أندرويد (Chrome):</span>
                 </div>
-                <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                <ol className="list-decimal list-inside space-y-1 text-zinc-300">
                   <li>اضغط على قائمة النقاط الثلاث <span className="font-bold text-white">⋮ في أعلى المتصفح</span>.</li>
-                  <li>اختر <span className="font-bold text-blue-300">"تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"</span>.</li>
-                  <li>اضغط <span className="font-bold text-emerald-400">"تثبيت" (Install)</span>.</li>
+                  <li>اختر <span className="font-bold text-white">"تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"</span>.</li>
+                  <li>اضغط <span className="font-bold text-white">"تثبيت" (Install)</span>.</li>
                 </ol>
               </div>
 
@@ -192,13 +190,13 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
                   handleEnableNotifications();
                   setShowPwaGuide(false);
                 }}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-3 rounded-xl text-xs shadow-lg shadow-blue-500/20 transition-all"
+                className="flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 rounded-xl text-xs shadow-md transition-all"
               >
                 تفعيل الإشعارات والبدء
               </button>
               <button
                 onClick={() => setShowPwaGuide(false)}
-                className="px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl text-xs"
+                className="px-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold py-3 rounded-xl text-xs border border-zinc-800"
               >
                 إغلاق
               </button>

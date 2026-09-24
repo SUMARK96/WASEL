@@ -66,28 +66,28 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
-      <div className="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="bg-zinc-950 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
         
         {/* Mobile Drag Handle */}
-        <div className="sm:hidden pt-2.5 pb-1 bg-slate-950 flex justify-center">
-          <div className="w-12 h-1.5 bg-slate-700 rounded-full" />
+        <div className="sm:hidden pt-2.5 pb-1 bg-black flex justify-center">
+          <div className="w-12 h-1.5 bg-zinc-700 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="bg-slate-950 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div className="bg-black px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-500 text-white flex items-center justify-center font-bold shrink-0 shadow-md shadow-blue-500/25">
-              <Star className="w-5 h-5 fill-amber-300 text-amber-300" />
+            <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center font-bold shrink-0 shadow-md">
+              <Star className="w-5 h-5 fill-black text-black" />
             </div>
             <div>
               <h3 className="text-sm sm:text-lg font-black text-white">تقييم تجربة التوصيل مع السائق</h3>
-              <p className="text-[11px] sm:text-xs text-slate-400">تقييمك يرفع من فرصة ظهور السائق المتميز في مقدمة العروض</p>
+              <p className="text-[11px] sm:text-xs text-zinc-400">تقييمك يرفع من فرصة ظهور السائق المتميز في مقدمة العروض</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors active:scale-95"
+            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -97,11 +97,11 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 overscroll-contain">
           {isDone ? (
             <div className="p-6 sm:p-8 text-center flex flex-col items-center justify-center space-y-3 animate-in zoom-in-95">
-              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border-2 border-emerald-500/30 animate-bounce">
-                <CheckCircle2 className="w-8 h-8" />
+              <div className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                <CheckCircle2 className="w-8 h-8 text-black" />
               </div>
               <h4 className="text-xl font-black text-white">شكراً لك على تقييمك! 🎉</h4>
-              <p className="text-slate-300 text-xs leading-relaxed max-w-xs">
+              <p className="text-zinc-300 text-xs leading-relaxed max-w-xs">
                 تم حفظ التقييم بنجاح وتحديث ترتيب السائق في منصة واصل.
               </p>
             </div>
@@ -109,29 +109,29 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               
               {/* Driver Summary Card */}
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center gap-3.5">
+              <div className="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center gap-3.5">
                 <img
                   src={driverOffer.driverAvatar}
                   alt={driverOffer.driverName}
-                  className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-cyan-500/50 shrink-0"
+                  className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl object-cover border-2 border-zinc-700 shrink-0"
                 />
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h4 className="font-extrabold text-white text-sm">{driverOffer.driverName}</h4>
                     {driverOffer.driverVerified && (
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <ShieldCheck className="w-4 h-4 text-white" />
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{driverOffer.driverVehicle}</p>
-                  <p className="text-[11px] text-cyan-300 font-bold mt-0.5">
+                  <p className="text-xs text-zinc-400 mt-0.5">{driverOffer.driverVehicle}</p>
+                  <p className="text-[11px] text-zinc-300 font-bold mt-0.5">
                     الطلب: {request.title}
                   </p>
                 </div>
               </div>
 
               {/* Interactive Stars Rating Picker */}
-              <div className="text-center space-y-2 bg-slate-950/60 p-4 sm:p-5 rounded-2xl border border-slate-800">
-                <label className="block text-xs font-bold text-slate-300">
+              <div className="text-center space-y-2 bg-black p-4 sm:p-5 rounded-2xl border border-zinc-800">
+                <label className="block text-xs font-bold text-zinc-300">
                   حدد تقييمك للسائق (من 1 إلى 5 نجوم):
                 </label>
                 
@@ -150,8 +150,8 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
                         <Star
                           className={`w-8 h-8 sm:w-9 sm:h-9 transition-colors ${
                             isFilled
-                              ? 'fill-amber-400 text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-                              : 'text-slate-700 hover:text-slate-500'
+                              ? 'fill-white text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]'
+                              : 'text-zinc-700 hover:text-zinc-500'
                           }`}
                         />
                       </button>
@@ -159,15 +159,15 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
                   })}
                 </div>
 
-                <div className="text-xs font-black text-amber-300 min-h-[20px]">
+                <div className="text-xs font-black text-white min-h-[20px]">
                   {getRatingLabel(hoverRating !== null ? hoverRating : selectedRating)}
                 </div>
               </div>
 
               {/* Highlight Badges */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <HeartHandshake className="w-3.5 h-3.5 text-cyan-400" />
+                <label className="block text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                  <HeartHandshake className="w-3.5 h-3.5 text-white" />
                   <span>ما الذي ميز تجربة التوصيل؟</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -180,8 +180,8 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
                         onClick={() => toggleTag(tag)}
                         className={`text-xs px-3 py-1.5 rounded-xl border transition-all font-semibold active:scale-95 ${
                           isSelected
-                            ? 'bg-cyan-500/15 border-cyan-500 text-cyan-300 shadow-sm'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                            ? 'bg-white text-black border-white shadow-sm'
+                            : 'bg-black border-zinc-800 text-zinc-400 hover:border-zinc-700'
                         }`}
                       >
                         {tag}
@@ -193,7 +193,7 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
 
               {/* Review Note */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold text-zinc-300 mb-1.5">
                   تعليقك أو ملاحظات إضافية (اختياري):
                 </label>
                 <textarea
@@ -201,13 +201,13 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
                   value={reviewNote}
                   onChange={(e) => setReviewNote(e.target.value)}
                   placeholder="اكتب ملاحظاتك لمساعدة باقي العملاء وتشجيع السائق المتميز..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-500 resize-none"
+                  className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-white resize-none"
                 />
               </div>
 
               {/* Impact Notice */}
-              <div className="bg-blue-950/40 border border-cyan-500/30 p-3 rounded-xl flex items-center gap-2 text-[11px] text-cyan-300">
-                <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+              <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center gap-2 text-[11px] text-zinc-300">
+                <Sparkles className="w-4 h-4 text-white shrink-0" />
                 <span>تقييمك يساهم تلقائياً في رفع ترتيب السائق ليظهر في مقدمة العروض للعملاء الآخرين.</span>
               </div>
 
@@ -215,13 +215,13 @@ export const RateDriverModal: React.FC<RateDriverModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3.5 px-6 rounded-2xl shadow-xl shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 px-6 rounded-2xl shadow-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
               >
                 {isSubmitting ? (
                   <span>جاري تسجيل التقييم وتحديث ترتيب السائق...</span>
                 ) : (
                   <>
-                    <Star className="w-4 h-4 fill-amber-300 text-amber-300" />
+                    <Star className="w-4 h-4 fill-black text-black" />
                     <span>إرسال التقييم النهائي ({selectedRating} نجوم ⭐)</span>
                   </>
                 )}

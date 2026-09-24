@@ -64,33 +64,31 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
       <div className="mb-5 flex items-center justify-between">
         <button
           onClick={onBackToPortal}
-          className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 sm:py-2.5 rounded-2xl border border-slate-800 text-xs font-bold transition-all active:scale-95 shadow-md"
+          className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white px-3.5 py-2 sm:py-2.5 rounded-2xl border border-zinc-800 text-xs font-bold transition-all active:scale-95 shadow-md"
         >
           <ArrowRight className="w-4 h-4" />
           <span>الرجوع لبوابة السائقين</span>
         </button>
 
-        <span className="text-xs text-teal-300 font-bold bg-teal-500/15 px-3 py-1 rounded-full border border-teal-500/30">
+        <span className="text-xs text-white font-bold bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
           تسجيل دخول السائق
         </span>
       </div>
 
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/10 rounded-full filter blur-2xl pointer-events-none" />
-
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden">
         {/* Header */}
         <div className="text-center space-y-2 relative z-10">
-          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white flex items-center justify-center font-black mx-auto shadow-lg shadow-teal-500/25">
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white text-black flex items-center justify-center font-black mx-auto shadow-lg">
             <LogIn className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.5]" />
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white">تسجيل الدخول إلى حساب السائق</h2>
-          <p className="text-slate-400 text-xs">أدخل بياناتك للانتقال إلى واجهة متابعة وتقديم العروض للعملاء</p>
+          <p className="text-zinc-400 text-xs">أدخل بياناتك للانتقال إلى واجهة متابعة وتقديم العروض للعملاء</p>
         </div>
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3 rounded-2xl text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="bg-zinc-900 border border-zinc-700 text-zinc-200 p-3 rounded-2xl text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-white shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -98,8 +96,8 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4 relative z-10">
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-teal-400" />
+            <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-white" />
               <span>البريد الإلكتروني أو رقم الهاتف</span>
             </label>
             <input
@@ -108,13 +106,13 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="مثال: m.saeed@wasel.ae أو 0501234567"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-teal-500 font-medium transition-colors"
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white font-medium transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-teal-400" />
+            <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-white" />
               <span>كلمة المرور</span>
             </label>
             <input
@@ -123,14 +121,14 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-teal-500 font-medium transition-colors"
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white font-medium transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-black py-3.5 px-6 rounded-2xl shadow-xl shadow-teal-600/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+            className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 px-6 rounded-2xl shadow-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
           >
             {isLoading ? (
               <span>جاري التحقق والدخول...</span>
@@ -144,12 +142,12 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
         </form>
 
         {/* Register Link */}
-        <div className="text-center pt-3 border-t border-slate-800/60">
-          <p className="text-xs text-slate-400">
+        <div className="text-center pt-3 border-t border-zinc-800">
+          <p className="text-xs text-zinc-400">
             ليس لديك حساب سائق بعد؟{' '}
             <button
               onClick={onGoToRegister}
-              className="text-cyan-400 hover:text-cyan-300 font-extrabold underline underline-offset-4 mr-1 active:scale-95"
+              className="text-white hover:underline font-extrabold underline-offset-4 mr-1 active:scale-95"
             >
               سجل الآن وادفع الاشتراك
             </button>

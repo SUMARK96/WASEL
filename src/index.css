@@ -7,8 +7,8 @@
   }
 
   body {
-    background-color: #0b1329;
-    color: #f8fafc;
+    background-color: #000000;
+    color: #ffffff;
     direction: rtl;
     min-height: 100vh;
     min-height: -webkit-fill-available;
@@ -23,20 +23,20 @@
   }
 }
 
-/* Custom modern scrollbar */
+/* Custom modern black & white scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b1329;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e3a8a;
+  background: #27272a;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0284c7;
+  background: #ffffff;
 }
 
 /* Smooth Touch Scrolling on iOS & Android */
@@ -45,13 +45,13 @@
   overscroll-behavior-y: contain;
 }
 
-/* Glassmorphic Blue/Cyan Gradients */
+/* Minimalist Monochrome Gradients */
 .bg-wasel-gradient {
-  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 50%, #06b6d4 100%);
+  background: linear-gradient(135deg, #18181b 0%, #09090b 50%, #000000 100%);
 }
 
 .text-wasel-gradient {
-  background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 50%, #60a5fa 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e4e4e7 50%, #a1a1aa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

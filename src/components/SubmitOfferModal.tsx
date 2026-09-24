@@ -30,23 +30,23 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
-      <div className="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="bg-zinc-950 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
         
         {/* Mobile Drag Indicator */}
-        <div className="sm:hidden pt-2.5 pb-1 bg-slate-950 flex justify-center">
-          <div className="w-12 h-1.5 bg-slate-700 rounded-full" />
+        <div className="sm:hidden pt-2.5 pb-1 bg-black flex justify-center">
+          <div className="w-12 h-1.5 bg-zinc-700 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="bg-slate-950 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+        <div className="bg-black px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
           <div>
             <h3 className="text-sm sm:text-lg font-black text-white">تقديم عرض سعر للعميل</h3>
-            <p className="text-[11px] sm:text-xs text-slate-400">تواصل مباشر عبر الواتساب والمكالمات عند قبول عرضك</p>
+            <p className="text-[11px] sm:text-xs text-zinc-400">تواصل مباشر عبر الواتساب والمكالمات عند قبول عرضك</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors active:scale-95"
+            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -56,15 +56,15 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
         <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
           
           {/* Request Brief */}
-          <div className="bg-slate-950/60 p-4 sm:p-5 border-b border-slate-800/80 space-y-2">
+          <div className="bg-black p-4 sm:p-5 border-b border-zinc-800 space-y-2">
             <h4 className="font-bold text-white text-xs sm:text-sm">{request.title}</h4>
             <div className="flex items-center gap-2 text-xs">
               <EmirateBadge emirate={request.pickupEmirate} type="pickup" size="sm" />
-              <span className="text-slate-500">⬅️</span>
+              <span className="text-zinc-500">⬅️</span>
               <EmirateBadge emirate={request.deliveryEmirate} type="delivery" size="sm" />
             </div>
-            <div className="text-xs text-slate-400 pt-1">
-              <span>فئة ونوع الطرد: <strong className="text-cyan-400">{request.packageType}</strong></span>
+            <div className="text-xs text-zinc-400 pt-1">
+              <span>فئة ونوع الطرد: <strong className="text-white">{request.packageType}</strong></span>
             </div>
           </div>
 
@@ -72,83 +72,83 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
             
             {/* Price */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">سعر العرض (بالدرهم AED)</label>
+              <label className="block text-xs font-semibold text-zinc-300 mb-1">سعر العرض (بالدرهم AED)</label>
               <div className="relative">
                 <input
                   type="number"
                   value={price}
                   onChange={(e) => setPrice(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 sm:py-3 text-base sm:text-lg font-black text-cyan-400 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-2.5 sm:py-3 text-base sm:text-lg font-black text-white focus:outline-none focus:border-white"
                   min={20}
                   required
                 />
-                <span className="absolute left-4 top-3 text-xs text-slate-400 font-bold">AED</span>
+                <span className="absolute left-4 top-3 text-xs text-zinc-400 font-bold">AED</span>
               </div>
             </div>
 
             {/* Driver Contact Numbers */}
-            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 border-b border-slate-800/80 pb-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-white border-b border-zinc-800 pb-2">
+                <CheckCircle2 className="w-4 h-4 text-white" />
                 <span>أرقام تواصلك المباشرة مع العميل (فعالة فوراً)</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-emerald-400 mb-1">رقم الواتساب (WhatsApp)</label>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">رقم الواتساب (WhatsApp)</label>
                   <input
                     type="text"
                     value={whatsappPhone}
                     onChange={(e) => setWhatsappPhone(e.target.value)}
                     placeholder="مثال: 971501234567"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono dir-ltr focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono dir-ltr focus:outline-none focus:border-white"
                     required
                   />
-                  <span className="text-[10px] text-slate-500 mt-0.5 block">سيفتح محادثة واتساب فورية للعميل</span>
+                  <span className="text-[10px] text-zinc-500 mt-0.5 block">سيفتح محادثة واتساب فورية للعميل</span>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-blue-400 mb-1">رقم المكالمات الهاتفية</label>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">رقم المكالمات الهاتفية</label>
                   <input
                     type="text"
                     value={callPhone}
                     onChange={(e) => setCallPhone(e.target.value)}
                     placeholder="مثال: +971 50 123 4567"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono dir-ltr focus:outline-none focus:border-blue-500"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white font-mono dir-ltr focus:outline-none focus:border-white"
                     required
                   />
-                  <span className="text-[10px] text-slate-500 mt-0.5 block">للاتصال الهاتفي المباشر</span>
+                  <span className="text-[10px] text-zinc-500 mt-0.5 block">للاتصال الهاتفي المباشر</span>
                 </div>
               </div>
             </div>
 
             {/* Estimated Delivery Time */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">وقت التوصيل التقديري</label>
+              <label className="block text-xs font-semibold text-zinc-300 mb-1">وقت التوصيل التقديري</label>
               <input
                 type="text"
                 value={estimatedTime}
                 onChange={(e) => setEstimatedTime(e.target.value)}
                 placeholder="مثال: خلال ساعتين ونصف"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white"
                 required
               />
             </div>
 
             {/* Driver Note */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">رسالة إضافية للعميل</label>
+              <label className="block text-xs font-semibold text-zinc-300 mb-1">رسالة إضافية للعميل</label>
               <textarea
                 rows={2}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-500 resize-none"
+                className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-white resize-none"
                 required
               />
             </div>
 
-            <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex items-center gap-2 text-xs text-emerald-400">
-              <ShieldCheck className="w-4 h-4 shrink-0" />
+            <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center gap-2 text-xs text-zinc-300">
+              <ShieldCheck className="w-4 h-4 text-white shrink-0" />
               <span>بصفتك مشتركاً، لن تخصم أي عمولة من قيمة هذا العرض (100% لك).</span>
             </div>
           </form>
@@ -156,11 +156,11 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-950 p-4 sm:px-6 border-t border-slate-800 shrink-0">
+        <div className="bg-black p-4 sm:px-6 border-t border-zinc-800 shrink-0">
           <button
             type="submit"
             form="submit-offer-form"
-            className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3 sm:py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+            className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3 sm:py-3.5 rounded-xl shadow-lg transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
           >
             <Send className="w-4 h-4" />
             إرسال العرض للعميل
