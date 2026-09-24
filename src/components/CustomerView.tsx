@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import type { DeliveryRequest, DriverOffer, DriverProfile } from '../types';
+import type { DeliveryRequest, DriverOffer, DriverProfile, CustomerNotification } from '../types';
 import { EmirateBadge } from './EmirateBadge';
+import { NotificationBanner } from './NotificationBanner';
 import { 
   Package, 
   Clock, 
@@ -11,12 +12,16 @@ import {
   ShieldCheck,
   Award,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  BellRing,
+  Check
 } from 'lucide-react';
 
 interface CustomerViewProps {
   requests: DeliveryRequest[];
   drivers: DriverProfile[];
+  customerNotifications?: CustomerNotification[];
+  onMarkCustomerNotificationRead?: (id: string) => void;
   onOpenNewRequest: () => void;
   onAcceptOffer: (requestId: string, offerId: string) => void;
   onViewDriverProfile: (driver: DriverOffer) => void;
@@ -26,6 +31,8 @@ interface CustomerViewProps {
 export const CustomerView: React.FC<CustomerViewProps> = ({
   requests,
   drivers: _drivers,
+  customerNotifications = [],
+  onMarkCustomerNotificationRead,
   onOpenNewRequest,
   onAcceptOffer,
   onViewDriverProfile,
@@ -37,8 +44,82 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     activeTab === 'active' ? (r.status === 'open' || r.status === 'assigned' || r.status === 'in_transit') : r.status === 'delivered'
   );
 
+  const unreadNotifications = customerNotifications.filter(n => !n.isRead);
+
   return (
     <div className="space-y-6 sm:space-y-8">
+      
+      {/* PWA & System Notifications Enable Banner */}
+      <NotificationBanner userRole="customer" />
+
+      {/* Unread Incoming Offers Alert for Customer */}
+      {unreadNotifications.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-emerald-950 border-2 border-emerald-500/50 rounded-3xl p-4 sm:p-5 shadow-2xl relative overflow-hidden animate-in slide-in-from-top duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold border border-emerald-500/40">
+                <BellRing className="w-5 h-5 text-emerald-400 animate-bounce" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-white">
+                  🔔 عروض أسعار جديدة وردت لطلباتك ({unreadNotifications.length})
+                </h3>
+                <p className="text-xs text-slate-300">
+                  قدم سائقون معتمدون عروض أسعار لتوصيل طرودك، يمكنك مراجعتها والتواصل المباشر معهم
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {unreadNotifications.map((notif) => (
+              <div 
+                key={notif.id}
+                className="bg-slate-950/80 border border-slate-800 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold shrink-0">
+                    {notif.driverName ? notif.driverName.charAt(0) : 'س'}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white flex items-center gap-2">
+                      <span>الكابتن {notif.driverName}</span>
+                      <span className="text-emerald-400 font-extrabold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                        {notif.price} AED
+                      </span>
+                    </div>
+                    <div className="text-slate-400 text-[11px] truncate max-w-xs sm:max-w-md">
+                      طلب: {notif.requestTitle} • {notif.timestamp}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {notif.driverWhatsappPhone && (
+                    <a
+                      href={`https://wa.me/${notif.driverWhatsappPhone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1 active:scale-95"
+                    >
+                      واتساب
+                    </a>
+                  )}
+                  {onMarkCustomerNotificationRead && (
+                    <button
+                      onClick={() => onMarkCustomerNotificationRead(notif.id)}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
+                      title="تحديد كمقروء"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Welcome & Quick Action Hero */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950/40 to-slate-900 p-5 sm:p-8 rounded-3xl border border-blue-900/40 shadow-2xl relative overflow-hidden">

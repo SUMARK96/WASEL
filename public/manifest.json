@@ -1,0 +1,45 @@
+{
+  "name": "واصل | WASEL - منصة التوصيل بين الإمارات",
+  "short_name": "واصل",
+  "description": "المنصة الأولى للتوصيل المباشر بين إمارات الدولة - إشعارات فورية للطلبات وعروض الأسعار",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
+  "background_color": "#0b1329",
+  "theme_color": "#0284c7",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "ar",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/wasel-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/wasel-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "نشر طلب توصيل",
+      "short_name": "طلب جديد",
+      "description": "نشر طلب توصيل طرد جديد للعملاء",
+      "url": "/?action=new_request",
+      "icons": [{ "src": "/wasel-logo.jpg", "sizes": "192x192" }]
+    },
+    {
+      "name": "بوابة السائقين",
+      "short_name": "السائقين",
+      "description": "دخول السائقين لتصفح الطلبات وتقديم العروض",
+      "url": "/?action=driver_portal",
+      "icons": [{ "src": "/wasel-logo.jpg", "sizes": "192x192" }]
+    }
+  ]
+}

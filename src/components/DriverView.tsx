@@ -4,6 +4,7 @@ import { UAE_EMIRATES } from '../data/mockData';
 import { getDaysUntilExpiry, formatArabicDate, getWhatsAppReminderUrl, createSubscriptionInvoice } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { EmirateBadge } from './EmirateBadge';
+import { NotificationBanner } from './NotificationBanner';
 import { 
   Truck, 
   Sparkles, 
@@ -93,6 +94,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
   return (
     <div className="space-y-6 sm:space-y-8">
       
+      {/* PWA & System Notifications Enable Banner */}
+      <NotificationBanner userRole="driver" />
+
       {/* 1. Inactive / Expired Account Warning Banner */}
       {isExpired && (
         <div className="bg-gradient-to-r from-rose-950/90 via-slate-900 to-rose-950/90 border-2 border-rose-500/60 text-white p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">

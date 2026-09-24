@@ -1,6 +1,7 @@
 import React from 'react';
 import { Package, Truck, ArrowLeft, ShieldCheck, Sparkles, PhoneCall, Clock, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
+import { NotificationBanner } from './NotificationBanner';
 
 interface LandingViewProps {
   onSelectCustomer: () => void;
@@ -12,8 +13,13 @@ export const LandingView: React.FC<LandingViewProps> = ({
   onSelectDriver
 }) => {
   return (
-    <div className="min-h-[82vh] flex flex-col justify-center py-4 sm:py-10 px-2 sm:px-4">
+    <div className="min-h-[82vh] flex flex-col justify-center py-4 sm:py-10 px-2 sm:px-4 space-y-6">
       
+      {/* PWA & System Notifications Banner */}
+      <div className="max-w-4xl mx-auto w-full">
+        <NotificationBanner userRole="general" />
+      </div>
+
       {/* Hero Title Section with Logo */}
       <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12 space-y-4">
         

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification } from './types';
+import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification } from './types';
 import { INITIAL_DRIVERS, INITIAL_REQUESTS } from './data/mockData';
 import { dbService } from './services/dbService';
+import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
 
 import { Header } from './components/Header';
 import { LandingView } from './components/LandingView';
@@ -52,6 +53,24 @@ export function App() {
     }
   ]);
 
+  // Real-time Customer Notifications Store (When drivers submit offers)
+  const [customerNotifications, setCustomerNotifications] = useState<CustomerNotification[]>([
+    {
+      id: 'cust-notif-1',
+      requestId: 'req-201',
+      requestTitle: 'توصيل طرد قطع غيار سيارات من أبوظبي إلى الشارقة',
+      driverName: 'خالد المنصوري',
+      driverAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      driverRating: 4.9,
+      driverPhone: '0501234567',
+      driverWhatsappPhone: '971501234567',
+      price: 180,
+      timestamp: 'منذ 30 دقيقة',
+      isRead: false,
+      type: 'new_offer'
+    }
+  ]);
+
   // Modals state
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
@@ -73,8 +92,10 @@ export function App() {
     }, 4500);
   };
 
-  // Initial load from Supabase / DB Service
+  // Initial load from Supabase / DB Service and Service Worker initialization
   useEffect(() => {
+    initNotificationService();
+    
     const loadInitialData = async () => {
       try {
         const [loadedDrivers, loadedRequests] = await Promise.all([
@@ -118,7 +139,7 @@ export function App() {
     showToast('🔒 تم إغلاق لوحة الإدارة وتأمين الحساب');
   };
 
-  // Customer creates a new request -> AUTOMATIC BROADCAST TO ALL DRIVERS
+  // Customer creates a new request -> AUTOMATIC BROADCAST TO ALL DRIVERS (Device Push + Sound)
   const handleCreateRequest = async (reqData: Omit<DeliveryRequest, 'id' | 'createdAt' | 'offers' | 'status'>) => {
     const newId = `req-${Date.now()}`;
     const newReq: DeliveryRequest = {
@@ -146,13 +167,22 @@ export function App() {
     setNotifications(prev => [newNotif, ...prev]);
     setIsNewRequestOpen(false);
 
-    // 3. Persist to Supabase Database
+    // 3. Dispatch Native System Web Notification & Audio Alert for all drivers
+    await sendDeviceNotification({
+      title: `🔔 طلب توصيل جديد: من ${newReq.pickupEmirate} إلى ${newReq.deliveryEmirate}`,
+      body: `${newReq.title} (${newReq.packageWeight || 'طرد'}) - اضغط لتقديم عرض سعرك فوراً!`,
+      tag: `new-req-${newId}`,
+      soundType: 'new_request',
+      url: '/?action=driver_portal'
+    });
+
+    // 4. Persist to Supabase Database
     await dbService.createRequest(newReq);
 
     showToast('📣 تم نشر طلب التوصيل بنجاح وإرسال إشعار فوري لجميع السائقين المسجلين بالموقع!');
   };
 
-  // Driver submits an offer with WhatsApp & Call numbers
+  // Driver submits an offer with WhatsApp & Call numbers -> AUTOMATIC ALERT TO CUSTOMER (Device Push + Sound)
   const handleSubmitOffer = async (price: number, estimatedDeliveryTime: string, note: string, whatsappPhone: string, callPhone: string) => {
     if (!selectedRequestForOffer) return;
 
@@ -187,9 +217,36 @@ export function App() {
       return req;
     }));
 
+    // 1. Add Customer Notification
+    const newCustomerNotif: CustomerNotification = {
+      id: `cust-notif-${Date.now()}`,
+      requestId: selectedRequestForOffer.id,
+      requestTitle: selectedRequestForOffer.title,
+      offerId: newOffer.id,
+      driverName: currentDriver.name,
+      driverAvatar: currentDriver.avatar,
+      driverRating: currentDriver.rating,
+      driverPhone: currentDriver.phone,
+      driverWhatsappPhone: whatsappPhone.replace(/[^0-9]/g, ''),
+      price,
+      timestamp: 'الآن',
+      isRead: false,
+      type: 'new_offer'
+    };
+    setCustomerNotifications(prev => [newCustomerNotif, ...prev]);
+
+    // 2. Dispatch Native System Web Notification & Audio Alert for Customer
+    await sendDeviceNotification({
+      title: `💬 عرض سعر جديد (${price} AED) من الكابتن ${currentDriver.name}`,
+      body: `قدم عرض توصيل لطلبك: "${selectedRequestForOffer.title}". اضغط للمعاينة والتواصل المباشر عبر واتساب.`,
+      tag: `offer-${newOffer.id}`,
+      soundType: 'new_offer',
+      url: '/?action=customer'
+    });
+
     setSelectedRequestForOffer(null);
 
-    // Persist offer to Supabase
+    // 3. Persist offer to Supabase
     await dbService.submitOffer(newOffer);
 
     showToast('👍 تم إرسال عرضك بنجاح! سينتقل العميل فوراً لمحادثة واتساب معك عند القبول.');
@@ -213,9 +270,14 @@ export function App() {
     showToast('✅ تم قبول عرض السائق بنجاح! يمكنك الآن التواصل معه فوراً عبر زر الواتساب والمكالمة.');
   };
 
-  // Mark notification read
+  // Mark driver notification read
   const handleMarkNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  };
+
+  // Mark customer notification read
+  const handleMarkCustomerNotificationRead = (id: string) => {
+    setCustomerNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
   // Driver Subscription Update
@@ -382,6 +444,8 @@ export function App() {
           <CustomerView
             requests={requests}
             drivers={drivers}
+            customerNotifications={customerNotifications}
+            onMarkCustomerNotificationRead={handleMarkCustomerNotificationRead}
             onOpenNewRequest={() => setIsNewRequestOpen(true)}
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}

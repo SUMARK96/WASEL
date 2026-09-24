@@ -117,6 +117,22 @@ export interface DriverNotification {
   message?: string;
 }
 
+export interface CustomerNotification {
+  id: string;
+  requestId: string;
+  requestTitle: string;
+  offerId?: string;
+  driverName: string;
+  driverAvatar?: string;
+  driverRating?: number;
+  driverPhone?: string;
+  driverWhatsappPhone?: string;
+  price: number;
+  timestamp: string;
+  isRead: boolean;
+  type?: 'new_offer' | 'status_update' | 'general';
+}
+
 export interface SubscriptionInvoice {
   id: string;
   invoiceNumber: string;
