@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import type { AppScreen, DriverProfile } from '../types';
 import { Logo } from './Logo';
 import { 
-  Sparkles, 
   ShieldCheck, 
   LogOut, 
   UserCheck, 
+  User,
   Truck, 
   Bell, 
   ChevronDown, 
@@ -16,30 +16,40 @@ import {
 } from 'lucide-react';
 
 export type CustomerHeaderSection = 'new_request' | 'new_offers' | 'my_requests';
+export type DriverHeaderSection = 'profile' | 'new_requests' | 'subscription';
 
 interface HeaderProps {
   currentScreen: AppScreen;
   onNavigate: (screen: AppScreen) => void;
   onOpenNewRequest: () => void;
-  onOpenSubscription: () => void;
+  onOpenSubscription?: () => void;
   currentDriver?: DriverProfile;
   customerSection?: CustomerHeaderSection;
   onSelectCustomerSection?: (section: CustomerHeaderSection) => void;
+  driverSection?: DriverHeaderSection;
+  onSelectDriverSection?: (section: DriverHeaderSection) => void;
   unreadNotificationsCount?: number;
+  unreadDriverNotificationsCount?: number;
   totalOffersCount?: number;
+  openRequestsCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentScreen,
   onNavigate,
-  onOpenSubscription,
+  onOpenSubscription: _onOpenSubscription,
   currentDriver,
   customerSection = 'my_requests',
   onSelectCustomerSection,
+  driverSection = 'new_requests',
+  onSelectDriverSection,
   unreadNotificationsCount = 0,
-  totalOffersCount = 0
+  unreadDriverNotificationsCount = 0,
+  totalOffersCount = 0,
+  openRequestsCount = 0
 }) => {
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const [isDriverDropdownOpen, setIsDriverDropdownOpen] = useState(false);
 
   const getCustomerSectionLabel = (sec: CustomerHeaderSection) => {
     switch (sec) {
@@ -52,6 +62,17 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const getDriverSectionLabel = (sec: DriverHeaderSection) => {
+    switch (sec) {
+      case 'profile':
+        return 'الملف الشخصي';
+      case 'new_requests':
+        return 'الطلبات الجديدة';
+      case 'subscription':
+        return 'الاشتراك';
+    }
+  };
+
   const handleCustomerSelect = (sec: CustomerHeaderSection | 'logout') => {
     setIsCustomerDropdownOpen(false);
     if (sec === 'logout') {
@@ -60,6 +81,17 @@ export const Header: React.FC<HeaderProps> = ({
     }
     if (onSelectCustomerSection) {
       onSelectCustomerSection(sec);
+    }
+  };
+
+  const handleDriverSelect = (sec: DriverHeaderSection | 'logout') => {
+    setIsDriverDropdownOpen(false);
+    if (sec === 'logout') {
+      onNavigate('landing');
+      return;
+    }
+    if (onSelectDriverSection) {
+      onSelectDriverSection(sec);
     }
   };
 
@@ -221,35 +253,121 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
 
-            {/* If on Driver screen */}
+            {/* If on Driver screen: Dropdown Selector + Bell Notification Button */}
             {currentScreen === 'driver' && currentDriver && (
-              <>
+              <div className="flex items-center gap-2">
+                
+                {/* 1. Driver Dropdown Selector in Header */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsDriverDropdownOpen(!isDriverDropdownOpen)}
+                    className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 hover:border-zinc-500 font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                  >
+                    <Truck className="w-4 h-4 text-white shrink-0" />
+                    <span>{getDriverSectionLabel(driverSection)}</span>
+                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isDriverDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Popup Menu */}
+                  {isDriverDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-30" 
+                        onClick={() => setIsDriverDropdownOpen(false)} 
+                      />
+                      <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-zinc-950 border-2 border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-zinc-800 text-right">
+                        
+                        {/* Option 1: الملف الشخصي */}
+                        <button
+                          type="button"
+                          onClick={() => handleDriverSelect('profile')}
+                          className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
+                            driverSection === 'profile' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            <span>الملف الشخصي</span>
+                          </div>
+                          {driverSection === 'profile' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        {/* Option 2: الطلبات الجديدة */}
+                        <button
+                          type="button"
+                          onClick={() => handleDriverSelect('new_requests')}
+                          className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
+                            driverSection === 'new_requests' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4" />
+                            <span>الطلبات الجديدة</span>
+                          </div>
+                          {openRequestsCount > 0 && (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                              driverSection === 'new_requests' ? 'bg-black text-white' : 'bg-white text-black'
+                            }`}>
+                              {openRequestsCount}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Option 3: الاشتراك */}
+                        <button
+                          type="button"
+                          onClick={() => handleDriverSelect('subscription')}
+                          className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
+                            driverSection === 'subscription' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>الاشتراك</span>
+                          </div>
+                          {driverSection === 'subscription' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        {/* Option 4: تسجيل خروج */}
+                        <button
+                          type="button"
+                          onClick={() => handleDriverSelect('logout')}
+                          className="w-full p-3 flex items-center justify-between text-xs text-white hover:bg-zinc-900 font-bold transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <LogOut className="w-4 h-4" />
+                            <span>تسجيل خروج</span>
+                          </div>
+                        </button>
+
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* 2. Bell Notification Button in Header for Driver */}
                 <button
-                  onClick={onOpenSubscription}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs border transition-all shadow-md active:scale-95 ${
-                    currentDriver.subscriptionStatus === 'active'
-                      ? 'bg-zinc-900 text-white border-zinc-700 hover:bg-zinc-800'
-                      : 'bg-white text-black border-white hover:bg-zinc-200 animate-pulse'
-                  }`}
+                  type="button"
+                  onClick={() => {
+                    if (onSelectDriverSection) {
+                      onSelectDriverSection('new_requests');
+                    }
+                  }}
+                  className="relative p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 transition-all active:scale-95"
+                  title="الطلبات والإشعارات الجديدة"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">
-                    {currentDriver.subscriptionStatus === 'active'
-                      ? `اشتراك (${currentDriver.subscriptionPlan.toUpperCase()})`
-                      : 'تجديد الاشتراك'}
-                  </span>
-                  <span className="sm:hidden">الاشتراك</span>
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  
+                  {/* Notification Counter Badge */}
+                  {(unreadDriverNotificationsCount > 0 || openRequestsCount > 0) && (
+                    <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                      {unreadDriverNotificationsCount > 0 ? unreadDriverNotificationsCount : openRequestsCount}
+                    </span>
+                  )}
                 </button>
 
-                <button
-                  onClick={() => onNavigate('landing')}
-                  className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-zinc-800 text-xs transition-all active:scale-95"
-                  title="تسجيل الخروج والعودة للرئيسية"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">تسجيل خروج</span>
-                </button>
-              </>
+              </div>
             )}
 
           </div>

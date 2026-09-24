@@ -5,7 +5,7 @@ import { dbService } from './services/dbService';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
 
-import { Header } from './components/Header';
+import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
 import { LandingView } from './components/LandingView';
 import { DriverPortalGate } from './components/DriverPortalGate';
 import { DriverLoginView } from './components/DriverLoginView';
@@ -83,7 +83,9 @@ export function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
   // Customer Active Section State
-  const [customerSection, setCustomerSection] = useState<'new_request' | 'new_offers' | 'my_requests'>('my_requests');
+  const [customerSection, setCustomerSection] = useState<CustomerHeaderSection>('my_requests');
+  // Driver Active Section State
+  const [driverSection, setDriverSection] = useState<DriverHeaderSection>('new_requests');
   
   const [selectedDriverForProfile, setSelectedDriverForProfile] = useState<DriverProfile | DriverOffer | null>(null);
   const [selectedRequestForOffer, setSelectedRequestForOffer] = useState<DeliveryRequest | null>(null);
@@ -620,8 +622,14 @@ export function App() {
             setIsNewRequestOpen(true);
           }
         }}
+        driverSection={driverSection}
+        onSelectDriverSection={(sec) => {
+          setDriverSection(sec);
+        }}
         unreadNotificationsCount={customerNotifications.filter(n => !n.isRead).length}
+        unreadDriverNotificationsCount={notifications.filter(n => !n.isRead).length}
         totalOffersCount={requests.reduce((acc, r) => acc + (r.offers ? r.offers.length : 0), 0)}
+        openRequestsCount={requests.filter(r => r.status === 'open').length}
       />
 
       {/* Main Content Viewport */}
@@ -684,6 +692,8 @@ export function App() {
             driver={currentDriver}
             requests={requests}
             notifications={notifications}
+            selectedSection={driverSection}
+            onSelectSection={setDriverSection}
             onOpenSubscription={() => setIsSubscriptionOpen(true)}
             onOpenSubmitOffer={(req) => setSelectedRequestForOffer(req)}
             onMarkNotificationRead={handleMarkNotificationRead}

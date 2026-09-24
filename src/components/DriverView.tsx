@@ -16,16 +16,12 @@ import {
   Send, 
   Phone, 
   Bell, 
-  ArrowRight,
-  Star,
-  ChevronDown,
-  FileText,
-  Share2,
-  User,
-  LogOut,
-  Layers,
-  Check,
-  AlertTriangle
+  Star, 
+  ChevronDown, 
+  FileText, 
+  Share2, 
+  Check, 
+  AlertTriangle 
 } from 'lucide-react';
 
 export type DriverDashboardSection = 'profile' | 'new_requests' | 'subscription';
@@ -34,6 +30,8 @@ interface DriverViewProps {
   driver: DriverProfile;
   requests: DeliveryRequest[];
   notifications: DriverNotification[];
+  selectedSection?: DriverDashboardSection;
+  onSelectSection?: (section: DriverDashboardSection) => void;
   onOpenSubscription?: () => void;
   onOpenSubmitOffer: (request: DeliveryRequest) => void;
   onMarkNotificationRead?: (id: string) => void;
@@ -45,15 +43,25 @@ export const DriverView: React.FC<DriverViewProps> = ({
   driver,
   requests,
   notifications: _notifications,
+  selectedSection: propSelectedSection,
+  onSelectSection,
   onOpenSubscription,
   onOpenSubmitOffer,
   onMarkNotificationRead: _onMarkNotificationRead,
-  onLogout,
+  onLogout: _onLogout,
   subscriptionPrice = 199
 }) => {
-  // Navigation Section State (only shows selected section)
-  const [selectedSection, setSelectedSection] = useState<DriverDashboardSection>('new_requests');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // Navigation Section State (Controlled or internal fallback)
+  const [internalSection, setInternalSection] = useState<DriverDashboardSection>('new_requests');
+  const selectedSection = propSelectedSection || internalSection;
+  const setSelectedSection = onSelectSection || setInternalSection;
+
+  // Accordion state for collapsible requests
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+
+  const toggleExpandRequest = (id: string) => {
+    setExpandedRequestId(prev => prev === id ? null : id);
+  };
 
   // Filters for new delivery requests
   const [filterPickup, setFilterPickup] = useState<string>('all');
@@ -104,257 +112,11 @@ export const DriverView: React.FC<DriverViewProps> = ({
     onOpenSubmitOffer(req);
   };
 
-  const handleDropdownSelect = (sectionKey: 'profile' | 'new_requests' | 'subscription' | 'logout') => {
-    setIsDropdownOpen(false);
-    if (sectionKey === 'logout') {
-      if (onLogout) {
-        onLogout();
-      }
-      return;
-    }
-    setSelectedSection(sectionKey);
-  };
-
-  const getSectionTitle = (sec: DriverDashboardSection) => {
-    switch (sec) {
-      case 'profile':
-        return 'الملف الشخصي';
-      case 'new_requests':
-        return 'الطلبات الجديدة';
-      case 'subscription':
-        return 'الاشتراك';
-    }
-  };
-
   return (
     <div className="space-y-6 sm:space-y-8">
       
       {/* PWA & System Notifications Enable Banner */}
       <NotificationBanner userRole="driver" />
-
-      {/* 👑 DRIVER NAVIGATION DROPDOWN & CONTROL BAR */}
-      <div className="bg-zinc-950 border-2 border-zinc-800 rounded-3xl p-4 sm:p-5 shadow-2xl relative">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
-          {/* Main Dropdown Button */}
-          <div className="relative flex-1">
-            <label className="block text-[11px] font-bold text-zinc-400 mb-1.5 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-white" />
-              <span>لوحة تحكم السائق (اختر القسم المطلوب لعرضه فقط):</span>
-            </label>
-
-            <button
-              type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full bg-black border-2 border-white hover:border-zinc-300 text-white rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between font-black text-sm sm:text-base shadow-xl transition-all active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-3">
-                {selectedSection === 'profile' && (
-                  <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold">
-                    <User className="w-5 h-5" />
-                  </div>
-                )}
-                {selectedSection === 'new_requests' && (
-                  <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold">
-                    <Truck className="w-5 h-5" />
-                  </div>
-                )}
-                {selectedSection === 'subscription' && (
-                  <div className="w-8 h-8 rounded-xl bg-white text-black flex items-center justify-center font-bold">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                )}
-                
-                <div className="text-right">
-                  <div className="text-sm sm:text-base font-black flex items-center gap-2">
-                    <span>{getSectionTitle(selectedSection)}</span>
-                    {selectedSection === 'profile' && (
-                      <span className="bg-zinc-800 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700">
-                        الكابتن {driver.name.split(' ')[0]}
-                      </span>
-                    )}
-                    {selectedSection === 'new_requests' && (
-                      <span className="bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-full">
-                        {openRequests.length} متاح
-                      </span>
-                    )}
-                    {selectedSection === 'subscription' && (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        driver.subscriptionStatus === 'active' ? 'bg-white text-black' : 'bg-zinc-800 text-zinc-400'
-                      }`}>
-                        {driver.subscriptionStatus === 'active' ? 'نشط 🟢' : 'غير مفعل ⚠️'}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[11px] text-zinc-400 font-normal">اضغط للتنقل أو تسجيل الخروج</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-zinc-400">
-                <span className="text-xs font-bold text-white hidden sm:inline">تغيير القسم</span>
-                <ChevronDown className={`w-5 h-5 text-white transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
-
-            {/* Dropdown Menu Popup */}
-            {isDropdownOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-30" 
-                  onClick={() => setIsDropdownOpen(false)} 
-                />
-                <div className="absolute top-full right-0 left-0 mt-2 z-40 bg-zinc-950 border-2 border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-zinc-800">
-                  
-                  {/* Option 1: الملف الشخصي */}
-                  <button
-                    type="button"
-                    onClick={() => handleDropdownSelect('profile')}
-                    className={`w-full text-right p-3.5 sm:p-4 flex items-center justify-between transition-colors ${
-                      selectedSection === 'profile' ? 'bg-white text-black font-black' : 'hover:bg-zinc-900 text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
-                        selectedSection === 'profile' ? 'bg-black text-white' : 'bg-zinc-900 text-white border border-zinc-700'
-                      }`}>
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-black">الملف الشخصي</div>
-                        <div className={`text-[11px] ${selectedSection === 'profile' ? 'text-zinc-800' : 'text-zinc-400'}`}>
-                          بيانات السائق، صور المركبة، التقييمات، وأرقام التواصل
-                        </div>
-                      </div>
-                    </div>
-                    {selectedSection === 'profile' && <Check className="w-5 h-5" />}
-                  </button>
-
-                  {/* Option 2: الطلبات الجديدة */}
-                  <button
-                    type="button"
-                    onClick={() => handleDropdownSelect('new_requests')}
-                    className={`w-full text-right p-3.5 sm:p-4 flex items-center justify-between transition-colors ${
-                      selectedSection === 'new_requests' ? 'bg-white text-black font-black' : 'hover:bg-zinc-900 text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
-                        selectedSection === 'new_requests' ? 'bg-black text-white' : 'bg-zinc-900 text-white border border-zinc-700'
-                      }`}>
-                        <Truck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-black flex items-center gap-2">
-                          <span>الطلبات الجديدة</span>
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                            selectedSection === 'new_requests' ? 'bg-black text-white' : 'bg-white text-black'
-                          }`}>
-                            {openRequests.length} طلب
-                          </span>
-                        </div>
-                        <div className={`text-[11px] ${selectedSection === 'new_requests' ? 'text-zinc-800' : 'text-zinc-400'}`}>
-                          استعراض طلبات العملاء بين الإمارات وتقديم عروض الأسعار
-                        </div>
-                      </div>
-                    </div>
-                    {selectedSection === 'new_requests' && <Check className="w-5 h-5" />}
-                  </button>
-
-                  {/* Option 3: الاشتراك */}
-                  <button
-                    type="button"
-                    onClick={() => handleDropdownSelect('subscription')}
-                    className={`w-full text-right p-3.5 sm:p-4 flex items-center justify-between transition-colors ${
-                      selectedSection === 'subscription' ? 'bg-white text-black font-black' : 'hover:bg-zinc-900 text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
-                        selectedSection === 'subscription' ? 'bg-black text-white' : 'bg-zinc-900 text-white border border-zinc-700'
-                      }`}>
-                        <ShieldCheck className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-black flex items-center gap-2">
-                          <span>الاشتراك</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            selectedSection === 'subscription' ? 'bg-black/10 border-black/20 text-black' : 'bg-zinc-900 border-zinc-700 text-zinc-300'
-                          }`}>
-                            {driver.subscriptionStatus === 'active' ? '199 AED شهرياً' : 'غير نشط'}
-                          </span>
-                        </div>
-                        <div className={`text-[11px] ${selectedSection === 'subscription' ? 'text-zinc-800' : 'text-zinc-400'}`}>
-                          حالة الاشتراك، موعد التجديد، الفاتورة، ورابط السداد عبر زينة
-                        </div>
-                      </div>
-                    </div>
-                    {selectedSection === 'subscription' && <Check className="w-5 h-5" />}
-                  </button>
-
-                  {/* Option 4: تسجيل خروج */}
-                  <button
-                    type="button"
-                    onClick={() => handleDropdownSelect('logout')}
-                    className="w-full text-right p-3.5 sm:p-4 flex items-center justify-between text-white hover:bg-zinc-900 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-zinc-900 text-zinc-300 border border-zinc-700 flex items-center justify-center font-bold">
-                        <LogOut className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-white">تسجيل خروج</div>
-                        <div className="text-[11px] text-zinc-400">الخروج من حساب السائق والرجوع للشاشة الرئيسية</div>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 rotate-180 text-zinc-400" />
-                  </button>
-
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Quick Segmented Switcher for Large Screens */}
-          <div className="hidden lg:flex items-center gap-2 self-end">
-            <button
-              onClick={() => setSelectedSection('profile')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
-                selectedSection === 'profile'
-                  ? 'bg-white text-black shadow-md'
-                  : 'bg-black text-zinc-300 hover:text-white border border-zinc-800'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>الملف الشخصي</span>
-            </button>
-
-            <button
-              onClick={() => setSelectedSection('new_requests')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
-                selectedSection === 'new_requests'
-                  ? 'bg-white text-black shadow-md'
-                  : 'bg-black text-zinc-300 hover:text-white border border-zinc-800'
-              }`}
-            >
-              <Truck className="w-4 h-4" />
-              <span>الطلبات الجديدة ({openRequests.length})</span>
-            </button>
-
-            <button
-              onClick={() => setSelectedSection('subscription')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
-                selectedSection === 'subscription'
-                  ? 'bg-white text-black shadow-md'
-                  : 'bg-black text-zinc-300 hover:text-white border border-zinc-800'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>الاشتراك</span>
-            </button>
-          </div>
-
-        </div>
-      </div>
 
       {/* ========================================================================= */}
       {/* 1. SECTION: الملف الشخصي (PROFILE) */}
@@ -689,78 +451,136 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 <p className="text-zinc-400 text-xs">سيتم تحديث القائمة تلقائياً فور قيام أي عميل بنشر طلب توصيل جديد.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {filteredRequests.map((req) => {
                   const alreadySubmitted = req.offers.some(o => o.driverId === driver.id);
+                  const isExpanded = expandedRequestId === req.id;
 
                   return (
                     <div
                       key={req.id}
-                      className="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4 transition-all"
+                      className={`bg-zinc-950 border transition-all duration-200 rounded-2xl overflow-hidden shadow-lg ${
+                        isExpanded ? 'border-white ring-1 ring-white/20' : 'border-zinc-800 hover:border-zinc-600'
+                      }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-white font-extrabold bg-zinc-900 px-2.5 py-0.5 rounded-full border border-zinc-700">
-                              {req.packageType}
-                            </span>
-                            <span className="text-xs text-zinc-400">{req.createdAt}</span>
-                            <span className="text-[10px] text-zinc-400 bg-black px-2 py-0.5 rounded-full border border-zinc-800">
-                              {req.offers.length} عروض مقدمة
-                            </span>
+                      {/* Compact Collapsed Row (Always visible & clickable to expand/collapse) */}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandRequest(req.id)}
+                        className="w-full text-right p-3.5 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-zinc-900/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {/* Route Emirate Badges */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                            <span className="text-zinc-500 text-xs">➔</span>
+                            <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
                           </div>
-                          <h3 className="text-base sm:text-lg font-black text-white">{req.title}</h3>
+
+                          {/* Request Title & Meta */}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-black text-white text-sm sm:text-base truncate">
+                                {req.title}
+                              </h4>
+                              <span className="bg-zinc-900 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">
+                                {req.packageType}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5 flex-wrap">
+                              <span>📅 {req.deliveryDate}</span>
+                              <span>•</span>
+                              <span>{req.createdAt}</span>
+                              <span>•</span>
+                              <span className="text-white font-bold">{req.offers.length} عروض</span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        {/* Expand / Status Indicator */}
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                           {alreadySubmitted ? (
-                            <span className="bg-zinc-900 text-white border border-zinc-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5">
-                              <Check className="w-4 h-4 text-white" />
+                            <span className="bg-zinc-900 text-white border border-zinc-700 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5 text-white" />
                               <span>تم تقديم عرضك</span>
                             </span>
                           ) : (
-                            <button
-                              onClick={() => handleOfferClick(req)}
-                              className="bg-white hover:bg-zinc-200 text-black font-black px-5 py-2.5 rounded-xl text-xs active:scale-95 transition-all shadow-md flex items-center gap-1.5"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                              <span>تقديم عرض سعر</span>
-                            </button>
+                            <span className="bg-white text-black font-black px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow">
+                              <span>{isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل وتقديم العرض'}</span>
+                            </span>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Route Details */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-black p-3.5 rounded-2xl border border-zinc-800 text-xs">
-                        <div>
-                          <div className="text-zinc-400 mb-1">من (الاستلام):</div>
-                          <div className="flex items-center gap-1.5 font-bold text-white mb-0.5">
-                            <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                          <div className={`w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-white text-black' : 'text-zinc-400'}`}>
+                            <ChevronDown className="w-4 h-4" />
                           </div>
-                          <div className="text-zinc-300">{req.pickupArea}</div>
                         </div>
+                      </button>
 
-                        <div>
-                          <div className="text-zinc-400 mb-1">إلى (التسليم):</div>
-                          <div className="flex items-center gap-1.5 font-bold text-white mb-0.5">
-                            <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                      {/* Expanded Full Details Section */}
+                      {isExpanded && (
+                        <div className="border-t border-zinc-800 p-4 sm:p-5 bg-black/60 space-y-4 animate-in slide-in-from-top-2 duration-150">
+                          {/* Full Location & Specs Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 text-xs">
+                            <div>
+                              <div className="text-zinc-400 mb-1">منطقة الاستلام بالتفصيل:</div>
+                              <div className="font-bold text-white mb-0.5">{req.pickupEmirate}</div>
+                              <div className="text-zinc-300 font-medium">{req.pickupArea}</div>
+                            </div>
+
+                            <div>
+                              <div className="text-zinc-400 mb-1">منطقة التسليم بالتفصيل:</div>
+                              <div className="font-bold text-white mb-0.5">{req.deliveryEmirate}</div>
+                              <div className="text-zinc-300 font-medium">{req.deliveryArea}</div>
+                            </div>
+
+                            <div>
+                              <div className="text-zinc-400 mb-1">المواصفات وموعد التوصيل:</div>
+                              <div className="text-white font-bold mb-0.5">📅 موعد التسليم: {req.deliveryDate}</div>
+                              <div className="text-zinc-300">الوزن / الحجم: {req.packageWeight}</div>
+                            </div>
                           </div>
-                          <div className="text-zinc-300">{req.deliveryArea}</div>
-                        </div>
 
-                        <div>
-                          <div className="text-zinc-400 mb-1">موعد التوصيل:</div>
-                          <div className="text-white font-bold mb-0.5">📅 {req.deliveryDate}</div>
-                          <div className="text-zinc-400">الوزن: {req.packageWeight}</div>
-                        </div>
-                      </div>
+                          {/* Notes if present */}
+                          {req.notes && (
+                            <div className="bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 text-xs space-y-1">
+                              <span className="text-zinc-400 font-bold block">💡 ملاحظات وتعليمات العميل:</span>
+                              <p className="text-white leading-relaxed">{req.notes}</p>
+                            </div>
+                          )}
 
-                      {req.notes && (
-                        <p className="text-xs text-zinc-300 bg-black p-3 rounded-xl border border-zinc-800">
-                          💡 <strong className="text-white">ملاحظات العميل:</strong> {req.notes}
-                        </p>
+                          {/* Action Button: Submit Price Offer */}
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                            <div className="text-xs text-zinc-400">
+                              {alreadySubmitted 
+                                ? '✅ لقد قمت بتقديم عرضك لهذا الطلب. يمكنك متابعة قبوله عبر قسم "عروضي المقدمة".'
+                                : 'اضغط على الزر لتحديد سعرك وموعد استلامك وإرسال العرض للعميل مباشرة.'}
+                            </div>
+
+                            <div className="w-full sm:w-auto flex items-center gap-2">
+                              {alreadySubmitted ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setRequestTab('my_bids')}
+                                  className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs border border-zinc-700 text-center"
+                                >
+                                  معاينة عرضك في عروضي المقدمة
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOfferClick(req);
+                                  }}
+                                  className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-6 py-3 rounded-xl text-xs sm:text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+                                >
+                                  <Send className="w-4 h-4" />
+                                  <span>تقديم عرض سعر للعميل الآن</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       )}
-
                     </div>
                   );
                 })}
@@ -775,24 +595,39 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 لم تقم بتقديم عروض أسعار بعد. استعرض الطلبات المتاحة وقدم عروضك الآن.
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {myBids.map((req) => {
                   const myOffer = req.offers.find(o => o.driverId === driver.id);
+                  const isExpanded = expandedRequestId === req.id;
                   return (
-                    <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-white text-base">{req.title}</h3>
+                    <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => toggleExpandRequest(req.id)}
+                      >
+                        <div>
+                          <h3 className="font-bold text-white text-base">{req.title}</h3>
+                          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
+                            <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                            <span>➔</span>
+                            <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                            <span>•</span>
+                            <span>{req.deliveryDate}</span>
+                          </div>
+                        </div>
                         {myOffer && (
-                          <span className="bg-white text-black font-extrabold px-3 py-1 rounded-xl text-xs">
+                          <span className="bg-white text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow">
                             عرضك: {myOffer.price} AED
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-zinc-400">
-                        <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
-                        <span>⬅️</span>
-                        <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
-                      </div>
+                      {isExpanded && (
+                        <div className="border-t border-zinc-800 pt-3 text-xs text-zinc-300 space-y-2">
+                          <div>من: {req.pickupEmirate} ({req.pickupArea}) ➔ إلى: {req.deliveryEmirate} ({req.deliveryArea})</div>
+                          <div>الوزن: {req.packageWeight} | نوع الشحنة: {req.packageType}</div>
+                          {req.notes && <div>ملاحظات العميل: {req.notes}</div>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -807,9 +642,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 لا توجد مهام توصيل مقبولة حالياً. فور قبول العميل لعرضك ستظهر هنا مع بيانات العميل.
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {activeJobs.map((req) => (
-                  <div key={req.id} className="bg-zinc-950 border-2 border-white rounded-3xl p-5 space-y-3">
+                  <div key={req.id} className="bg-zinc-950 border-2 border-white rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-black text-white text-base">{req.title}</h3>
                       <span className="bg-white text-black font-extrabold px-3 py-1 rounded-full text-xs">
@@ -818,8 +653,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
-                      <span>⬅️</span>
+                      <span>➔</span>
                       <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                      <span className="text-zinc-400">• {req.deliveryDate}</span>
                     </div>
                   </div>
                 ))}
