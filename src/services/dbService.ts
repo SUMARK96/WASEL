@@ -4,7 +4,7 @@ import type { DeliveryRequest, DriverProfile, DriverOffer, ExemptionCode } from 
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests';
-const STORAGE_KEY_DRIVERS = 'wasel_drivers';
+const STORAGE_KEY_DRIVERS = 'wasel_drivers_v2';
 const STORAGE_KEY_SUBSCRIPTION_PRICE = 'wasel_subscription_price';
 const STORAGE_KEY_EXEMPTION_CODES = 'wasel_exemption_codes';
 
@@ -12,8 +12,41 @@ export const dbService = {
   // Check if active Supabase connection is available
   isConnected: () => isSupabaseConfigured(),
 
-  // ==================== DRIVERS ====================
+  // ==================== DRIVERS PERSISTENCE ====================
+  // Instant synchronous local read for zero-flicker UI initialization
+  getLocalDrivers(): DriverProfile[] {
+    try {
+      const local = localStorage.getItem(STORAGE_KEY_DRIVERS);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Merge with initial drivers to ensure baseline accounts exist alongside new registered drivers
+          const existingIds = new Set(parsed.map(d => d.id));
+          const missingInitial = INITIAL_DRIVERS.filter(d => !existingIds.has(d.id));
+          return [...parsed, ...missingInitial];
+        }
+      }
+    } catch (e) {
+      console.error('Error reading local drivers:', e);
+    }
+    return INITIAL_DRIVERS;
+  },
+
+  // Save drivers list directly to local storage
+  saveLocalDrivers(drivers: DriverProfile[]): void {
+    try {
+      if (Array.isArray(drivers) && drivers.length > 0) {
+        localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(drivers));
+      }
+    } catch (e) {
+      console.error('Error saving local drivers:', e);
+    }
+  },
+
   async getDrivers(): Promise<DriverProfile[]> {
+    const localDrivers = this.getLocalDrivers();
+    let cloudDrivers: DriverProfile[] = [];
+
     if (this.isConnected()) {
       try {
         const { data, error } = await supabase
@@ -22,7 +55,7 @@ export const dbService = {
           .order('rating', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          return data.map((d: any) => ({
+          cloudDrivers = data.map((d: any) => ({
             id: d.id,
             name: d.name,
             phone: d.phone,
@@ -36,6 +69,7 @@ export const dbService = {
             vehicleModel: d.vehicle_model,
             vehiclePlate: d.vehicle_plate,
             vehiclePhoto: d.vehicle_photo,
+            vehiclePhotos: Array.isArray(d.vehicle_photos) ? d.vehicle_photos : (d.vehicle_photo ? [d.vehicle_photo] : []),
             licensePhoto: d.license_photo,
             mulkiyaPhoto: d.mulkiya_photo,
             emiratesIdPhoto: d.emirates_id_photo,
@@ -46,30 +80,55 @@ export const dbService = {
             subscriptionStatus: d.subscription_status || 'active',
             subscriptionPlan: d.subscription_plan || 'unified',
             subscriptionExpiry: d.subscription_expiry || '2026-12-31',
-            joinedDate: d.joined_date ? new Date(d.joined_date).toLocaleDateString('ar-AE') : '2026',
+            joinedDate: d.joined_date ? (d.joined_date.includes('T') ? new Date(d.joined_date).toLocaleDateString('ar-AE') : d.joined_date) : '2026',
+            lastPaymentDate: d.last_payment_date,
+            usedExemptionCode: d.used_exemption_code,
+            isExemptionActive: Boolean(d.is_exemption_active),
             bio: d.bio || 'سائق معتمد'
           }));
         }
       } catch (err) {
-        console.warn('Supabase getDrivers error, using local fallback:', err);
+        console.warn('Supabase getDrivers error, relying on local storage:', err);
       }
     }
 
-    const local = localStorage.getItem(STORAGE_KEY_DRIVERS);
-    if (local) {
-      try {
-        return JSON.parse(local);
-      } catch (e) {
-        console.error(e);
+    // Merge strategy: combine cloud drivers with local drivers so no driver account is ever deleted
+    const driverMap = new Map<string, DriverProfile>();
+    
+    // 1. Add all initial mock drivers
+    INITIAL_DRIVERS.forEach(d => driverMap.set(d.id, d));
+    
+    // 2. Add local storage drivers (overrides initial if modified)
+    localDrivers.forEach(d => driverMap.set(d.id, d));
+    
+    // 3. Add cloud drivers (most up to date from database)
+    cloudDrivers.forEach(d => driverMap.set(d.id, d));
+
+    const merged = Array.from(driverMap.values());
+    this.saveLocalDrivers(merged);
+
+    // If there are drivers in local storage not yet in cloud, sync them to Supabase in background
+    if (this.isConnected() && cloudDrivers.length > 0) {
+      const cloudIds = new Set(cloudDrivers.map(c => c.id));
+      const pendingSync = merged.filter(d => !cloudIds.has(d.id));
+      for (const d of pendingSync) {
+        this.registerDriver(d).catch(console.error);
       }
     }
-    return INITIAL_DRIVERS;
+
+    return merged;
   },
 
   async registerDriver(driver: DriverProfile): Promise<boolean> {
+    // 1. Immediately persist locally
+    const current = this.getLocalDrivers();
+    const updated = [driver, ...current.filter(d => d.id !== driver.id)];
+    this.saveLocalDrivers(updated);
+
+    // 2. Persist to Supabase
     if (this.isConnected()) {
       try {
-        const { error } = await supabase.from('drivers').insert({
+        const { error } = await supabase.from('drivers').upsert({
           id: driver.id,
           name: driver.name,
           phone: driver.phone,
@@ -83,6 +142,7 @@ export const dbService = {
           vehicle_model: driver.vehicleModel,
           vehicle_plate: driver.vehiclePlate,
           vehicle_photo: driver.vehiclePhoto,
+          vehicle_photos: driver.vehiclePhotos || [],
           license_photo: driver.licensePhoto,
           mulkiya_photo: driver.mulkiyaPhoto,
           emirates_id_photo: driver.emiratesIdPhoto,
@@ -93,9 +153,14 @@ export const dbService = {
           subscription_status: driver.subscriptionStatus,
           subscription_plan: driver.subscriptionPlan,
           subscription_expiry: driver.subscriptionExpiry,
+          joined_date: driver.joinedDate,
+          last_payment_date: driver.lastPaymentDate,
+          used_exemption_code: driver.usedExemptionCode,
+          is_exemption_active: driver.isExemptionActive,
           bio: driver.bio
-        });
-        if (error) console.error('Supabase registerDriver error:', error);
+        }, { onConflict: 'id' });
+        
+        if (error) console.error('Supabase registerDriver upsert error:', error);
       } catch (err) {
         console.warn('Supabase registerDriver failed:', err);
       }
@@ -103,7 +168,34 @@ export const dbService = {
     return true;
   },
 
-  async updateDriverSubscription(driverId: string, planId: string, expiryDate: string, status: 'active' | 'trial' | 'expired' = 'active'): Promise<void> {
+  async updateDriverSubscription(
+    driverId: string, 
+    planId: string, 
+    expiryDate: string, 
+    status: 'active' | 'trial' | 'expired' | 'suspended' = 'active',
+    lastPaymentDate?: string,
+    usedExemptionCode?: string,
+    isExemptionActive?: boolean
+  ): Promise<void> {
+    // 1. Update local storage
+    const current = this.getLocalDrivers();
+    const updated = current.map(d => {
+      if (d.id === driverId) {
+        return {
+          ...d,
+          subscriptionStatus: status,
+          subscriptionPlan: planId as any,
+          subscriptionExpiry: expiryDate,
+          lastPaymentDate: lastPaymentDate || d.lastPaymentDate,
+          usedExemptionCode: usedExemptionCode !== undefined ? usedExemptionCode : d.usedExemptionCode,
+          isExemptionActive: isExemptionActive !== undefined ? isExemptionActive : d.isExemptionActive
+        };
+      }
+      return d;
+    });
+    this.saveLocalDrivers(updated);
+
+    // 2. Update Supabase
     if (this.isConnected()) {
       try {
         await supabase
@@ -111,7 +203,11 @@ export const dbService = {
           .update({
             subscription_status: status,
             subscription_plan: planId,
-            subscription_expiry: expiryDate
+            subscription_expiry: expiryDate,
+            last_payment_date: lastPaymentDate,
+            used_exemption_code: usedExemptionCode,
+            is_exemption_active: isExemptionActive,
+            updated_at: new Date().toISOString()
           })
           .eq('id', driverId);
       } catch (err) {
@@ -277,6 +373,27 @@ export const dbService = {
   },
 
   async rateDriver(requestId: string, driverId: string, rating: number, note: string): Promise<void> {
+    // 1. Update local storage
+    const current = this.getLocalDrivers();
+    const updated = current.map(d => {
+      if (d.id === driverId) {
+        const currentCount = d.reviewsCount || 0;
+        const currentRating = d.rating || 5.0;
+        const newCount = currentCount + 1;
+        const newRating = Number(((currentRating * currentCount + rating) / newCount).toFixed(2));
+        const newDeliveries = (d.completedDeliveries || 0) + 1;
+        return {
+          ...d,
+          rating: newRating,
+          reviewsCount: newCount,
+          completedDeliveries: newDeliveries
+        };
+      }
+      return d;
+    });
+    this.saveLocalDrivers(updated);
+
+    // 2. Update Supabase
     if (this.isConnected()) {
       try {
         await supabase
@@ -289,7 +406,7 @@ export const dbService = {
           })
           .eq('id', requestId);
 
-        // Update driver stats
+        // Update driver stats in database
         const { data: driver } = await supabase
           .from('drivers')
           .select('rating, reviews_count, completed_deliveries')
@@ -308,12 +425,32 @@ export const dbService = {
             .update({
               rating: newRating,
               reviews_count: newCount,
-              completed_deliveries: newDeliveries
+              completed_deliveries: newDeliveries,
+              updated_at: new Date().toISOString()
             })
             .eq('id', driverId);
         }
       } catch (err) {
         console.warn('Supabase rateDriver failed:', err);
+      }
+    }
+  },
+
+  async updateDriverVerification(driverId: string, isVerified: boolean): Promise<void> {
+    // 1. Local update
+    const current = this.getLocalDrivers();
+    const updated = current.map(d => d.id === driverId ? { ...d, isVerified } : d);
+    this.saveLocalDrivers(updated);
+
+    // 2. Supabase update
+    if (this.isConnected()) {
+      try {
+        await supabase
+          .from('drivers')
+          .update({ is_verified: isVerified, updated_at: new Date().toISOString() })
+          .eq('id', driverId);
+      } catch (err) {
+        console.warn('Supabase updateDriverVerification failed:', err);
       }
     }
   },

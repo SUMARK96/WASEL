@@ -28,8 +28,11 @@ export function App() {
   // Primary Screen State (Default is Landing with 2 options: Customer or Driver)
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing');
   
-  const [drivers, setDrivers] = useState<DriverProfile[]>(INITIAL_DRIVERS);
-  const [activeDriverId, setActiveDriverId] = useState<string>(INITIAL_DRIVERS[0].id);
+  const [drivers, setDrivers] = useState<DriverProfile[]>(() => dbService.getLocalDrivers());
+  const [activeDriverId, setActiveDriverId] = useState<string>(() => {
+    const local = dbService.getLocalDrivers();
+    return local[0]?.id || INITIAL_DRIVERS[0].id;
+  });
   const [requests, setRequests] = useState<DeliveryRequest[]>(INITIAL_REQUESTS);
   
   // Real-time Driver Notifications Broadcast Store
@@ -429,6 +432,13 @@ export function App() {
     setCustomerNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
+  // Auto-sync drivers to local storage on any state update
+  useEffect(() => {
+    if (drivers && drivers.length > 0) {
+      dbService.saveLocalDrivers(drivers);
+    }
+  }, [drivers]);
+
   // Driver Subscription Update (Computed from moment of payment / renewal)
   const handleSubscribeSuccess = async (planId: SubscriptionPlanId, newExpiry?: string, usedPromoCode?: string, isExemption?: boolean) => {
     const now = new Date();
@@ -451,7 +461,15 @@ export function App() {
     }));
 
     setIsSubscriptionOpen(false);
-    await dbService.updateDriverSubscription(currentDriver.id, planId, formattedExpiry, 'active');
+    await dbService.updateDriverSubscription(
+      currentDriver.id, 
+      planId, 
+      formattedExpiry, 
+      'active',
+      todayStr,
+      isExemption ? usedPromoCode : undefined,
+      Boolean(isExemption)
+    );
     showToast(isExemption 
       ? `🎫 تم تفعيل كود الإعفاء "${usedPromoCode}" وتمديد الحساب حتى ${formattedExpiry}!` 
       : `🌟 تم سداد الاشتراك الشهري وتفعيل الحساب بنجاح حتى ${formattedExpiry}!`
@@ -460,12 +478,12 @@ export function App() {
 
   // New Driver Registration & Activation Success
   const handleDriverRegisterSuccess = async (newDriver: DriverProfile) => {
-    setDrivers(prev => [newDriver, ...prev]);
+    setDrivers(prev => [newDriver, ...prev.filter(d => d.id !== newDriver.id)]);
     setActiveDriverId(newDriver.id);
     setCurrentScreen('driver');
     setIsDriverRegisterOpen(false);
 
-    // Save to database
+    // Save to database & localStorage
     await dbService.registerDriver(newDriver);
 
     showToast(`🎉 مرحباً بك يا ${newDriver.name}! تم تفعيل حسابك واشتراكك بنجاح.`);
@@ -529,16 +547,19 @@ export function App() {
 
     setSelectedRequestForRating(null);
 
-    // Persist rating to Supabase
+    // Persist rating to Supabase & localStorage
     await dbService.rateDriver(requestId, driverId, ratingValue, reviewNote);
 
     showToast(`⭐ شكراً لك! تم تسجيل تقييمك (${ratingValue} نجوم) وتحديث ترتيب السائق.`);
   };
 
   // Admin toggles verification
-  const handleToggleVerifyDriver = (driverId: string) => {
-    setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, isVerified: !d.isVerified } : d));
-    showToast('تم تحديث حالة توثيق السائق بنجاح.');
+  const handleToggleVerifyDriver = async (driverId: string) => {
+    const target = drivers.find(d => d.id === driverId);
+    const newStatus = !target?.isVerified;
+    setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, isVerified: newStatus } : d));
+    await dbService.updateDriverVerification(driverId, newStatus);
+    showToast('تم تحديث حالة توثيق السائق وحفظها بنجاح.');
   };
 
   return (
