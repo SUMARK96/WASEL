@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { DriverProfile, DeliveryRequest, SubscriptionInvoice, ExemptionCode } from '../types';
 import { createSubscriptionInvoice, getDaysUntilExpiry, getWhatsAppReminderUrl } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
-import { UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
+import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
 import { 
   Package, 
   DollarSign, 
@@ -20,7 +20,9 @@ import {
   Copy,
   Users,
   Calendar,
-  ShieldCheck
+  ShieldCheck,
+  Filter,
+  MapPin
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -61,9 +63,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newCodeNotes, setNewCodeNotes] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
+  // Drivers Registry Filter State
+  const [selectedEmirateFilter, setSelectedEmirateFilter] = useState<string>('all');
+
   const activeDriversCount = drivers.filter(d => d.subscriptionStatus === 'active').length;
   const totalRevenue = activeDriversCount * subscriptionPrice;
   const totalOffersCount = requests.reduce((acc, r) => acc + r.offers.length, 0);
+
+  // Calculate drivers count per emirate
+  const emirateCounts = UAE_EMIRATES.reduce((acc, emirate) => {
+    acc[emirate] = drivers.filter(d => d.emirate === emirate).length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const filteredDrivers = selectedEmirateFilter === 'all'
+    ? drivers
+    : drivers.filter(d => d.emirate === selectedEmirateFilter);
 
   const handleSavePrice = () => {
     const val = parseInt(tempPrice, 10);
@@ -445,127 +460,220 @@ export const AdminView: React.FC<AdminViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. DRIVERS REGISTRY TABLE */}
+      {/* 3. DRIVERS REGISTRY TABLE WITH EMIRATE FILTER */}
       {/* ========================================================================= */}
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-black text-white text-base sm:text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
-          <span className="text-xs text-zinc-400">إجمالي الحسابات: {drivers.length}</span>
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-5">
+        
+        {/* Header & Filter Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-white" />
+              <h3 className="font-black text-white text-base sm:text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
+            </div>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              استعراض وإدارة حسابات السائقين والتحقق من التوثيق وفلترة السائقين حسب الإمارة.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-300 font-bold bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-700">
+              المعروض: <strong className="text-white">{filteredDrivers.length}</strong> من <strong className="text-white">{drivers.length}</strong> سائق
+            </span>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
-            <thead className="bg-black text-zinc-400 uppercase font-bold border-b border-zinc-800">
-              <tr>
-                <th className="p-3">السائق</th>
-                <th className="p-3">الإمارة</th>
-                <th className="p-3">السيارة واللوحة</th>
-                <th className="p-3">الاشتراك وصلاحية الشهر</th>
-                <th className="p-3">الفاتورة والتذكير</th>
-                <th className="p-3">الرحلات</th>
-                <th className="p-3 text-center">حالة التوثيق</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {drivers.map((drv) => (
-                <tr key={drv.id} className="hover:bg-zinc-900/50 transition-colors">
-                  <td className="p-3 flex items-center gap-3">
-                    <img src={drv.avatar} alt={drv.name} className="w-9 h-9 rounded-xl object-cover border border-zinc-700" />
-                    <div>
-                      <div className="font-bold text-white text-sm">{drv.name}</div>
-                      <div className="text-[10px] text-zinc-400">{drv.phone}</div>
-                    </div>
-                  </td>
+        {/* Emirate Filter Buttons Bar with Counts */}
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
+            <Filter className="w-3.5 h-3.5 text-white" />
+            <span>فلترة السائقين حسب الإمارة (مع عرض عدد السائقين في كل إمارة):</span>
+          </div>
 
-                  <td className="p-3 font-semibold text-zinc-300">{drv.emirate}</td>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* "All" Option */}
+            <button
+              onClick={() => setSelectedEmirateFilter('all')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
+                selectedEmirateFilter === 'all'
+                  ? 'bg-white text-black shadow-lg border border-white'
+                  : 'bg-black text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800'
+              }`}
+            >
+              <span>جميع الإمارات</span>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                selectedEmirateFilter === 'all'
+                  ? 'bg-black text-white'
+                  : 'bg-zinc-900 text-zinc-300 border border-zinc-700'
+              }`}>
+                {drivers.length}
+              </span>
+            </button>
 
-                  <td className="p-3">
-                    <div className="font-bold text-zinc-200">{drv.vehicleModel}</div>
-                    <div className="text-[10px] text-zinc-400 font-mono">{drv.vehiclePlate}</div>
-                  </td>
+            {/* Each UAE Emirate Button with Count */}
+            {UAE_EMIRATES.map((emirate) => {
+              const count = emirateCounts[emirate] || 0;
+              const isSelected = selectedEmirateFilter === emirate;
 
-                  {(() => {
-                    const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
-                    const isExpiring = daysRemaining <= 5 && daysRemaining >= 0;
-                    const inv = createSubscriptionInvoice(
-                      drv,
-                      `ZIN-${drv.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
-                      drv.joinedDate,
-                      drv.subscriptionExpiry,
-                      subscriptionPrice
-                    );
+              return (
+                <button
+                  key={emirate}
+                  onClick={() => setSelectedEmirateFilter(emirate)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                    isSelected
+                      ? 'bg-white text-black font-black shadow-lg border border-white'
+                      : 'bg-black text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800'
+                  }`}
+                >
+                  <MapPin className={`w-3 h-3 ${isSelected ? 'text-black' : 'text-zinc-500'}`} />
+                  <span>{emirate}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    isSelected
+                      ? 'bg-black text-white'
+                      : count > 0 
+                        ? 'bg-zinc-900 text-white border border-zinc-700'
+                        : 'bg-zinc-900/60 text-zinc-600 border border-zinc-800'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-                    return (
-                      <>
-                        <td className="p-3">
-                          {drv.subscriptionStatus === 'active' ? (
-                            <div className="space-y-1">
-                              <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
-                                <span>مفعل ({subscriptionPrice} AED) ✓</span>
-                              </span>
-                              <div className="text-[10px] text-zinc-400">
-                                ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
-                              </div>
-                              {isExpiring && (
-                                <span className="bg-zinc-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-700 flex items-center gap-1 w-fit animate-pulse">
-                                  <Bell className="w-2.5 h-2.5" />
-                                  <span>تذكير 5 أيام (متبقي {daysRemaining} يوم)</span>
+        {/* Drivers Table / Empty State */}
+        {filteredDrivers.length === 0 ? (
+          <div className="bg-black rounded-2xl p-8 sm:p-12 text-center border border-zinc-800 space-y-3 animate-in fade-in">
+            <Truck className="w-12 h-12 text-zinc-600 mx-auto stroke-[1.5]" />
+            <h4 className="text-sm sm:text-base font-bold text-white">
+              لا يوجد سائقين مسجلين في إمارة "{selectedEmirateFilter}" حالياً
+            </h4>
+            <p className="text-xs text-zinc-400">
+              يمكنك اختيار إمارة أخرى أو استعراض كافة السائقين المسجلين في الدولة.
+            </p>
+            <button
+              onClick={() => setSelectedEmirateFilter('all')}
+              className="mt-2 bg-white hover:bg-zinc-200 text-black font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow"
+            >
+              عرض جميع السائقين ({drivers.length})
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead className="bg-black text-zinc-400 uppercase font-bold border-b border-zinc-800">
+                <tr>
+                  <th className="p-3">السائق</th>
+                  <th className="p-3">الإمارة</th>
+                  <th className="p-3">السيارة واللوحة</th>
+                  <th className="p-3">الاشتراك وصلاحية الشهر</th>
+                  <th className="p-3">الفاتورة والتذكير</th>
+                  <th className="p-3">الرحلات</th>
+                  <th className="p-3 text-center">حالة التوثيق</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {filteredDrivers.map((drv) => (
+                  <tr key={drv.id} className="hover:bg-zinc-900/50 transition-colors">
+                    <td className="p-3 flex items-center gap-3">
+                      <img src={drv.avatar} alt={drv.name} className="w-9 h-9 rounded-xl object-cover border border-zinc-700" />
+                      <div>
+                        <div className="font-bold text-white text-sm">{drv.name}</div>
+                        <div className="text-[10px] text-zinc-400">{drv.phone}</div>
+                      </div>
+                    </td>
+
+                    <td className="p-3 font-semibold text-zinc-300">{drv.emirate}</td>
+
+                    <td className="p-3">
+                      <div className="font-bold text-zinc-200">{drv.vehicleModel}</div>
+                      <div className="text-[10px] text-zinc-400 font-mono">{drv.vehiclePlate}</div>
+                    </td>
+
+                    {(() => {
+                      const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
+                      const isExpiring = daysRemaining <= 5 && daysRemaining >= 0;
+                      const inv = createSubscriptionInvoice(
+                        drv,
+                        `ZIN-${drv.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
+                        drv.joinedDate,
+                        drv.subscriptionExpiry,
+                        subscriptionPrice
+                      );
+
+                      return (
+                        <>
+                          <td className="p-3">
+                            {drv.subscriptionStatus === 'active' ? (
+                              <div className="space-y-1">
+                                <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
+                                  <span>مفعل ({subscriptionPrice} AED) ✓</span>
                                 </span>
+                                <div className="text-[10px] text-zinc-400">
+                                  ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
+                                </div>
+                                {isExpiring && (
+                                  <span className="bg-zinc-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-700 flex items-center gap-1 w-fit animate-pulse">
+                                    <Bell className="w-2.5 h-2.5" />
+                                    <span>تذكير 5 أيام (متبقي {daysRemaining} يوم)</span>
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="bg-zinc-900 text-zinc-400 font-extrabold px-2.5 py-1 rounded-lg border border-zinc-700 flex items-center gap-1 w-fit">
+                                <span>غير مفعل / بانتظار الدفع ⏳</span>
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="p-3">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedInvoice(inv)}
+                                className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-colors"
+                                title="عرض الفاتورة الرسمية"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                              </button>
+                              {isExpiring && (
+                                <a
+                                  href={getWhatsAppReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-all"
+                                  title="إرسال تذكير التجديد بالواتساب"
+                                >
+                                  <Share2 className="w-3.5 h-3.5" />
+                                </a>
                               )}
                             </div>
-                          ) : (
-                            <span className="bg-zinc-900 text-zinc-400 font-extrabold px-2.5 py-1 rounded-lg border border-zinc-700 flex items-center gap-1 w-fit">
-                              <span>غير مفعل / بانتظار الدفع ⏳</span>
-                            </span>
-                          )}
-                        </td>
+                          </td>
+                        </>
+                      );
+                    })()}
 
-                        <td className="p-3">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedInvoice(inv)}
-                              className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-colors"
-                              title="عرض الفاتورة الرسمية"
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                            </button>
-                            {isExpiring && (
-                              <a
-                                href={getWhatsAppReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-all"
-                                title="إرسال تذكير التجديد بالواتساب"
-                              >
-                                <Share2 className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                      </>
-                    );
-                  })()}
+                    <td className="p-3 font-bold text-zinc-200">{drv.completedDeliveries} توصيلة</td>
 
-                  <td className="p-3 font-bold text-zinc-200">{drv.completedDeliveries} توصيلة</td>
-
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => onToggleVerifyDriver(drv.id)}
-                      className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 ${
-                        drv.isVerified
-                          ? 'bg-white text-black border border-white'
-                          : 'bg-zinc-900 text-zinc-400 border border-zinc-700'
-                      }`}
-                    >
-                      {drv.isVerified ? '✓ موثق' : 'غير موثق'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => onToggleVerifyDriver(drv.id)}
+                        className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 ${
+                          drv.isVerified
+                            ? 'bg-white text-black border border-white'
+                            : 'bg-zinc-900 text-zinc-400 border border-zinc-700'
+                        }`}
+                      >
+                        {drv.isVerified ? '✓ موثق' : 'غير موثق'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Admin Invoice Preview Modal */}
