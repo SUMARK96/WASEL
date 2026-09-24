@@ -68,7 +68,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
             <div>
               <h2 className="text-2xl sm:text-3xl font-black text-white group-hover:text-cyan-400 transition-colors">
-                أنا عميل
+                عميل
               </h2>
               <p className="text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
                 أريد إرسال أو توصيل طرد، مستندات، أجهزة، أو بضائع بين أي إمارتين في الدولة واستقبال عروض الأسعار مباشرة.
@@ -125,7 +125,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
             <div>
               <h2 className="text-2xl sm:text-3xl font-black text-white group-hover:text-teal-400 transition-colors">
-                أنا سائق
+                سائق
               </h2>
               <p className="text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
                 أملك مركبة وأريد تقديم خدمات التوصيل بين الإمارات باشتراك شهري واستقبال طلبات الزبائن مباشرة.
