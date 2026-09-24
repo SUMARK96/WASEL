@@ -99,7 +99,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               }}
               className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3.5 sm:py-4 px-6 rounded-2xl shadow-xl shadow-blue-600/30 transition-all text-sm sm:text-base flex items-center justify-center gap-2 group-hover:shadow-cyan-500/30 active:scale-95"
             >
-              <span>الدخول كـ عميل</span>
+              <span>دخول - عميل</span>
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" />
             </button>
           </div>
@@ -156,7 +156,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
               }}
               className="w-full bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-black py-3.5 sm:py-4 px-6 rounded-2xl shadow-xl shadow-teal-600/30 transition-all text-sm sm:text-base flex items-center justify-center gap-2 group-hover:shadow-teal-500/30 active:scale-95"
             >
-              <span>الدخول كـ سائق</span>
+              <span>دخول - سائق</span>
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" />
             </button>
           </div>
