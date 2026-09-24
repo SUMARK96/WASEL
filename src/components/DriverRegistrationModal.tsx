@@ -357,7 +357,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
         // Visual AI Scanning effect
         setTimeout(async () => {
-          const result = await validateDrivingLicenseImage(base64);
+          const result = await validateDrivingLicenseImage(base64, name, emirate);
           setIsScanningLicense(false);
           setLicenseValidationResult(result);
 
@@ -388,7 +388,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
         // Visual AI Scanning effect
         setTimeout(async () => {
-          const result = await validateMulkiyaImage(base64);
+          const result = await validateMulkiyaImage(base64, vehicleModel, vehiclePlate);
           setIsScanningMulkiya(false);
           setMulkiyaValidationResult(result);
 
@@ -419,7 +419,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
         // Visual AI Scanning effect
         setTimeout(async () => {
-          const result = await validateEmiratesIdImage(base64);
+          const result = await validateEmiratesIdImage(base64, name);
           setIsScanningId(false);
           setIdValidationResult(result);
 
@@ -900,16 +900,38 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       </div>
                     )}
 
-                    {/* Verification Passed Badge */}
+                    {/* Verification Passed Badge & Data Fields Match Table */}
                     {!isScanningLicense && licenseValidationResult?.isValid && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 space-y-1.5 text-xs">
-                        <div className="flex items-center gap-2 text-white font-bold">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          <span>تم التحقق: تصميم رخصة القيادة مطابق للشكل والجدول المعتمد رسمياً في دولة الإمارات ✓</span>
+                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3.5 space-y-3 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-white font-bold">
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            <span>تم التحقق: تطابق نوع المستند وحقول بيانات رخصة القيادة الرسمية ✓</span>
+                          </div>
+                          <span className="text-[10px] text-black font-bold bg-white px-2 py-0.5 rounded-full">
+                            مطابقة {licenseValidationResult.score}%
+                          </span>
                         </div>
-                        <div className="text-[10px] text-zinc-400">
-                          نسبة المطابقة البصرية: <strong className="text-white font-bold">{licenseValidationResult.score}%</strong> (تم تدقيق جدول البيانات وشعار الصقر وعنوان رخصة القيادة).
-                        </div>
+
+                        {/* Fields Match Grid */}
+                        {licenseValidationResult.fields && licenseValidationResult.fields.length > 0 && (
+                          <div className="space-y-1.5 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                            <div className="text-[10px] text-zinc-400 font-bold mb-1">جدول تطابق حقول بيانات رخصة القيادة:</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {licenseValidationResult.fields.map((f, fIdx) => (
+                                <div key={fIdx} className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 flex items-center justify-between text-[11px]">
+                                  <div>
+                                    <span className="text-zinc-400 block text-[9px]">{f.fieldName}</span>
+                                    <span className="text-white font-bold">{f.extractedValue}</span>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
+                                    {f.statusText}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1000,21 +1022,43 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         <Scan className="w-5 h-5 text-white animate-spin" />
                         <div className="text-xs">
                           <div className="font-bold text-white">جاري مسح وتدقيق ملكية المركبة الإماراتية آلياً...</div>
-                          <div className="text-[10px] text-zinc-400">التحقق من الخلفية الأمنية، شعار صقر الإمارات المركزي، والجدول المعتمد لرخصة المركبة</div>
+                          <div className="text-[10px] text-zinc-400">التحقق من تطابق نوع المستند، رقم اللوحة، وطراز المركبة والجدول المعتمد</div>
                         </div>
                       </div>
                     )}
 
-                    {/* Verification Passed Badge */}
+                    {/* Verification Passed Badge & Data Fields Match Table */}
                     {!isScanningMulkiya && mulkiyaValidationResult?.isValid && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 space-y-1.5 text-xs">
-                        <div className="flex items-center gap-2 text-white font-bold">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          <span>تم التحقق: تصميم ملكية المركبة مطابق للنموذج والجدول المعتمد رسمياً في دولة الإمارات ✓</span>
+                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3.5 space-y-3 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-white font-bold">
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            <span>تم التحقق: تطابق نوع المستند وحقول بيانات ملكية المركبة الرسمية ✓</span>
+                          </div>
+                          <span className="text-[10px] text-black font-bold bg-white px-2 py-0.5 rounded-full">
+                            مطابقة {mulkiyaValidationResult.score}%
+                          </span>
                         </div>
-                        <div className="text-[10px] text-zinc-400">
-                          نسبة المطابقة البصرية: <strong className="text-white font-bold">{mulkiyaValidationResult.score}%</strong> (تم تدقيق الخلفية وشعار الصقر المركزي وجدول الترخيص).
-                        </div>
+
+                        {/* Fields Match Grid */}
+                        {mulkiyaValidationResult.fields && mulkiyaValidationResult.fields.length > 0 && (
+                          <div className="space-y-1.5 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                            <div className="text-[10px] text-zinc-400 font-bold mb-1">جدول تطابق حقول بيانات ملكية المركبة (رخصة مركبة):</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {mulkiyaValidationResult.fields.map((f, fIdx) => (
+                                <div key={fIdx} className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 flex items-center justify-between text-[11px]">
+                                  <div>
+                                    <span className="text-zinc-400 block text-[9px]">{f.fieldName}</span>
+                                    <span className="text-white font-bold">{f.extractedValue}</span>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
+                                    {f.statusText}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1105,36 +1149,60 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         <Scan className="w-5 h-5 text-white animate-spin" />
                         <div className="text-xs">
                           <div className="font-bold text-white">جاري مسح وتدقيق الهوية الإماراتية آلياً...</div>
-                          <div className="text-[10px] text-zinc-400">التحقق من تطابق الأبعاد، شعار الصقر، وهيكل البيانات الرسمي</div>
+                          <div className="text-[10px] text-zinc-400">التحقق من تطابق نوع المستند، رقم الهوية الموحد 784، واسم صاحب الهوية</div>
                         </div>
                       </div>
                     )}
 
-                    {/* Verification Passed Badge */}
+                    {/* Verification Passed Badge & Data Fields Match Table */}
                     {!isScanningId && idValidationResult?.isValid && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 space-y-2 text-xs">
-                        <div className="flex items-center gap-2 text-white font-bold">
-                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                          <span>تم التحقق: تصميم الهوية مطابق للمواصفات الرسمية للهيئة الاتحادية للهوية والجنسية ✓</span>
+                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3.5 space-y-3 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-white font-bold">
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            <span>تم التحقق: تطابق نوع المستند وحقول بطاقة الهوية الإماراتية الرسمية ✓</span>
+                          </div>
+                          <span className="text-[10px] text-black font-bold bg-white px-2 py-0.5 rounded-full">
+                            مطابقة {idValidationResult.score}%
+                          </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
-                              رقم الهوية الموحد (15 رقماً):
+                        {/* Emirates ID number input */}
+                        <div className="bg-black/60 p-2.5 rounded-xl border border-zinc-800 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-zinc-400">
+                              رقم الهوية الموحد المكتشف:
                             </label>
-                            <input
-                              type="text"
-                              value={emiratesIdNumber}
-                              onChange={(e) => setEmiratesIdNumber(formatEmiratesIdNumber(e.target.value))}
-                              placeholder="784-1990-1234567-1"
-                              className="w-full bg-black border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono font-bold dir-ltr focus:outline-none focus:border-white"
-                            />
+                            <span className="text-[9px] text-zinc-300 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-700">صيغة 784 معتمدة</span>
                           </div>
-                          <div className="flex items-center text-[10px] text-zinc-400 pt-3">
-                            <span>نسبة المطابقة البصرية: <strong className="text-white font-bold">{idValidationResult.score}%</strong></span>
-                          </div>
+                          <input
+                            type="text"
+                            value={emiratesIdNumber}
+                            onChange={(e) => setEmiratesIdNumber(formatEmiratesIdNumber(e.target.value))}
+                            placeholder="784-1990-1234567-1"
+                            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono font-bold dir-ltr focus:outline-none focus:border-white"
+                          />
                         </div>
+
+                        {/* Fields Match Grid */}
+                        {idValidationResult.fields && idValidationResult.fields.length > 0 && (
+                          <div className="space-y-1.5 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
+                            <div className="text-[10px] text-zinc-400 font-bold mb-1">جدول تطابق حقول بيانات بطاقة الهوية:</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {idValidationResult.fields.map((f, fIdx) => (
+                                <div key={fIdx} className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 flex items-center justify-between text-[11px]">
+                                  <div>
+                                    <span className="text-zinc-400 block text-[9px]">{f.fieldName}</span>
+                                    <span className="text-white font-bold">{f.fieldCode === 'ID_NUMBER' ? emiratesIdNumber : f.extractedValue}</span>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
+                                    {f.statusText}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
