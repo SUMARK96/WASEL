@@ -91,8 +91,9 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     isVerified: true,
     subscriptionStatus: 'active',
     subscriptionPlan: 'unified',
-    subscriptionExpiry: '2026-10-15',
+    subscriptionExpiry: '2026-10-24',
     joinedDate: '2025-01-10',
+    lastPaymentDate: '2026-09-24',
     bio: 'سائق محترف متخصص في نقل الطرود بين دبي وأبوظبي والشارقة. الالتزام بالوقت وسلامة الطرد أولويتي.'
   },
   {
@@ -114,8 +115,11 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     isVerified: true,
     subscriptionStatus: 'active',
     subscriptionPlan: 'unified',
-    subscriptionExpiry: '2026-11-01',
+    subscriptionExpiry: '2026-11-24',
     joinedDate: '2025-02-15',
+    lastPaymentDate: '2026-09-24',
+    usedExemptionCode: 'WASEL2026',
+    isExemptionActive: true,
     bio: 'توصيل سريع وآمن بين جميع إمارات الدولة. خبرة 5 سنوات في التوصيل بين أبوظبي والإمارات الشمالية.'
   },
   {
@@ -137,8 +141,11 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     isVerified: true,
     subscriptionStatus: 'active',
     subscriptionPlan: 'unified',
-    subscriptionExpiry: '2026-10-01',
+    subscriptionExpiry: '2026-09-28',
     joinedDate: '2024-11-01',
+    lastPaymentDate: '2026-08-28',
+    usedExemptionCode: 'FREE1M',
+    isExemptionActive: true,
     bio: 'فان نقل مغلق ومكيف للطرود الحساسة والأجهزة والأثاث. رحلات يومية بين الشارقة وعجمان ودبي ورأس الخيمة.'
   },
   {
@@ -158,10 +165,13 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     reviewsCount: 38,
     completedDeliveries: 45,
     isVerified: true,
-    subscriptionStatus: 'active',
+    subscriptionStatus: 'suspended',
     subscriptionPlan: 'unified',
-    subscriptionExpiry: '2026-09-30',
+    subscriptionExpiry: '2026-09-20',
     joinedDate: '2025-05-12',
+    lastPaymentDate: '2026-08-20',
+    usedExemptionCode: 'FREE1M',
+    isExemptionActive: true,
     bio: 'توصيل المستندات والطرود الصغيرة والسريعة بين الإمارات.'
   }
 ];

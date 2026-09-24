@@ -134,6 +134,99 @@ export function getWhatsAppReminderUrl(phone: string, driverName: string, daysRe
 }
 
 /**
+ * Generates the official reminder message 5 days before an exemption code period ends.
+ */
+export function getExemptionReminderMessage(driverName: string, daysRemaining: number, expiryDate: string, codeName?: string): string {
+  const daysText = daysRemaining === 0 
+    ? 'اليوم' 
+    : daysRemaining === 1 
+      ? 'غداً' 
+      : `خلال ${daysRemaining} أيام`;
+
+  return `🔔 *تنبيه منصة واصل (WASEL) - قرب انتهاء فترة كود الإعفاء*
+عزيزي الكابتن ${driverName}،
+نود إحاطتكم علماً بأن فترة الإعفاء المجاني ${codeName ? `(كود: ${codeName})` : ''} ستنتهي ${daysText} (بتاريخ ${expiryDate}).
+
+⚠️ يرجى سداد الاشتراك الشهري قبل نهاية الفترة لضمان استمرار عمل حسابك وتجنب تعليق الحساب (Suspension):
+https://pay.ziina.com/Waslasd/IWXxU478H?source=app
+
+نتمنى لكم دوام التوفيق والنجاح.
+فريق منصة واصل - الإمارات`;
+}
+
+/**
+ * WhatsApp link for 5-day exemption expiry reminder.
+ */
+export function getWhatsAppExemptionReminderUrl(phone: string, driverName: string, daysRemaining: number, expiryDate: string, codeName?: string): string {
+  const cleanPhone = phone.replace(/[^0-9]/g, '');
+  const message = getExemptionReminderMessage(driverName, daysRemaining, expiryDate, codeName);
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Message sent when account is suspended due to unpaid subscription after exemption period.
+ */
+export function getDriverSuspendedMessage(driverName: string, codeName?: string): string {
+  return `⛔ *إشعار تعليق الحساب - منصة واصل (WASEL)*
+عزيزي الكابتن ${driverName}،
+تم تعليق حسابك مؤقتاً لانتهاء فترة كود الإعفاء ${codeName ? `(${codeName})` : ''} وعدم سداد الاشتراك الشهري.
+
+⚡ لإعادة تنشيط حسابك فوراً والبدء في استقبال طلبات التوصيل مجدداً، يرجى سداد الاشتراك الشهري عبر الرابط التالي:
+https://pay.ziina.com/Waslasd/IWXxU478H?source=app
+
+فريق منصة واصل - الإمارات`;
+}
+
+/**
+ * WhatsApp link for suspended account notification.
+ */
+export function getWhatsAppSuspendedUrl(phone: string, driverName: string, codeName?: string): string {
+  const cleanPhone = phone.replace(/[^0-9]/g, '');
+  const message = getDriverSuspendedMessage(driverName, codeName);
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Comprehensive subscription status evaluator for drivers.
+ */
+export function checkDriverSubscriptionStatus(driver: DriverProfile): {
+  status: 'active' | 'expired' | 'suspended';
+  daysRemaining: number;
+  isExpiringSoon: boolean;
+  isExpired: boolean;
+  isSuspended: boolean;
+  isExemption: boolean;
+} {
+  const daysRemaining = getDaysUntilExpiry(driver.subscriptionExpiry);
+  const isExpiringSoon = daysRemaining <= 5 && daysRemaining >= 0;
+  const isExpired = daysRemaining < 0;
+  const isExemption = Boolean(driver.usedExemptionCode || driver.isExemptionActive);
+
+  let status: 'active' | 'expired' | 'suspended' = 'active';
+
+  if (isExpired) {
+    if (isExemption) {
+      status = 'suspended'; // Account is suspended if exemption ended without paying
+    } else {
+      status = 'expired';
+    }
+  } else if (driver.subscriptionStatus === 'suspended') {
+    status = 'suspended';
+  } else if (driver.subscriptionStatus === 'expired') {
+    status = isExemption ? 'suspended' : 'expired';
+  }
+
+  return {
+    status,
+    daysRemaining,
+    isExpiringSoon,
+    isExpired,
+    isSuspended: status === 'suspended',
+    isExemption
+  };
+}
+
+/**
  * Creates a WhatsApp link to send the official invoice summary to the driver.
  */
 export function getWhatsAppInvoiceUrl(invoice: SubscriptionInvoice): string {

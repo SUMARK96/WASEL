@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import type { DriverProfile, DeliveryRequest, SubscriptionInvoice, ExemptionCode } from '../types';
-import { createSubscriptionInvoice, getDaysUntilExpiry, getWhatsAppReminderUrl } from '../utils/subscriptionUtils';
+import { 
+  createSubscriptionInvoice, 
+  getWhatsAppReminderUrl,
+  getWhatsAppExemptionReminderUrl,
+  getWhatsAppSuspendedUrl,
+  checkDriverSubscriptionStatus
+} from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
 import { 
@@ -592,20 +598,48 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     </td>
 
                     {(() => {
-                      const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
-                      const isExpiring = daysRemaining <= 5 && daysRemaining >= 0;
+                      const subStatus = checkDriverSubscriptionStatus(drv);
+                      const isSuspended = subStatus.isSuspended || drv.subscriptionStatus === 'suspended';
+                      const isExemption = subStatus.isExemption;
+                      const isExpiring = subStatus.isExpiringSoon;
+                      const daysRemaining = subStatus.daysRemaining;
+
                       const inv = createSubscriptionInvoice(
                         drv,
                         `ZIN-${drv.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
                         drv.joinedDate,
                         drv.subscriptionExpiry,
-                        subscriptionPrice
+                        isExemption ? 0 : subscriptionPrice
                       );
 
                       return (
                         <>
                           <td className="p-3">
-                            {drv.subscriptionStatus === 'active' ? (
+                            {isSuspended ? (
+                              <div className="space-y-1">
+                                <span className="bg-black text-white font-black px-2.5 py-0.5 rounded-lg border border-white inline-flex items-center gap-1 shadow">
+                                  <span>معلق لانتهاء كود الإعفاء ⛔</span>
+                                </span>
+                                <div className="text-[10px] text-zinc-400">
+                                  انتهى: <strong className="text-zinc-300">{drv.subscriptionExpiry}</strong>
+                                </div>
+                              </div>
+                            ) : isExemption ? (
+                              <div className="space-y-1">
+                                <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
+                                  <span>إعفاء ({drv.usedExemptionCode || 'كود'}) ✓</span>
+                                </span>
+                                <div className="text-[10px] text-zinc-400">
+                                  ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
+                                </div>
+                                {isExpiring && (
+                                  <span className="bg-zinc-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-700 flex items-center gap-1 w-fit animate-pulse">
+                                    <Bell className="w-2.5 h-2.5" />
+                                    <span>تنبيه إعفاء 5 أيام (متبقي {daysRemaining} يوم)</span>
+                                  </span>
+                                )}
+                              </div>
+                            ) : drv.subscriptionStatus === 'active' ? (
                               <div className="space-y-1">
                                 <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
                                   <span>مفعل ({subscriptionPrice} AED) ✓</span>
@@ -637,7 +671,28 @@ export const AdminView: React.FC<AdminViewProps> = ({
                               >
                                 <FileText className="w-3.5 h-3.5" />
                               </button>
-                              {isExpiring && (
+
+                              {isSuspended ? (
+                                <a
+                                  href={getWhatsAppSuspendedUrl(drv.phone, drv.name, drv.usedExemptionCode)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-black hover:bg-zinc-900 text-white p-1.5 rounded-lg border border-zinc-700 transition-all shadow"
+                                  title="إرسال إشعار تعليق الحساب بالواتساب"
+                                >
+                                  <Share2 className="w-3.5 h-3.5 text-white" />
+                                </a>
+                              ) : isExemption && isExpiring ? (
+                                <a
+                                  href={getWhatsAppExemptionReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry, drv.usedExemptionCode)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-all"
+                                  title="إرسال تذكير قرب انتهاء الإعفاء بالواتساب (5 أيام)"
+                                >
+                                  <Share2 className="w-3.5 h-3.5" />
+                                </a>
+                              ) : isExpiring ? (
                                 <a
                                   href={getWhatsAppReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry)}
                                   target="_blank"
@@ -647,7 +702,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
                                 </a>
-                              )}
+                              ) : null}
                             </div>
                           </td>
                         </>

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import type { DeliveryRequest, DriverProfile, DriverNotification } from '../types';
 import { UAE_EMIRATES } from '../data/mockData';
-import { getDaysUntilExpiry, getWhatsAppInvoiceUrl, createSubscriptionInvoice } from '../utils/subscriptionUtils';
+import { 
+  getWhatsAppInvoiceUrl, 
+  createSubscriptionInvoice,
+  checkDriverSubscriptionStatus 
+} from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { EmirateBadge } from './EmirateBadge';
 import { NotificationBanner } from './NotificationBanner';
@@ -59,8 +63,10 @@ export const DriverView: React.FC<DriverViewProps> = ({
   // State for invoice modal
   const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
 
-  const daysRemaining = getDaysUntilExpiry(driver.subscriptionExpiry);
-  const isExpired = daysRemaining < 0 || driver.subscriptionStatus !== 'active';
+  const subStatus = checkDriverSubscriptionStatus(driver);
+  const daysRemaining = subStatus.daysRemaining;
+  const isExpired = subStatus.isExpired || driver.subscriptionStatus === 'expired';
+  const isSuspended = subStatus.isSuspended || driver.subscriptionStatus === 'suspended';
 
   // Driver current invoice object
   const currentInvoice = createSubscriptionInvoice(
@@ -68,7 +74,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
     `ZIN-${driver.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
     driver.joinedDate || '2026-09-01',
     driver.subscriptionExpiry,
-    subscriptionPrice
+    driver.isExemptionActive ? 0 : subscriptionPrice
   );
 
   const openRequests = requests.filter(r => r.status === 'open');
@@ -83,9 +89,16 @@ export const DriverView: React.FC<DriverViewProps> = ({
   const activeJobs = requests.filter(r => r.selectedOfferId && r.offers.some(o => o.id === r.selectedOfferId && o.driverId === driver.id));
 
   const handleOfferClick = (req: DeliveryRequest) => {
-    if (driver.subscriptionStatus !== 'active') {
+    if (isSuspended) {
+      alert('⛔ تم تعليق حسابك لانتهاء فترة كود الإعفاء وعدم سداد الاشتراك الشهري. يرجى سداد الاشتراك لتتمكن من تقديم عروض الأسعار للعملاء.');
+      if (onOpenSubscription) onOpenSubscription();
+      else setSelectedSection('subscription');
+      return;
+    }
+    if (isExpired || driver.subscriptionStatus !== 'active') {
       alert('⚠️ حسابك غير مفعل أو انتهت صلاحية اشتراكك. يجب سداد وتأكيد الاشتراك عبر رابط زينة أولاً لتتمكن من تقديم عروض الأسعار للعملاء.');
-      setSelectedSection('subscription');
+      if (onOpenSubscription) onOpenSubscription();
+      else setSelectedSection('subscription');
       return;
     }
     onOpenSubmitOffer(req);
@@ -516,8 +529,72 @@ export const DriverView: React.FC<DriverViewProps> = ({
       {selectedSection === 'new_requests' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           
-          {/* Status Alert if account expired */}
-          {isExpired && (
+          {/* Status Alert if account is suspended due to exemption expiration */}
+          {isSuspended ? (
+            <div className="bg-black border-2 border-white p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xl animate-in zoom-in-95">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center font-black shrink-0 text-lg shadow">
+                  ⛔
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-black text-white text-sm sm:text-base">تم تعليق حساب السائق مؤقتاً (Suspended)</h4>
+                    {driver.usedExemptionCode && (
+                      <span className="bg-zinc-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700">
+                        انتهاء كود الإعفاء: {driver.usedExemptionCode}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
+                    انتهت فترة كود الإعفاء المجاني ولم يتم سداد الاشتراك الشهري. يرجى سداد الاشتراك ({subscriptionPrice} AED) لإعادة تفعيل الحساب فوراً والبدء بتقديم عروض الأسعار للعملاء.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (onOpenSubscription) onOpenSubscription();
+                  else setSelectedSection('subscription');
+                }}
+                className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-5 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow-lg"
+              >
+                سداد الاشتراك الشهري وتنشيط الحساب ⚡
+              </button>
+            </div>
+          ) : subStatus.isExemption && subStatus.isExpiringSoon ? (
+            /* 5-Day Exemption Expiry Warning */
+            <div className="bg-zinc-950 border-2 border-white p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl animate-in zoom-in-95">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center font-black shrink-0">
+                  <Bell className="w-5 h-5 text-black" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-black text-white text-sm sm:text-base">
+                      تنبيه: متبقي {subStatus.daysRemaining} {subStatus.daysRemaining === 1 ? 'يوم' : 'أيام'} على انتهاء فترة كود الإعفاء
+                    </h4>
+                    {driver.usedExemptionCode && (
+                      <span className="bg-zinc-900 text-white text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700">
+                        {driver.usedExemptionCode}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
+                    ينتهي الإعفاء بتاريخ {driver.subscriptionExpiry}. يرجى دفع الاشتراك الشهري ({subscriptionPrice} AED) لتجنب تعليق الحساب عند نهاية الفترة.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (onOpenSubscription) onOpenSubscription();
+                  else setSelectedSection('subscription');
+                }}
+                className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-5 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow"
+              >
+                سداد الاشتراك الشهري الآن ({subscriptionPrice} AED)
+              </button>
+            </div>
+          ) : isExpired ? (
+            /* General Expired Alert */
             <div className="bg-zinc-950 border-2 border-white p-4 sm:p-5 rounded-3xl flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-6 h-6 text-white shrink-0" />
@@ -536,7 +613,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 تفعيل الاشتراك ⚡
               </button>
             </div>
-          )}
+          ) : null}
 
           {/* Subtabs for Requests: المتاحة / عروضي المقدمة / المهام النشطة */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
@@ -781,7 +858,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
               <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-1">
                 <div className="text-zinc-400">حالة الاشتراك الحالية:</div>
                 <div className="font-black text-sm text-white">
-                  {driver.subscriptionStatus === 'active' ? '🟢 نشط ومفعل' : '⚠️ غير نشط'}
+                  {isSuspended ? (
+                    <span className="text-white font-extrabold flex items-center gap-1">
+                      <span>⛔ معلق لانتهاء كود الإعفاء</span>
+                    </span>
+                  ) : subStatus.isExemption ? (
+                    <span className="text-white font-extrabold flex items-center gap-1">
+                      <span>🟢 إعفاء نشط ({driver.usedExemptionCode || 'كود ترويجي'})</span>
+                    </span>
+                  ) : driver.subscriptionStatus === 'active' ? (
+                    '🟢 نشط ومفعل'
+                  ) : (
+                    '⚠️ غير نشط'
+                  )}
                 </div>
               </div>
 
@@ -793,21 +882,49 @@ export const DriverView: React.FC<DriverViewProps> = ({
               <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-1">
                 <div className="text-zinc-400">الأيام المتبقية:</div>
                 <div className="font-bold text-sm text-white">
-                  {daysRemaining > 0 ? `${daysRemaining} يوماً` : 'منتهي الصلاحية'}
+                  {isSuspended ? (
+                    <span className="text-zinc-400">انتهت فترة الإعفاء (معلق)</span>
+                  ) : daysRemaining > 0 ? (
+                    `${daysRemaining} يوماً`
+                  ) : (
+                    'منتهي الصلاحية'
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* 5-Day Automated Expiry Reminder Notice */}
-            <div className="bg-zinc-900 border border-zinc-700 p-4 rounded-2xl text-xs text-zinc-300 space-y-1.5">
-              <div className="flex items-center gap-2 font-bold text-white">
-                <Bell className="w-4 h-4 text-white" />
-                <span>نظام التنبيه التلقائي قبل الانتهاء بـ 5 أيام:</span>
+            {/* Suspended Notice Banner inside Subscription Section */}
+            {isSuspended && (
+              <div className="bg-black border-2 border-white p-4 rounded-2xl text-xs text-white space-y-2">
+                <div className="flex items-center gap-2 font-black text-sm">
+                  <span>⛔ تنبيه تعليق الحساب (Account Suspended):</span>
+                </div>
+                <p className="text-zinc-300 leading-relaxed text-[11px]">
+                  تم تعليق حسابك نظراً لانتهاء فترة كود الإعفاء وعدم سداد الاشتراك الشهري. قم بسداد الاشتراك الشهري عبر بوابة زينة ({subscriptionPrice} AED) أو إدخال كود إعفاء جديد لتنشيط حسابك فوراً.
+                </p>
               </div>
-              <p className="text-zinc-400 leading-relaxed text-[11px]">
-                يقوم نظام واصل بإرسال رسالة تذكير وفاتورة رسمية لرقم هاتفك المدرج ({driver.phone}) قبل انتهاء موعد اشتراكك بـ 5 أيام لضمان استمرار ظهور عروضك دون انقطاع.
-              </p>
-            </div>
+            )}
+
+            {/* 5-Day Automated Expiry Reminder Notice */}
+            {!isSuspended && (
+              <div className="bg-zinc-900 border border-zinc-700 p-4 rounded-2xl text-xs text-zinc-300 space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-white">
+                  <Bell className="w-4 h-4 text-white" />
+                  <span>
+                    {subStatus.isExemption
+                      ? 'نظام التنبيه التلقائي قبل انتهاء كود الإعفاء بـ 5 أيام:'
+                      : 'نظام التنبيه التلقائي قبل الانتهاء بـ 5 أيام:'
+                    }
+                  </span>
+                </div>
+                <p className="text-zinc-400 leading-relaxed text-[11px]">
+                  {subStatus.isExemption
+                    ? `يقوم نظام واصل بإرسال إشعار ورسالة تذكير لهاتفك (${driver.phone}) قبل انتهاء كود الإعفاء بـ 5 أيام لتتمكن من سداد الاشتراك الشهري وتجنب تعليق الحساب.`
+                    : `يقوم نظام واصل بإرسال رسالة تذكير وفاتورة رسمية لرقم هاتفك المدرج (${driver.phone}) قبل انتهاء موعد اشتراكك بـ 5 أيام لضمان استمرار ظهور عروضك دون انقطاع.`
+                  }
+                </p>
+              </div>
+            )}
 
             {/* Actions: Invoice Preview, WhatsApp Invoice, Ziina Pay / Promo Code */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
@@ -837,7 +954,12 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 }}
                 className="bg-white hover:bg-zinc-200 text-black font-black py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl"
               >
-                <span>⚡ تجديد الاشتراك / كود إعفاء ({subscriptionPrice} AED)</span>
+                <span>
+                  {isSuspended 
+                    ? `⚡ تنشيط الحساب وسداد الاشتراك (${subscriptionPrice} AED)` 
+                    : `⚡ تجديد الاشتراك / كود إعفاء (${subscriptionPrice} AED)`
+                  }
+                </span>
               </button>
             </div>
 

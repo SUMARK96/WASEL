@@ -192,6 +192,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         subscriptionPlan: selectedPlan,
         subscriptionExpiry: formattedExpiry,
         joinedDate: todayStr,
+        lastPaymentDate: todayStr,
+        usedExemptionCode: appliedExemption.code,
+        isExemptionActive: true,
         bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
       };
 
@@ -255,6 +258,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         subscriptionPlan: selectedPlan,
         subscriptionExpiry: formattedExpiry,
         joinedDate: todayStr,
+        lastPaymentDate: todayStr,
+        usedExemptionCode: undefined,
+        isExemptionActive: false,
         bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
       };
 

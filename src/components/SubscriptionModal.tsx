@@ -32,7 +32,7 @@ import { InvoiceModal } from './InvoiceModal';
 interface SubscriptionModalProps {
   driver: DriverProfile;
   onClose: () => void;
-  onSubscribeSuccess: (planId: SubscriptionPlanId, newExpiry?: string) => void;
+  onSubscribeSuccess: (planId: SubscriptionPlanId, newExpiry?: string, usedPromoCode?: string, isExemption?: boolean) => void;
   subscriptionPrice?: number;
   exemptionCodes?: ExemptionCode[];
   onApplyExemptionCode?: (codeStr: string, driverId?: string) => { success: boolean; message: string; months?: number };
@@ -102,15 +102,15 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     setErrorMessage(null);
 
     setTimeout(() => {
-      // Calculate start date: if current subscription is still active and in the future, extend from expiry, else from now
-      const isStillActive = driver.subscriptionStatus === 'active' && getDaysUntilExpiry(driver.subscriptionExpiry) > 0;
-      const baseDate = isStillActive ? new Date(driver.subscriptionExpiry) : new Date();
-      const newExpiry = calculateExpiryByMonths(baseDate, appliedExemption.months);
+      // Calculate start date from the exact moment/date of this transaction
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const newExpiry = calculateExpiryByMonths(now, appliedExemption.months);
 
       const inv = createSubscriptionInvoice(
         driver, 
         `PROMO-${appliedExemption.code}`,
-        new Date().toISOString().split('T')[0],
+        todayStr,
         newExpiry,
         0,
         `كود إعفاء ترويجي (${appliedExemption.code} - ${appliedExemption.months} شهر مجاناً)`
@@ -132,14 +132,15 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
     // Strict verification simulation with Ziina Payment Gateway
     setTimeout(() => {
-      const isStillActive = driver.subscriptionStatus === 'active' && getDaysUntilExpiry(driver.subscriptionExpiry) > 0;
-      const baseDate = isStillActive ? new Date(driver.subscriptionExpiry) : new Date();
-      const newExpiry = calculateOneMonthExpiry(baseDate);
+      // Calculate start date from the exact moment/date of this payment
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const newExpiry = calculateOneMonthExpiry(now);
 
       const inv = createSubscriptionInvoice(
         driver, 
         refNumber || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
-        new Date().toISOString().split('T')[0],
+        todayStr,
         newExpiry,
         subscriptionPrice
       );
@@ -154,7 +155,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   const handleFinalSuccess = () => {
-    onSubscribeSuccess('unified', generatedInvoice?.expiryDate);
+    onSubscribeSuccess('unified', generatedInvoice?.expiryDate, appliedExemption?.code, Boolean(appliedExemption));
   };
 
   const daysRemaining = getDaysUntilExpiry(driver.subscriptionExpiry);

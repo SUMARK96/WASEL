@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
 import { INITIAL_DRIVERS, INITIAL_REQUESTS } from './data/mockData';
 import { dbService } from './services/dbService';
-import { calculateOneMonthExpiry } from './utils/subscriptionUtils';
+import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
 
 import { Header } from './components/Header';
@@ -199,6 +199,71 @@ export function App() {
     loadInitialData();
   }, []);
 
+  // Automated 5-day Exemption Expiry Reminders and Account Suspension for Unpaid Exemption Accounts
+  useEffect(() => {
+    let driversUpdated = false;
+    const updatedDrivers = drivers.map(drv => {
+      const isExemption = Boolean(drv.usedExemptionCode || drv.isExemptionActive);
+      const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
+
+      // If exemption period ended and driver hasn't paid monthly subscription -> Auto suspend
+      if (isExemption && daysRemaining < 0 && drv.subscriptionStatus !== 'suspended') {
+        driversUpdated = true;
+        return {
+          ...drv,
+          subscriptionStatus: 'suspended' as const
+        };
+      }
+      return drv;
+    });
+
+    if (driversUpdated) {
+      setDrivers(updatedDrivers);
+    }
+
+    // Generate in-app notifications for drivers with exemption codes
+    drivers.forEach(drv => {
+      const isExemption = Boolean(drv.usedExemptionCode || drv.isExemptionActive);
+      const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
+
+      // 1. Five days reminder
+      if (isExemption && daysRemaining >= 0 && daysRemaining <= 5 && drv.subscriptionStatus === 'active') {
+        setNotifications(prev => {
+          if (prev.some(n => n.type === 'exemption_reminder' && n.title.includes(drv.name))) return prev;
+          return [
+            {
+              id: `notif-exemp-${drv.id}`,
+              title: `🔔 تنبيه: متبقي ${daysRemaining} أيام على انتهاء كود الإعفاء (${drv.name})`,
+              message: `ينتهي كود الإعفاء بتاريخ ${drv.subscriptionExpiry}. يرجى دفع الاشتراك الشهري لتجنب تعليق الحساب عند نهاية الفترة.`,
+              timestamp: 'الآن',
+              isRead: false,
+              type: 'exemption_reminder'
+            },
+            ...prev
+          ];
+        });
+      }
+
+      // 2. Suspended notice
+      if (isExemption && (daysRemaining < 0 || drv.subscriptionStatus === 'suspended')) {
+        setNotifications(prev => {
+          if (prev.some(n => n.type === 'suspended_notice' && n.title.includes(drv.name))) return prev;
+          return [
+            {
+              id: `notif-susp-${drv.id}`,
+              title: `⛔ تم تعليق حساب الكابتن ${drv.name} لانتهاء كود الإعفاء`,
+              message: 'يرجى سداد الاشتراك الشهري لتنشيط الحساب واستئناف تقديم عروض الأسعار للعملاء.',
+              timestamp: 'الآن',
+              isRead: false,
+              type: 'suspended_notice'
+            },
+            ...prev
+          ];
+        });
+      }
+    });
+  }, [drivers]);
+
   const currentDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
 
   // Admin Access Handler
@@ -364,9 +429,11 @@ export function App() {
     setCustomerNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
-  // Driver Subscription Update
-  const handleSubscribeSuccess = async (planId: SubscriptionPlanId, newExpiry?: string) => {
-    const formattedExpiry = newExpiry || calculateOneMonthExpiry(new Date());
+  // Driver Subscription Update (Computed from moment of payment / renewal)
+  const handleSubscribeSuccess = async (planId: SubscriptionPlanId, newExpiry?: string, usedPromoCode?: string, isExemption?: boolean) => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const formattedExpiry = newExpiry || calculateOneMonthExpiry(now);
 
     setDrivers(prev => prev.map(drv => {
       if (drv.id === currentDriver.id) {
@@ -374,7 +441,10 @@ export function App() {
           ...drv,
           subscriptionStatus: 'active',
           subscriptionPlan: planId,
-          subscriptionExpiry: formattedExpiry
+          subscriptionExpiry: formattedExpiry,
+          lastPaymentDate: todayStr,
+          usedExemptionCode: isExemption ? usedPromoCode : undefined,
+          isExemptionActive: Boolean(isExemption)
         };
       }
       return drv;
@@ -382,7 +452,10 @@ export function App() {
 
     setIsSubscriptionOpen(false);
     await dbService.updateDriverSubscription(currentDriver.id, planId, formattedExpiry, 'active');
-    showToast(`🌟 تم تجديد وتفعيل اشتراك السائق بنجاح حتى ${formattedExpiry}!`);
+    showToast(isExemption 
+      ? `🎫 تم تفعيل كود الإعفاء "${usedPromoCode}" وتمديد الحساب حتى ${formattedExpiry}!` 
+      : `🌟 تم سداد الاشتراك الشهري وتفعيل الحساب بنجاح حتى ${formattedExpiry}!`
+    );
   };
 
   // New Driver Registration & Activation Success

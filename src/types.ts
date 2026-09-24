@@ -64,10 +64,13 @@ export interface DriverProfile {
   reviewsCount: number;
   completedDeliveries: number;
   isVerified: boolean;
-  subscriptionStatus: 'active' | 'trial' | 'expired';
+  subscriptionStatus: 'active' | 'trial' | 'expired' | 'suspended';
   subscriptionPlan: SubscriptionPlanId;
   subscriptionExpiry: string;
   joinedDate: string;
+  lastPaymentDate?: string;
+  usedExemptionCode?: string;
+  isExemptionActive?: boolean;
   bio: string;
 }
 
@@ -125,7 +128,7 @@ export interface DriverNotification {
   deliveryEmirate?: Emirate;
   timestamp: string;
   isRead: boolean;
-  type?: 'request' | 'expiry_reminder' | 'invoice';
+  type?: 'request' | 'expiry_reminder' | 'exemption_reminder' | 'suspended_notice' | 'invoice';
   message?: string;
 }
 
