@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { DriverProfile } from '../types';
-import { LogIn, ArrowRight, Mail, Lock, AlertCircle, UserCheck } from 'lucide-react';
+import { LogIn, ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react';
 
 interface DriverLoginViewProps {
   drivers: DriverProfile[];
@@ -62,12 +62,6 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
     }, 600);
   };
 
-  const handleQuickLogin = (driver: DriverProfile) => {
-    setEmail(driver.email);
-    setPassword(driver.password || '123456');
-    onLoginSuccess(driver);
-  };
-
   return (
     <div className="min-h-[75vh] flex flex-col justify-center py-4 sm:py-10 max-w-xl mx-auto w-full px-2 sm:px-4">
       
@@ -118,7 +112,7 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="مثال: m.saeed@wasel.ae"
+              placeholder="مثال: m.saeed@wasel.ae أو 0501234567"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:outline-none focus:border-teal-500 font-medium transition-colors"
             />
           </div>
@@ -154,39 +148,8 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
           </button>
         </form>
 
-        {/* Quick Demo Accounts Selection */}
-        <div className="pt-4 border-t border-slate-800/80 space-y-3">
-          <div className="flex items-center justify-between text-[11px] text-slate-400">
-            <span className="font-bold text-slate-300 flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span>حسابات تجريبية سريعة للسائقين المسجلين:</span>
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {drivers.slice(0, 4).map((drv) => (
-              <button
-                key={drv.id}
-                type="button"
-                onClick={() => handleQuickLogin(drv)}
-                className="bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 p-2.5 rounded-xl text-right transition-all flex items-center gap-2.5 group active:scale-95"
-              >
-                <img
-                  src={drv.avatar}
-                  alt={drv.name}
-                  className="w-8 h-8 rounded-lg object-cover border border-slate-700 shrink-0"
-                />
-                <div className="truncate flex-1">
-                  <div className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors truncate">{drv.name}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{drv.emirate} • {drv.vehicleModel.split(' ')[0]}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Register Link */}
-        <div className="text-center pt-2 border-t border-slate-800/60">
+        <div className="text-center pt-3 border-t border-slate-800/60">
           <p className="text-xs text-slate-400">
             ليس لديك حساب سائق بعد؟{' '}
             <button
