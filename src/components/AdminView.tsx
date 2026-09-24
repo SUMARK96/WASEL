@@ -1,5 +1,5 @@
-import React from 'react';
-import type { DriverProfile, DeliveryRequest, SubscriptionInvoice } from '../types';
+import React, { useState } from 'react';
+import type { DriverProfile, DeliveryRequest, SubscriptionInvoice, ExemptionCode } from '../types';
 import { createSubscriptionInvoice, getDaysUntilExpiry, getWhatsAppReminderUrl } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
@@ -10,24 +10,120 @@ import {
   Truck,
   FileText,
   Bell,
-  Share2
+  Share2,
+  Edit2,
+  Check,
+  X,
+  Ticket,
+  Plus,
+  Trash2,
+  Copy,
+  Users,
+  Calendar,
+  ShieldCheck
 } from 'lucide-react';
 
 interface AdminViewProps {
   drivers: DriverProfile[];
   requests: DeliveryRequest[];
   onToggleVerifyDriver: (driverId: string) => void;
+  subscriptionPrice?: number;
+  onUpdateSubscriptionPrice?: (newPrice: number) => void;
+  exemptionCodes?: ExemptionCode[];
+  onCreateExemptionCode?: (code: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => void;
+  onDeleteExemptionCode?: (id: string) => void;
+  onToggleExemptionCode?: (id: string) => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
   drivers,
   requests,
-  onToggleVerifyDriver
+  onToggleVerifyDriver,
+  subscriptionPrice = UNIFIED_SUBSCRIPTION_PLAN.price,
+  onUpdateSubscriptionPrice,
+  exemptionCodes = [],
+  onCreateExemptionCode,
+  onDeleteExemptionCode,
+  onToggleExemptionCode
 }) => {
-  const [selectedInvoice, setSelectedInvoice] = React.useState<SubscriptionInvoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<SubscriptionInvoice | null>(null);
+
+  // Price Edit State
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [tempPrice, setTempPrice] = useState<string>(subscriptionPrice.toString());
+  const [priceSaveMessage, setPriceSaveMessage] = useState<string | null>(null);
+
+  // Exemption Code Creation Form State
+  const [showCreateCodeModal, setShowCreateCodeModal] = useState(false);
+  const [newCodeName, setNewCodeName] = useState('');
+  const [newCodeMonths, setNewCodeMonths] = useState<number>(1);
+  const [newCodeMaxDrivers, setNewCodeMaxDrivers] = useState<number>(10);
+  const [newCodeNotes, setNewCodeNotes] = useState('');
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
   const activeDriversCount = drivers.filter(d => d.subscriptionStatus === 'active').length;
-  const totalRevenue = activeDriversCount * UNIFIED_SUBSCRIPTION_PLAN.price;
+  const totalRevenue = activeDriversCount * subscriptionPrice;
   const totalOffersCount = requests.reduce((acc, r) => acc + r.offers.length, 0);
+
+  const handleSavePrice = () => {
+    const val = parseInt(tempPrice, 10);
+    if (isNaN(val) || val < 0) {
+      alert('يرجى إدخال سعر صحيح بالأرقام');
+      return;
+    }
+    if (onUpdateSubscriptionPrice) {
+      onUpdateSubscriptionPrice(val);
+    }
+    setIsEditingPrice(false);
+    setPriceSaveMessage(`تم تحديث سعر الباقة إلى ${val} درهم بنجاح`);
+    setTimeout(() => setPriceSaveMessage(null), 3500);
+  };
+
+  const handleGenerateRandomCode = () => {
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const prefix = newCodeMonths > 1 ? `WASEL${newCodeMonths}M` : 'FREE';
+    setNewCodeName(`${prefix}-${randomStr}`);
+  };
+
+  const handleCreateCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = newCodeName.trim().toUpperCase();
+    if (!cleanCode) {
+      alert('يرجى إدخال اسم الكود أو توليده');
+      return;
+    }
+    if (newCodeMonths <= 0) {
+      alert('يرجى تحديد فترة إعفاء صالحة');
+      return;
+    }
+    if (newCodeMaxDrivers <= 0) {
+      alert('يرجى تحديد عدد السائقين المسموح لهم');
+      return;
+    }
+
+    if (onCreateExemptionCode) {
+      onCreateExemptionCode({
+        code: cleanCode,
+        months: newCodeMonths,
+        maxDrivers: newCodeMaxDrivers,
+        isActive: true,
+        notes: newCodeNotes.trim() || `إعفاء لمدة ${newCodeMonths} شهر لـ ${newCodeMaxDrivers} سائق`
+      });
+    }
+
+    // Reset Form
+    setNewCodeName('');
+    setNewCodeMonths(1);
+    setNewCodeMaxDrivers(10);
+    setNewCodeNotes('');
+    setShowCreateCodeModal(false);
+  };
+
+  const handleCopyCode = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCodeId(id);
+    setTimeout(() => setCopiedCodeId(null), 2500);
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -40,7 +136,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
               لوحة تحكم منصة واصل (WASEL Admin)
             </span>
             <h1 className="text-xl sm:text-2xl font-black text-white">إحصائيات المنصة واشتراكات السائقين المستقلين</h1>
-            <p className="text-xs text-zinc-400 mt-1">نموذج الإيرادات: اشتراك شهري موحد (199 AED) للسائقين للتوصيل بين إمارات الدولة</p>
+            <p className="text-xs text-zinc-400 mt-1">
+              نموذج الإيرادات: اشتراك شهري موحد ({subscriptionPrice} AED) للسائقين للتوصيل بين إمارات الدولة
+            </p>
           </div>
 
           <div className="text-left bg-black px-5 py-3 rounded-2xl border border-zinc-800">
@@ -60,8 +158,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">{totalRevenue} AED</div>
-          <span className="text-[10px] text-zinc-400 font-bold block">↑ اشتراكات شهرية موحدة نشطة</span>
+          <div className="text-xl sm:text-2xl font-black text-white">{totalRevenue.toLocaleString()} AED</div>
+          <span className="text-[10px] text-zinc-400 font-bold block">↑ اشتراكات شهرية نشطة ({subscriptionPrice} AED/سائق)</span>
         </div>
 
         <div className="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-2">
@@ -99,27 +197,256 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       </div>
 
-      {/* Subscription Tier Overview */}
-      <div className="bg-zinc-950 p-5 sm:p-6 rounded-3xl border border-zinc-800 space-y-3">
-        <h3 className="font-black text-white text-base">الباقة الموحدة للسائقين</h3>
-        <div className="bg-black p-4 rounded-2xl border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ========================================================================= */}
+      {/* 1. EDITABLE UNIFIED SUBSCRIPTION PLAN SECTION */}
+      {/* ========================================================================= */}
+      <div className="bg-zinc-950 p-5 sm:p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
+            <h3 className="font-black text-white text-base sm:text-lg flex items-center gap-2">
+              <span>الباقة الموحدة للسائقين</span>
+              <span className="text-xs text-zinc-400 font-normal">(قابلة للتعديل الفوري من الإدارة)</span>
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              تحديد سعر الاشتراك الشهري الموحد لجميع السائقين الجدد والحاليين، وينعكس السعر مباشرة في نافذة التسجيل والتجديد.
+            </p>
+          </div>
+
+          {!isEditingPrice && (
+            <button
+              onClick={() => {
+                setTempPrice(subscriptionPrice.toString());
+                setIsEditingPrice(true);
+              }}
+              className="flex items-center gap-1.5 bg-white hover:bg-zinc-200 text-black px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-md self-start sm:self-auto"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              <span>تعديل سعر الباقة</span>
+            </button>
+          )}
+        </div>
+
+        {priceSaveMessage && (
+          <div className="bg-zinc-900 border border-zinc-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 animate-in fade-in">
+            <Check className="w-4 h-4 text-white" />
+            <span>{priceSaveMessage}</span>
+          </div>
+        )}
+
+        <div className="bg-black p-4 sm:p-5 rounded-2xl border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-white text-sm sm:text-base">{UNIFIED_SUBSCRIPTION_PLAN.name}</span>
-              <span className="text-xs font-bold text-white bg-zinc-900 px-2.5 py-0.5 rounded-full border border-zinc-700">
-                199 AED/شهر
+              <span className="text-xs font-black text-white bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
+                {subscriptionPrice} AED / شهر
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-1">باقة واحدة موحدة للجميع مع نظام الأولوية بالتقييم</p>
+            <p className="text-xs text-zinc-400">باقة واحدة موحدة للجميع مع نظام الأولوية بالتقييم وعمولة 0%</p>
           </div>
-          <div className="text-left sm:text-right">
-            <span className="text-xs text-zinc-400 block">السائقين المشتركين:</span>
-            <span className="text-lg font-black text-white">{activeDriversCount} كباتن نشطين</span>
-          </div>
+
+          {isEditingPrice ? (
+            <div className="flex flex-wrap items-center gap-2 bg-zinc-900 p-2.5 rounded-xl border border-zinc-700">
+              <span className="text-xs font-bold text-zinc-300">السعر الجديد (AED):</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={tempPrice}
+                onChange={(e) => setTempPrice(e.target.value)}
+                className="w-24 bg-black border border-zinc-600 rounded-lg px-2.5 py-1.5 text-sm font-black text-white text-center focus:outline-none focus:border-white"
+                autoFocus
+              />
+              <button
+                onClick={handleSavePrice}
+                className="bg-white hover:bg-zinc-200 text-black text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>حفظ</span>
+              </button>
+              <button
+                onClick={() => setIsEditingPrice(false)}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 active:scale-95"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>إلغاء</span>
+              </button>
+            </div>
+          ) : (
+            <div className="text-left sm:text-right flex items-center gap-4">
+              <div>
+                <span className="text-xs text-zinc-400 block">السائقين المشتركين:</span>
+                <span className="text-base sm:text-lg font-black text-white">{activeDriversCount} كباتن نشطين</span>
+              </div>
+              <div className="border-r border-zinc-800 pr-4">
+                <span className="text-xs text-zinc-400 block">سعر التجديد الحالي:</span>
+                <span className="text-base sm:text-lg font-black text-white">{subscriptionPrice} درهم</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Drivers Registry Table */}
+      {/* ========================================================================= */}
+      {/* 2. EXEMPTION CODES MANAGEMENT SECTION (أكواد الإعفاء والاشتراكات المجانية) */}
+      {/* ========================================================================= */}
+      <div className="bg-zinc-950 p-5 sm:p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-white" />
+              <h3 className="font-black text-white text-base sm:text-lg">أكواد الإعفاء والاشتراكات المجانية للسائقين</h3>
+            </div>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              إنشاء أكواد إعفاء مخصصة تمنح السائقين اشتراكاً مجانياً لفترة محددة (شهر، شهرين، أو أكثر) مع تحديد سقف لعدد السائقين المستفيدين.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowCreateCodeModal(true)}
+            className="flex items-center gap-1.5 bg-white hover:bg-zinc-200 text-black px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-md self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إنشاء كود إعفاء جديد</span>
+          </button>
+        </div>
+
+        {/* Exemption Codes List */}
+        {exemptionCodes.length === 0 ? (
+          <div className="bg-black rounded-2xl p-6 text-center border border-zinc-800 space-y-2">
+            <Ticket className="w-10 h-10 text-zinc-600 mx-auto" />
+            <p className="text-xs text-zinc-400 font-bold">لا توجد أكواد إعفاء منشأة حالياً.</p>
+            <p className="text-[11px] text-zinc-500">اضغط على زر "إنشاء كود إعفاء جديد" لإضافة أول كود للسائقين.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {exemptionCodes.map((item) => {
+              const isExhausted = item.usedDriversCount >= item.maxDrivers;
+              const percentUsed = Math.min(100, Math.round((item.usedDriversCount / item.maxDrivers) * 100));
+
+              return (
+                <div
+                  key={item.id}
+                  className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                    item.isActive && !isExhausted
+                      ? 'bg-black border-zinc-700 hover:border-white'
+                      : 'bg-zinc-900/40 border-zinc-800 opacity-80'
+                  }`}
+                >
+                  {/* Top Bar: Code and Status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-black text-sm sm:text-base text-white bg-zinc-900 px-3 py-1 rounded-xl border border-zinc-700 tracking-wider">
+                        {item.code}
+                      </span>
+                      <button
+                        onClick={() => handleCopyCode(item.code, item.id)}
+                        className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                        title="نسخ الكود"
+                      >
+                        {copiedCodeId === item.id ? (
+                          <Check className="w-3.5 h-3.5 text-white" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div>
+                      {!item.isActive ? (
+                        <span className="text-[10px] font-bold bg-zinc-900 text-zinc-400 px-2 py-0.5 rounded-full border border-zinc-700">
+                          معطل
+                        </span>
+                      ) : isExhausted ? (
+                        <span className="text-[10px] font-bold bg-zinc-900 text-white px-2 py-0.5 rounded-full border border-zinc-700">
+                          مستنفذ (مكتمل)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black bg-white text-black px-2.5 py-0.5 rounded-full">
+                          نشط ومتاح 🟢
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
+                    <div>
+                      <span className="text-[10px] text-zinc-400 block">فترة الإعفاء:</span>
+                      <span className="font-bold text-white flex items-center gap-1 mt-0.5">
+                        <Calendar className="w-3 h-3 text-zinc-400" />
+                        <span>{item.months} {item.months === 1 ? 'شهر' : item.months === 2 ? 'شهرين' : `${item.months} شهور`} مجاناً</span>
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-zinc-400 block">استخدام السائقين:</span>
+                      <span className="font-bold text-white flex items-center gap-1 mt-0.5">
+                        <Users className="w-3 h-3 text-zinc-400" />
+                        <span>{item.usedDriversCount} من {item.maxDrivers} سائق</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Usage Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-zinc-400 font-semibold">
+                      <span>نسبة الاستهلاك:</span>
+                      <span>{percentUsed}% ({item.maxDrivers - item.usedDriversCount} متبقي)</span>
+                    </div>
+                    <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
+                      <div
+                        className="bg-white h-full transition-all duration-300"
+                        style={{ width: `${percentUsed}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {item.notes && (
+                    <p className="text-[11px] text-zinc-400 bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-800 truncate">
+                      💡 {item.notes}
+                    </p>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-1 border-t border-zinc-800 text-xs">
+                    {onToggleExemptionCode && (
+                      <button
+                        onClick={() => onToggleExemptionCode(item.id)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all ${
+                          item.isActive
+                            ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700'
+                            : 'bg-white text-black font-black'
+                        }`}
+                      >
+                        {item.isActive ? 'تعطيل الكود' : 'تفعيل الكود'}
+                      </button>
+                    )}
+
+                    {onDeleteExemptionCode && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`هل أنت متأكد من حذف كود الإعفاء "${item.code}"؟`)) {
+                            onDeleteExemptionCode(item.id);
+                          }
+                        }}
+                        className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors"
+                        title="حذف الكود"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. DRIVERS REGISTRY TABLE */}
+      {/* ========================================================================= */}
       <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-black text-white text-base sm:text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
@@ -160,7 +487,13 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   {(() => {
                     const daysRemaining = getDaysUntilExpiry(drv.subscriptionExpiry);
                     const isExpiring = daysRemaining <= 5 && daysRemaining >= 0;
-                    const inv = createSubscriptionInvoice(drv, `ZIN-${drv.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`, drv.joinedDate, drv.subscriptionExpiry);
+                    const inv = createSubscriptionInvoice(
+                      drv,
+                      `ZIN-${drv.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
+                      drv.joinedDate,
+                      drv.subscriptionExpiry,
+                      subscriptionPrice
+                    );
 
                     return (
                       <>
@@ -168,7 +501,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           {drv.subscriptionStatus === 'active' ? (
                             <div className="space-y-1">
                               <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
-                                <span>مفعل (زينة 199 AED) ✓</span>
+                                <span>مفعل ({subscriptionPrice} AED) ✓</span>
                               </span>
                               <div className="text-[10px] text-zinc-400">
                                 ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
@@ -242,6 +575,173 @@ export const AdminView: React.FC<AdminViewProps> = ({
           onClose={() => setSelectedInvoice(null)}
         />
       )}
+
+      {/* Create Exemption Code Modal */}
+      {showCreateCodeModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-black px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white text-black flex items-center justify-center font-black">
+                  <Ticket className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-black text-white text-base">إنشاء كود إعفاء جديد</h4>
+                  <p className="text-[11px] text-zinc-400">تخصيص كود إعفاء مجاني للسائقين مع تحديد المدة والعدد</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCreateCodeModal(false)}
+                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCodeSubmit} className="p-5 sm:p-6 space-y-4 text-xs">
+              
+              {/* Code Name & Generate Button */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-300">
+                  رمز الكود (الكود الترويجي):
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={newCodeName}
+                    onChange={(e) => setNewCodeName(e.target.value.toUpperCase())}
+                    placeholder="مثال: WASEL2026 أو FREE1M"
+                    className="flex-1 bg-black border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm font-mono font-black text-white tracking-wider focus:outline-none focus:border-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGenerateRandomCode}
+                    className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white px-3 py-2 rounded-xl border border-zinc-700 font-bold active:scale-95"
+                  >
+                    توليد تلقائي 🎲
+                  </button>
+                </div>
+              </div>
+
+              {/* Exemption Duration (Months) */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-300">
+                  فترة الإعفاء المجاني (بالشهور):
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, 2, 3, 6].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setNewCodeMonths(m)}
+                      className={`py-2 px-3 rounded-xl font-bold border transition-all text-xs ${
+                        newCodeMonths === m
+                          ? 'bg-white text-black border-white shadow-md'
+                          : 'bg-black text-zinc-400 border-zinc-800 hover:text-white'
+                      }`}
+                    >
+                      {m === 1 ? 'شهر (1)' : m === 2 ? 'شهرين (2)' : `${m} شهور`}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-zinc-400">أو عدد مخصص:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="36"
+                    value={newCodeMonths}
+                    onChange={(e) => setNewCodeMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-20 bg-black border border-zinc-700 rounded-lg px-2.5 py-1 text-xs font-bold text-white text-center"
+                  />
+                  <span className="text-[11px] text-zinc-400">شهر</span>
+                </div>
+              </div>
+
+              {/* Max Drivers Usage */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-300">
+                  عدد السائقين المسموح لهم باستخدام الكود:
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[10, 25, 50, 100].map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setNewCodeMaxDrivers(count)}
+                      className={`py-2 px-3 rounded-xl font-bold border transition-all text-xs ${
+                        newCodeMaxDrivers === count
+                          ? 'bg-white text-black border-white shadow-md'
+                          : 'bg-black text-zinc-400 border-zinc-800 hover:text-white'
+                      }`}
+                    >
+                      {count} سائق
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-zinc-400">أو عدد مخصص:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={newCodeMaxDrivers}
+                    onChange={(e) => setNewCodeMaxDrivers(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-24 bg-black border border-zinc-700 rounded-lg px-2.5 py-1 text-xs font-bold text-white text-center"
+                  />
+                  <span className="text-[11px] text-zinc-400">سائق</span>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-300">
+                  ملاحظات أو مناسبة الكود (اختياري):
+                </label>
+                <input
+                  type="text"
+                  value={newCodeNotes}
+                  onChange={(e) => setNewCodeNotes(e.target.value)}
+                  placeholder="مثال: كود ترويجي لإطلاق الحملة الإعلانية"
+                  className="w-full bg-black border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white"
+                />
+              </div>
+
+              {/* Preview Box */}
+              <div className="bg-black p-3.5 rounded-2xl border border-zinc-800 space-y-1">
+                <div className="font-bold text-white text-[11px] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                  <span>ملخص الكود الجديد:</span>
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  سيتمكن حتى <strong className="text-white">{newCodeMaxDrivers} سائق</strong> من إدخال الكود للحصول على <strong className="text-white">اشتراك مجاني بالكامل لمدة {newCodeMonths} {newCodeMonths === 1 ? 'شهر' : 'شهور'}</strong> فور التسجيل أو التجديد.
+                </p>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-lg flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>حفظ وإنشاء الكود</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateCodeModal(false)}
+                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-3 px-5 rounded-xl text-xs active:scale-95"
+                >
+                  إلغاء
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

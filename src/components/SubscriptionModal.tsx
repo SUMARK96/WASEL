@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { DriverProfile, SubscriptionPlanId, SubscriptionInvoice } from '../types';
+import type { DriverProfile, SubscriptionPlanId, SubscriptionInvoice, ExemptionCode } from '../types';
 import { UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import { 
   X, 
@@ -16,11 +16,13 @@ import {
   FileText,
   Share2,
   Calendar,
-  Bell
+  Bell,
+  Ticket
 } from 'lucide-react';
 import { 
   createSubscriptionInvoice, 
   calculateOneMonthExpiry, 
+  calculateExpiryByMonths,
   getWhatsAppInvoiceUrl, 
   getDaysUntilExpiry,
   formatArabicDate
@@ -30,13 +32,19 @@ import { InvoiceModal } from './InvoiceModal';
 interface SubscriptionModalProps {
   driver: DriverProfile;
   onClose: () => void;
-  onSubscribeSuccess: (planId: SubscriptionPlanId) => void;
+  onSubscribeSuccess: (planId: SubscriptionPlanId, newExpiry?: string) => void;
+  subscriptionPrice?: number;
+  exemptionCodes?: ExemptionCode[];
+  onApplyExemptionCode?: (codeStr: string, driverId?: string) => { success: boolean; message: string; months?: number };
 }
 
 export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   driver,
   onClose,
-  onSubscribeSuccess
+  onSubscribeSuccess,
+  subscriptionPrice = UNIFIED_SUBSCRIPTION_PLAN.price,
+  exemptionCodes = [],
+  onApplyExemptionCode
 }) => {
   const [stage, setStage] = useState<'plan' | 'link_opened' | 'verifying' | 'success' | 'failed'>('plan');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -44,8 +52,73 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [generatedInvoice, setGeneratedInvoice] = useState<SubscriptionInvoice | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
+  // Exemption Code States
+  const [inputPromoCode, setInputPromoCode] = useState('');
+  const [appliedExemption, setAppliedExemption] = useState<{ code: string; months: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
+
   const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
-  const plan = UNIFIED_SUBSCRIPTION_PLAN;
+  const plan = {
+    ...UNIFIED_SUBSCRIPTION_PLAN,
+    price: subscriptionPrice
+  };
+
+  const handleApplyPromo = () => {
+    setPromoError(null);
+    setPromoSuccess(null);
+    const clean = inputPromoCode.trim().toUpperCase();
+    if (!clean) {
+      setPromoError('يرجى كتابة رمز الكود أولاً');
+      return;
+    }
+
+    if (onApplyExemptionCode) {
+      const res = onApplyExemptionCode(clean, driver.id);
+      if (res.success && res.months) {
+        setAppliedExemption({ code: clean, months: res.months });
+        setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! تجديد مجاني بنسبة 100% لمدة ${res.months} ${res.months === 1 ? 'شهر' : res.months === 2 ? 'شهرين' : `${res.months} شهور`} دون أي رسوم.`);
+      } else {
+        setPromoError(res.message || 'كود الإعفاء غير صالح أو انتهت صلاحيته');
+      }
+    } else {
+      const found = exemptionCodes?.find(c => c.code.toUpperCase() === clean && c.isActive);
+      if (found) {
+        if (found.usedDriversCount >= found.maxDrivers) {
+          setPromoError('تم استنفاد الحد الأقصى لعدد السائقين المسموح لهم بهذا الكود');
+          return;
+        }
+        setAppliedExemption({ code: found.code, months: found.months });
+        setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! تجديد مجاني بنسبة 100% لمدة ${found.months} ${found.months === 1 ? 'شهر' : found.months === 2 ? 'شهرين' : `${found.months} شهور`} دون أي رسوم.`);
+      } else {
+        setPromoError('كود الإعفاء غير صحيح أو غير مفعل');
+      }
+    }
+  };
+
+  const handleActivateWithExemption = () => {
+    if (!appliedExemption) return;
+    setStage('verifying');
+    setErrorMessage(null);
+
+    setTimeout(() => {
+      // Calculate start date: if current subscription is still active and in the future, extend from expiry, else from now
+      const isStillActive = driver.subscriptionStatus === 'active' && getDaysUntilExpiry(driver.subscriptionExpiry) > 0;
+      const baseDate = isStillActive ? new Date(driver.subscriptionExpiry) : new Date();
+      const newExpiry = calculateExpiryByMonths(baseDate, appliedExemption.months);
+
+      const inv = createSubscriptionInvoice(
+        driver, 
+        `PROMO-${appliedExemption.code}`,
+        new Date().toISOString().split('T')[0],
+        newExpiry,
+        0,
+        `كود إعفاء ترويجي (${appliedExemption.code} - ${appliedExemption.months} شهر مجاناً)`
+      );
+      setGeneratedInvoice(inv);
+      setStage('success');
+    }, 1200);
+  };
 
   const handleOpenZiina = () => {
     setErrorMessage(null);
@@ -59,12 +132,16 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
     // Strict verification simulation with Ziina Payment Gateway
     setTimeout(() => {
-      const newExpiry = calculateOneMonthExpiry(new Date());
+      const isStillActive = driver.subscriptionStatus === 'active' && getDaysUntilExpiry(driver.subscriptionExpiry) > 0;
+      const baseDate = isStillActive ? new Date(driver.subscriptionExpiry) : new Date();
+      const newExpiry = calculateOneMonthExpiry(baseDate);
+
       const inv = createSubscriptionInvoice(
         driver, 
         refNumber || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
         new Date().toISOString().split('T')[0],
-        newExpiry
+        newExpiry,
+        subscriptionPrice
       );
       setGeneratedInvoice(inv);
       setStage('success');
@@ -77,7 +154,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   const handleFinalSuccess = () => {
-    onSubscribeSuccess('unified');
+    onSubscribeSuccess('unified', generatedInvoice?.expiryDate);
   };
 
   const daysRemaining = getDaysUntilExpiry(driver.subscriptionExpiry);
@@ -100,7 +177,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm sm:text-lg font-black text-white">تجديد الاشتراك الشهري الموحد للسائقين</h3>
-                <p className="text-[11px] sm:text-xs text-zinc-400">بوابة الدفع الإلكتروني المباشر (Ziina Pay) • عمولة 0%</p>
+                <p className="text-[11px] sm:text-xs text-zinc-400">بوابة الدفع الإلكتروني المباشر (Ziina Pay) أو كود الإعفاء • عمولة 0%</p>
               </div>
             </div>
             <button
@@ -122,11 +199,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
                 <div className="space-y-1">
                   <span className="bg-zinc-900 text-white text-xs font-black px-3 py-1 rounded-full border border-zinc-700">
-                    تم تأكيد الدفع بنجاح وإصدار الفاتورة الرسمية ✓
+                    تم تأكيد التجديد بنجاح وإصدار الفاتورة الرسمية ✓
                   </span>
                   <h4 className="text-lg sm:text-2xl font-black text-white pt-1">تم تجديد اشتراكك بنجاح! 🎉</h4>
                   <p className="text-zinc-300 font-bold text-xs sm:text-sm">
-                    صلاحية الاشتراك الجديد: <strong className="text-white">شهر كامل بالظبط (حتى {generatedInvoice.expiryDate})</strong>.
+                    صلاحية الاشتراك الجديد: <strong className="text-white">حتى {generatedInvoice.expiryDate}</strong>.
                   </p>
                 </div>
 
@@ -142,7 +219,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-zinc-300">
                     <span>المبلغ المسدد:</span>
-                    <span className="font-bold text-white">{generatedInvoice.amount}.00 AED</span>
+                    <span className="font-bold text-white">
+                      {generatedInvoice.amount === 0 ? '0.00 AED (إعفاء مجاني)' : `${generatedInvoice.amount}.00 AED`}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-zinc-300">
+                    <span>طريقة السداد / الاعتماد:</span>
+                    <span className="font-bold text-white">{generatedInvoice.paymentMethod}</span>
                   </div>
                   <div className="flex items-center justify-between text-zinc-300">
                     <span>تاريخ الانتهاء الجديد:</span>
@@ -207,8 +290,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <h4 className="text-base sm:text-lg font-bold text-white">جاري التحقق من نجاح الدفع في بوابة زينة (Ziina)...</h4>
-                  <p className="text-xs text-zinc-400">التحقق من إتمام الحوالة وتأكيد دفع الاشتراك الموحد ({plan.price} AED)</p>
+                  <h4 className="text-base sm:text-lg font-bold text-white">
+                    {appliedExemption ? 'جاري تفعيل وتمديد الاشتراك بكود الإعفاء...' : 'جاري التحقق من نجاح الدفع في بوابة زينة (Ziina)...'}
+                  </h4>
+                  <p className="text-xs text-zinc-400">
+                    {appliedExemption ? `تطبيق إعفاء مجاني لمدة ${appliedExemption.months} شهر` : `التحقق من إتمام الحوالة وتأكيد دفع الاشتراك الموحد (${plan.price} AED)`}
+                  </p>
                 </div>
               </div>
             )}
@@ -227,7 +314,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <div className="bg-zinc-900 border border-zinc-700 p-4 rounded-2xl w-full text-right text-xs text-zinc-300">
                   <p className="font-semibold text-white mb-1">⚠️ تنبيه عدم التجديد:</p>
                   <p className="text-zinc-400 leading-relaxed">
-                    لم يتم تجديد الاشتراك. لن تتمكن من تقديم عروض أسعار جديدة للعملاء حتى إتمام الدفع بنجاح في رابط زينة.
+                    لم يتم تجديد الاشتراك. لن تتمكن من تقديم عروض أسعار جديدة للعملاء حتى إتمام الدفع بنجاح في رابط زينة أو إدخال كود إعفاء صالح.
                   </p>
                 </div>
 
@@ -350,8 +437,22 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     </div>
 
                     <div className="text-left">
-                      <div className="text-2xl sm:text-3xl font-black text-white">{plan.price}</div>
-                      <div className="text-[10px] text-zinc-400 font-bold">درهم / شهر كامل</div>
+                      {appliedExemption ? (
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-zinc-500 line-through text-sm font-bold">{plan.price} AED</span>
+                            <span className="text-2xl sm:text-3xl font-black text-white">0 AED</span>
+                          </div>
+                          <span className="text-[10px] text-zinc-300 font-black bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-700">
+                            إعفاء مجاني ({appliedExemption.months} شهر)
+                          </span>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-2xl sm:text-3xl font-black text-white">{plan.price}</div>
+                          <div className="text-[10px] text-zinc-400 font-bold">درهم / شهر كامل</div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -370,24 +471,99 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
                 </div>
 
-                {/* Ziina Gateway Secure Notice */}
-                <div className="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-black shadow shrink-0 text-sm border border-zinc-800">
-                      💳
+                {/* Exemption & Promo Code Section */}
+                <div className="bg-zinc-900/80 p-4 rounded-2xl border border-zinc-700 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="w-4 h-4 text-white" />
+                      <span className="font-black text-white text-xs sm:text-sm">لديك كود إعفاء أو تجديد ترويجي؟</span>
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
-                        <span className="text-[10px] text-white bg-zinc-900 px-1.5 py-0.2 rounded border border-zinc-700 font-bold">آمن ومشفر</span>
+                    <span className="text-[10px] text-zinc-400 font-semibold">تجديد 100% بدون دفع</span>
+                  </div>
+
+                  {appliedExemption ? (
+                    <div className="bg-black p-3.5 rounded-xl border border-zinc-700 flex items-center justify-between gap-3 animate-in fade-in">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-white text-black text-xs font-black px-2 py-0.5 rounded font-mono">
+                            {appliedExemption.code}
+                          </span>
+                          <span className="text-white text-xs font-black">✓ تم تفعيل كود الإعفاء بنجاح</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-300">
+                          تمديد وتجديد مجاني لمدة <strong>{appliedExemption.months} {appliedExemption.months === 1 ? 'شهر' : 'شهور'}</strong> دون الحاجة لأي دفع.
+                        </p>
                       </div>
-                      <p className="text-[11px] text-zinc-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedExemption(null);
+                          setPromoSuccess(null);
+                          setInputPromoCode('');
+                        }}
+                        className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 px-2.5 py-1.5 rounded-lg border border-zinc-700"
+                      >
+                        إلغاء الكود
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={inputPromoCode}
+                          onChange={(e) => {
+                            setInputPromoCode(e.target.value.toUpperCase());
+                            setPromoError(null);
+                          }}
+                          placeholder="أدخل رمز الكود (مثال: WASEL2026)"
+                          className="flex-1 bg-black border border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-white tracking-wider focus:outline-none focus:border-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyPromo}
+                          className="bg-white hover:bg-zinc-200 text-black text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 shadow"
+                        >
+                          تطبيق الكود
+                        </button>
+                      </div>
+
+                      {promoError && (
+                        <div className="text-red-400 text-[11px] font-bold flex items-center gap-1.5 animate-in fade-in">
+                          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                          <span>{promoError}</span>
+                        </div>
+                      )}
+
+                      {promoSuccess && (
+                        <div className="text-white bg-zinc-900 p-2 rounded-lg border border-zinc-700 text-[11px] font-bold animate-in fade-in">
+                          {promoSuccess}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Ziina Gateway Secure Notice (If no exemption code applied) */}
+                {!appliedExemption && (
+                  <div className="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-black shadow shrink-0 text-sm border border-zinc-800">
+                        💳
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
+                          <span className="text-[10px] text-white bg-zinc-900 px-1.5 py-0.2 rounded border border-zinc-700 font-bold">آمن ومشفر</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                      </div>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <span className="text-base font-black text-white">{plan.price} AED</span>
                     </div>
                   </div>
-                  <div className="text-left shrink-0">
-                    <span className="text-base font-black text-white">{plan.price} AED</span>
-                  </div>
-                </div>
+                )}
 
                 {/* Strict Policy & Automated Invoice Notice */}
                 <div className="bg-zinc-900 border border-zinc-800 p-3.5 rounded-xl text-xs text-zinc-300 space-y-1">
@@ -396,19 +572,33 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <span>سياسة التجديد والفواتير:</span>
                   </div>
                   <p className="text-zinc-400 text-[11px] leading-relaxed">
-                    يتم تمديد صلاحية الاشتراك لمدة شهر كامل بالظبط بعد تأكيد الدفع في زينة مباشرة، ويتم إصدار فاتورة ضريبية رسمية قابلة للطباعة والإرسال للواتساب.
+                    {appliedExemption
+                      ? `سيتم تمديد اشتراكك فوراً لمدة ${appliedExemption.months} شهر مجاناً وإصدار فاتورة رسمية بقيمة 0 درهم.`
+                      : `يتم تمديد صلاحية الاشتراك لمدة شهر كامل بالظبط بعد تأكيد الدفع في زينة مباشرة، ويتم إصدار فاتورة ضريبية رسمية قابلة للطباعة والإرسال للواتساب.`
+                    }
                   </p>
                 </div>
 
-                {/* Submit Button */}
-                <button
-                  type="button"
-                  onClick={handleOpenZiina}
-                  className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>الانتقال للدفع وتجديد الاشتراك عبر زينة ({plan.price} AED)</span>
-                </button>
+                {/* Submit / Activate Button */}
+                {appliedExemption ? (
+                  <button
+                    type="button"
+                    onClick={handleActivateWithExemption}
+                    className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-black" />
+                    <span>✨ تأكيد التجديد المجاني وتمديد الصلاحية ({appliedExemption.months} شهر)</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleOpenZiina}
+                    className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>الانتقال للدفع وتجديد الاشتراك عبر زينة ({plan.price} AED)</span>
+                  </button>
+                )}
               </>
             )}
 

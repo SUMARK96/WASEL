@@ -34,12 +34,19 @@ export function isSubscriptionExpired(expiryDateStr: string): boolean {
 }
 
 /**
+ * Computes expiry date string (YYYY-MM-DD) for given number of months.
+ */
+export function calculateExpiryByMonths(startDate: Date = new Date(), months: number = 1): string {
+  const expiry = new Date(startDate);
+  expiry.setMonth(expiry.getMonth() + months);
+  return expiry.toISOString().split('T')[0];
+}
+
+/**
  * Computes exact 1 month expiry date string (YYYY-MM-DD).
  */
 export function calculateOneMonthExpiry(startDate: Date = new Date()): string {
-  const expiry = new Date(startDate);
-  expiry.setMonth(expiry.getMonth() + 1);
-  return expiry.toISOString().split('T')[0];
+  return calculateExpiryByMonths(startDate, 1);
 }
 
 /**
@@ -66,12 +73,15 @@ export function createSubscriptionInvoice(
   driver: DriverProfile,
   paymentRef?: string,
   customStartDate?: string,
-  customExpiryDate?: string
+  customExpiryDate?: string,
+  customAmount?: number,
+  customPaymentMethod?: string
 ): SubscriptionInvoice {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const expiryStr = customExpiryDate || calculateOneMonthExpiry(now);
   const invoiceNum = `INV-WSL-${now.getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+  const finalAmount = typeof customAmount === 'number' ? customAmount : UNIFIED_SUBSCRIPTION_PLAN.price;
 
   return {
     id: `inv-${Date.now()}`,
@@ -83,12 +93,12 @@ export function createSubscriptionInvoice(
     driverEmirate: driver.emirate,
     driverVehicle: `${driver.vehicleModel} (${driver.vehiclePlate})`,
     planName: UNIFIED_SUBSCRIPTION_PLAN.name,
-    amount: UNIFIED_SUBSCRIPTION_PLAN.price,
+    amount: finalAmount,
     issueDate: todayStr,
     startDate: customStartDate || todayStr,
     expiryDate: expiryStr,
-    paymentMethod: 'بوابة زينة (Ziina Pay)',
-    paymentRef: paymentRef || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
+    paymentMethod: customPaymentMethod || (finalAmount === 0 ? 'كود إعفاء ترويجي (مجاني)' : 'بوابة زينة (Ziina Pay)'),
+    paymentRef: paymentRef || (finalAmount === 0 ? 'EXEMPTION-PROMO' : `ZIN-${Math.floor(100000 + Math.random() * 900000)}`),
     status: 'paid'
   };
 }

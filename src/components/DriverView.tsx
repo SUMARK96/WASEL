@@ -17,7 +17,6 @@ import {
   ChevronDown,
   FileText,
   Share2,
-  ExternalLink,
   User,
   LogOut,
   Layers,
@@ -35,16 +34,18 @@ interface DriverViewProps {
   onOpenSubmitOffer: (request: DeliveryRequest) => void;
   onMarkNotificationRead?: (id: string) => void;
   onLogout?: () => void;
+  subscriptionPrice?: number;
 }
 
 export const DriverView: React.FC<DriverViewProps> = ({
   driver,
   requests,
   notifications: _notifications,
-  onOpenSubscription: _onOpenSubscription,
+  onOpenSubscription,
   onOpenSubmitOffer,
   onMarkNotificationRead: _onMarkNotificationRead,
-  onLogout
+  onLogout,
+  subscriptionPrice = 199
 }) => {
   // Navigation Section State (only shows selected section)
   const [selectedSection, setSelectedSection] = useState<DriverDashboardSection>('new_requests');
@@ -66,7 +67,8 @@ export const DriverView: React.FC<DriverViewProps> = ({
     driver,
     `ZIN-${driver.id.replace(/[^0-9]/g, '').slice(-6) || '892134'}`,
     driver.joinedDate || '2026-09-01',
-    driver.subscriptionExpiry
+    driver.subscriptionExpiry,
+    subscriptionPrice
   );
 
   const openRequests = requests.filter(r => r.status === 'open');
@@ -521,11 +523,14 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 <AlertTriangle className="w-6 h-6 text-white shrink-0" />
                 <div>
                   <h4 className="font-black text-white text-sm">حسابك غير مفعل حالياً أو انتهت صلاحية الاشتراك</h4>
-                  <p className="text-xs text-zinc-400">يجب سداد وتأكيد الاشتراك الموحد (199 AED) لتقديم عروض الأسعار للعملاء.</p>
+                  <p className="text-xs text-zinc-400">يجب سداد وتأكيد الاشتراك الموحد ({subscriptionPrice} AED) أو إدخال كود إعفاء لتقديم عروض الأسعار للعملاء.</p>
                 </div>
               </div>
               <button
-                onClick={() => setSelectedSection('subscription')}
+                onClick={() => {
+                  if (onOpenSubscription) onOpenSubscription();
+                  else setSelectedSection('subscription');
+                }}
                 className="bg-white hover:bg-zinc-200 text-black font-bold px-4 py-2.5 rounded-xl text-xs shrink-0"
               >
                 تفعيل الاشتراك ⚡
@@ -766,7 +771,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
               </div>
 
               <div className="text-right sm:text-left">
-                <span className="text-3xl font-black text-white">199</span>
+                <span className="text-3xl font-black text-white">{subscriptionPrice}</span>
                 <span className="text-xs text-zinc-400 font-bold mr-1">درهم / شهرياً</span>
               </div>
             </div>
@@ -804,7 +809,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
               </p>
             </div>
 
-            {/* Actions: Invoice Preview, WhatsApp Invoice, Ziina Pay Gateway */}
+            {/* Actions: Invoice Preview, WhatsApp Invoice, Ziina Pay / Promo Code */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <button
                 type="button"
@@ -825,15 +830,15 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 <span>إرسال الفاتورة للواتساب</span>
               </a>
 
-              <a
-                href="https://pay.ziina.com/Waslasd/IWXxU478H?source=app"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenSubscription) onOpenSubscription();
+                }}
                 className="bg-white hover:bg-zinc-200 text-black font-black py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl"
               >
-                <ExternalLink className="w-4 h-4" />
-                <span>سداد / تجديد عبر زينة (199 AED)</span>
-              </a>
+                <span>⚡ تجديد الاشتراك / كود إعفاء ({subscriptionPrice} AED)</span>
+              </button>
             </div>
 
           </div>

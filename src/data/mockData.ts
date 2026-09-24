@@ -46,6 +46,31 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   UNIFIED_SUBSCRIPTION_PLAN
 ];
 
+export const INITIAL_EXEMPTION_CODES: import('../types').ExemptionCode[] = [
+  {
+    id: 'code-1',
+    code: 'WASEL2026',
+    months: 2,
+    maxDrivers: 50,
+    usedDriversCount: 8,
+    usedDriverIds: ['drv-101', 'drv-102'],
+    isActive: true,
+    createdAt: '2026-09-01',
+    notes: 'كود إعفاء ترويجي لانطلاق المنصة (شهرين مجاناً)'
+  },
+  {
+    id: 'code-2',
+    code: 'FREE1M',
+    months: 1,
+    maxDrivers: 20,
+    usedDriversCount: 3,
+    usedDriverIds: ['drv-103'],
+    isActive: true,
+    createdAt: '2026-09-10',
+    notes: 'كود إعفاء شهر مجاني للسائقين الجدد'
+  }
+];
+
 export const INITIAL_DRIVERS: DriverProfile[] = [
   {
     id: 'drv-101',

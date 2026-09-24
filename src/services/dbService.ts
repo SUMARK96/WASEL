@@ -1,10 +1,12 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import type { DeliveryRequest, DriverProfile, DriverOffer } from '../types';
-import { INITIAL_DRIVERS, INITIAL_REQUESTS } from '../data/mockData';
+import { INITIAL_DRIVERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
+import type { DeliveryRequest, DriverProfile, DriverOffer, ExemptionCode } from '../types';
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests';
 const STORAGE_KEY_DRIVERS = 'wasel_drivers';
+const STORAGE_KEY_SUBSCRIPTION_PRICE = 'wasel_subscription_price';
+const STORAGE_KEY_EXEMPTION_CODES = 'wasel_exemption_codes';
 
 export const dbService = {
   // Check if active Supabase connection is available
@@ -314,5 +316,38 @@ export const dbService = {
         console.warn('Supabase rateDriver failed:', err);
       }
     }
+  },
+
+  // ==================== SUBSCRIPTION PRICE & EXEMPTION CODES ====================
+  getSubscriptionPrice(): number {
+    const local = localStorage.getItem(STORAGE_KEY_SUBSCRIPTION_PRICE);
+    if (local) {
+      const parsed = parseInt(local, 10);
+      if (!isNaN(parsed) && parsed >= 0) {
+        return parsed;
+      }
+    }
+    return UNIFIED_SUBSCRIPTION_PLAN.price;
+  },
+
+  setSubscriptionPrice(price: number): void {
+    localStorage.setItem(STORAGE_KEY_SUBSCRIPTION_PRICE, price.toString());
+  },
+
+  getExemptionCodes(): ExemptionCode[] {
+    const local = localStorage.getItem(STORAGE_KEY_EXEMPTION_CODES);
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error('Failed to parse exemption codes:', e);
+      }
+    }
+    return INITIAL_EXEMPTION_CODES;
+  },
+
+  saveExemptionCodes(codes: ExemptionCode[]): void {
+    localStorage.setItem(STORAGE_KEY_EXEMPTION_CODES, JSON.stringify(codes));
   }
 };

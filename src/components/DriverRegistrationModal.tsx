@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { DriverProfile, Emirate, SubscriptionPlanId, SubscriptionInvoice } from '../types';
-import { createSubscriptionInvoice, calculateOneMonthExpiry, getWhatsAppInvoiceUrl } from '../utils/subscriptionUtils';
+import type { DriverProfile, Emirate, SubscriptionPlanId, SubscriptionInvoice, ExemptionCode } from '../types';
+import { createSubscriptionInvoice, calculateOneMonthExpiry, calculateExpiryByMonths, getWhatsAppInvoiceUrl } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
 import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
@@ -34,12 +34,16 @@ import {
   CheckCircle2,
   AlertTriangle,
   Scan,
-  Eye
+  Eye,
+  Ticket
 } from 'lucide-react';
 
 interface DriverRegistrationModalProps {
   onClose: () => void;
   onRegisterSuccess: (newDriver: DriverProfile) => void;
+  subscriptionPrice?: number;
+  exemptionCodes?: ExemptionCode[];
+  onApplyExemptionCode?: (codeStr: string, driverId?: string) => { success: boolean; message: string; months?: number };
 }
 
 // Default avatar placeholder if not uploaded yet
@@ -51,7 +55,10 @@ const DEFAULT_DOC_IMG = 'https://images.unsplash.com/photo-1589829545856-d10d557
 
 export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = ({
   onClose,
-  onRegisterSuccess
+  onRegisterSuccess,
+  subscriptionPrice = UNIFIED_SUBSCRIPTION_PLAN.price,
+  exemptionCodes = [],
+  onApplyExemptionCode
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -104,8 +111,104 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [generatedInvoice, setGeneratedInvoice] = useState<SubscriptionInvoice | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
 
+  // Exemption Code States
+  const [inputPromoCode, setInputPromoCode] = useState('');
+  const [appliedExemption, setAppliedExemption] = useState<{ code: string; months: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
+
   const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
-  const selectedPlanDetails = UNIFIED_SUBSCRIPTION_PLAN;
+  const selectedPlanDetails = {
+    ...UNIFIED_SUBSCRIPTION_PLAN,
+    price: subscriptionPrice
+  };
+
+  const handleApplyPromo = () => {
+    setPromoError(null);
+    setPromoSuccess(null);
+    const clean = inputPromoCode.trim().toUpperCase();
+    if (!clean) {
+      setPromoError('يرجى كتابة رمز الكود أولاً');
+      return;
+    }
+    if (onApplyExemptionCode) {
+      const res = onApplyExemptionCode(clean);
+      if (res.success && res.months) {
+        setAppliedExemption({ code: clean, months: res.months });
+        setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! اشتراك مجاني بنسبة 100% لمدة ${res.months} ${res.months === 1 ? 'شهر' : res.months === 2 ? 'شهرين' : `${res.months} شهور`} دون أي رسوم.`);
+      } else {
+        setPromoError(res.message || 'كود الإعفاء غير صالح أو انتهت صلاحيته');
+      }
+    } else {
+      const found = exemptionCodes?.find(c => c.code.toUpperCase() === clean && c.isActive);
+      if (found) {
+        if (found.usedDriversCount >= found.maxDrivers) {
+          setPromoError('تم استنفاد الحد الأقصى لعدد السائقين المسموح لهم باستخدام هذا الكود');
+          return;
+        }
+        setAppliedExemption({ code: found.code, months: found.months });
+        setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! اشتراك مجاني بنسبة 100% لمدة ${found.months} ${found.months === 1 ? 'شهر' : found.months === 2 ? 'شهرين' : `${found.months} شهور`} دون أي رسوم.`);
+      } else {
+        setPromoError('كود الإعفاء غير صحيح أو غير مفعل');
+      }
+    }
+  };
+
+  const handleActivateWithExemption = () => {
+    if (!appliedExemption) return;
+    setPaymentStage('verifying');
+
+    setTimeout(() => {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const formattedExpiry = calculateExpiryByMonths(now, appliedExemption.months);
+
+      const newDriverId = `drv-${Date.now()}`;
+      const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
+      const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : `+971 ${phone.trim()}`;
+
+      const activatedDriver: DriverProfile = {
+        id: newDriverId,
+        name: name.trim(),
+        phone: fullCallPhone,
+        whatsappPhone: cleanWhatsapp,
+        callPhone: fullCallPhone,
+        email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
+        password: password.trim() || '123456',
+        avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
+        emirate,
+        vehicleModel: vehicleModel.trim(),
+        vehiclePlate: vehiclePlate.trim(),
+        vehiclePhoto: vehiclePhotos[0] || DEFAULT_VEHICLE_IMG,
+        vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [DEFAULT_VEHICLE_IMG],
+        licensePhoto: drivingLicensePhoto,
+        mulkiyaPhoto,
+        emiratesIdPhoto,
+        rating: 5.0,
+        reviewsCount: 1,
+        completedDeliveries: 0,
+        isVerified: true,
+        subscriptionStatus: 'active',
+        subscriptionPlan: selectedPlan,
+        subscriptionExpiry: formattedExpiry,
+        joinedDate: todayStr,
+        bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
+      };
+
+      const invoice = createSubscriptionInvoice(
+        activatedDriver,
+        `PROMO-${appliedExemption.code}`,
+        todayStr,
+        formattedExpiry,
+        0,
+        `كود إعفاء ترويجي (${appliedExemption.code} - ${appliedExemption.months} شهر مجاناً)`
+      );
+
+      setGeneratedInvoice(invoice);
+      setCreatedActiveDriver(activatedDriver);
+      setPaymentStage('success');
+    }, 1200);
+  };
 
   const handleOpenZiinaPayment = () => {
     setPaymentError(null);
@@ -159,7 +262,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         activatedDriver,
         transactionRef || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
         todayStr,
-        formattedExpiry
+        formattedExpiry,
+        subscriptionPrice
       );
 
       setGeneratedInvoice(invoice);
@@ -1310,8 +1414,22 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       </div>
 
                       <div className="text-right sm:text-left">
-                        <span className="text-2xl sm:text-3xl font-black text-white">{selectedPlanDetails.price}</span>
-                        <span className="text-xs text-zinc-400 font-semibold mr-1">درهم / شهرياً</span>
+                        {appliedExemption ? (
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-zinc-500 line-through text-sm font-bold">{selectedPlanDetails.price} AED</span>
+                              <span className="text-2xl sm:text-3xl font-black text-white">0 AED</span>
+                            </div>
+                            <span className="text-[10px] text-zinc-300 font-black bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-700">
+                              إعفاء مجاني ({appliedExemption.months} شهر)
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-2xl sm:text-3xl font-black text-white">{selectedPlanDetails.price}</span>
+                            <span className="text-xs text-zinc-400 font-semibold mr-1">درهم / شهرياً</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1332,24 +1450,99 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
                   </div>
 
-                  {/* Ziina Gateway Secure Notice */}
-                  <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center font-black shadow shrink-0 text-sm">
-                        💳
+                  {/* Exemption & Promo Code Section */}
+                  <div className="bg-zinc-900/80 p-4 rounded-2xl border border-zinc-700 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Ticket className="w-4 h-4 text-white" />
+                        <span className="font-black text-white text-xs sm:text-sm">لديك كود إعفاء أو اشتراك ترويجي؟</span>
                       </div>
-                      <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
-                          <span className="text-[10px] text-zinc-300 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700 font-bold">آمن ومشفر</span>
+                      <span className="text-[10px] text-zinc-400 font-semibold">إعفاء 100% بدون دفع</span>
+                    </div>
+
+                    {appliedExemption ? (
+                      <div className="bg-black p-3.5 rounded-xl border border-zinc-700 flex items-center justify-between gap-3 animate-in fade-in">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-white text-black text-xs font-black px-2 py-0.5 rounded font-mono">
+                              {appliedExemption.code}
+                            </span>
+                            <span className="text-white text-xs font-black">✓ تم تفعيل كود الإعفاء بنجاح</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-300">
+                            اشتراك مجاني بالكامل لمدة <strong>{appliedExemption.months} {appliedExemption.months === 1 ? 'شهر' : 'شهور'}</strong> دون الحاجة لأي بطاقة دفع.
+                          </p>
                         </div>
-                        <p className="text-[11px] text-zinc-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAppliedExemption(null);
+                            setPromoSuccess(null);
+                            setInputPromoCode('');
+                          }}
+                          className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 px-2.5 py-1.5 rounded-lg border border-zinc-700"
+                        >
+                          إلغاء الكود
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={inputPromoCode}
+                            onChange={(e) => {
+                              setInputPromoCode(e.target.value.toUpperCase());
+                              setPromoError(null);
+                            }}
+                            placeholder="أدخل رمز الكود (مثال: WASEL2026)"
+                            className="flex-1 bg-black border border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-white tracking-wider focus:outline-none focus:border-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyPromo}
+                            className="bg-white hover:bg-zinc-200 text-black text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 shadow"
+                          >
+                            تطبيق الكود
+                          </button>
+                        </div>
+
+                        {promoError && (
+                          <div className="text-red-400 text-[11px] font-bold flex items-center gap-1.5 animate-in fade-in">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                            <span>{promoError}</span>
+                          </div>
+                        )}
+
+                        {promoSuccess && (
+                          <div className="text-white bg-zinc-900 p-2 rounded-lg border border-zinc-700 text-[11px] font-bold animate-in fade-in">
+                            {promoSuccess}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Gateway Box (If no exemption code applied) */}
+                  {!appliedExemption && (
+                    <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center font-black shadow shrink-0 text-sm">
+                          💳
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
+                            <span className="text-[10px] text-zinc-300 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700 font-bold">آمن ومشفر</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                        </div>
+                      </div>
+                      <div className="text-left shrink-0">
+                        <span className="text-base font-black text-white">{selectedPlanDetails.price} AED</span>
                       </div>
                     </div>
-                    <div className="text-left shrink-0">
-                      <span className="text-base font-black text-white">{selectedPlanDetails.price} AED</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Strict Policy Notice */}
                   <div className="bg-zinc-900 border border-zinc-700 p-3.5 rounded-xl text-xs text-zinc-300 space-y-1">
@@ -1358,7 +1551,10 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <span>تنبيه أمني هام بشأن تفعيل الحساب:</span>
                     </div>
                     <p className="text-zinc-400 text-[11px] leading-relaxed">
-                      لن يتم تفعيل حساب السائق أو منحه شارة "سائق معتمد" إلا بعد التأكد من إتمام عملية الدفع بنجاح في رابط زينة. في حال تعذر أو فشل الدفع، يظل الحساب غير مفعل ولن يتمكن من تقديم العروض.
+                      {appliedExemption 
+                        ? `سيتم تفعيل حسابك مباشرة ومنحك شارة "سائق معتمد" بالاشتراك المجاني لمدة ${appliedExemption.months} شهر بناءً على كود الإعفاء المدخل فوراً.`
+                        : `لن يتم تفعيل حساب السائق أو منحه شارة "سائق معتمد" إلا بعد التأكد من إتمام عملية الدفع بنجاح في رابط زينة. في حال تعذر أو فشل الدفع، يظل الحساب غير مفعل ولن يتمكن من تقديم العروض.`
+                      }
                     </p>
                   </div>
 
@@ -1372,15 +1568,27 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <span>السابق</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={handleOpenZiinaPayment}
-                      className="flex-1 mr-3 bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      <span>الانتقال للدفع عبر رابط زينة ({selectedPlanDetails.price} AED)</span>
-                      <ArrowLeft className="w-4 h-4" />
-                    </button>
+                    {appliedExemption ? (
+                      <button
+                        type="button"
+                        onClick={handleActivateWithExemption}
+                        className="flex-1 mr-3 bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-black" />
+                        <span>✨ تفعيل الحساب فوراً بالاشتراك المجاني ({appliedExemption.months} شهر)</span>
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleOpenZiinaPayment}
+                        className="flex-1 mr-3 bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>الانتقال للدفع عبر رابط زينة ({selectedPlanDetails.price} AED)</span>
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </>
               )}

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification } from './types';
+import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
 import { INITIAL_DRIVERS, INITIAL_REQUESTS } from './data/mockData';
 import { dbService } from './services/dbService';
+import { calculateOneMonthExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
 
 import { Header } from './components/Header';
@@ -85,6 +86,10 @@ export function App() {
   const [selectedRequestForOffer, setSelectedRequestForOffer] = useState<DeliveryRequest | null>(null);
   const [selectedRequestForRating, setSelectedRequestForRating] = useState<{ request: DeliveryRequest; offer: DriverOffer } | null>(null);
 
+  // Subscription Price & Exemption Codes State
+  const [subscriptionPrice, setSubscriptionPrice] = useState<number>(() => dbService.getSubscriptionPrice());
+  const [exemptionCodes, setExemptionCodes] = useState<ExemptionCode[]>(() => dbService.getExemptionCodes());
+
   // Toast Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -93,6 +98,82 @@ export function App() {
     setTimeout(() => {
       setToastMessage(null);
     }, 4500);
+  };
+
+  const handleUpdateSubscriptionPrice = (newPrice: number) => {
+    setSubscriptionPrice(newPrice);
+    dbService.setSubscriptionPrice(newPrice);
+    showToast(`✨ تم تحديث سعر الباقة الموحدة إلى ${newPrice} درهم بنجاح`);
+  };
+
+  const handleCreateExemptionCode = (codeData: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => {
+    const newCode: ExemptionCode = {
+      id: `code-${Date.now()}`,
+      code: codeData.code.toUpperCase(),
+      months: codeData.months,
+      maxDrivers: codeData.maxDrivers,
+      usedDriversCount: 0,
+      usedDriverIds: [],
+      isActive: true,
+      createdAt: new Date().toISOString().split('T')[0],
+      notes: codeData.notes
+    };
+    const updated = [newCode, ...exemptionCodes];
+    setExemptionCodes(updated);
+    dbService.saveExemptionCodes(updated);
+    showToast(`🎫 تم إنشاء كود الإعفاء "${newCode.code}" (${newCode.months} شهر مجاناً) بنجاح`);
+  };
+
+  const handleDeleteExemptionCode = (codeId: string) => {
+    const updated = exemptionCodes.filter(c => c.id !== codeId);
+    setExemptionCodes(updated);
+    dbService.saveExemptionCodes(updated);
+    showToast('🗑️ تم حذف كود الإعفاء بنجاح');
+  };
+
+  const handleToggleExemptionCode = (codeId: string) => {
+    const updated = exemptionCodes.map(c => c.id === codeId ? { ...c, isActive: !c.isActive } : c);
+    setExemptionCodes(updated);
+    dbService.saveExemptionCodes(updated);
+    const target = updated.find(c => c.id === codeId);
+    showToast(target?.isActive ? `🟢 تم تفعيل كود الإعفاء "${target.code}"` : `⚪ تم تعطيل كود الإعفاء "${target?.code}"`);
+  };
+
+  const handleApplyExemptionCode = (codeStr: string, driverId?: string) => {
+    const clean = codeStr.trim().toUpperCase();
+    const found = exemptionCodes.find(c => c.code.toUpperCase() === clean);
+    if (!found) {
+      return { success: false, message: 'كود الإعفاء غير موجود، يرجى التأكد من الرمز' };
+    }
+    if (!found.isActive) {
+      return { success: false, message: 'هذا الكود معطل حالياً من إدارة المنصة' };
+    }
+    if (found.usedDriversCount >= found.maxDrivers) {
+      return { success: false, message: 'تم استنفاد الحد الأقصى للسائقين المسموح لهم بهذا الكود' };
+    }
+    if (driverId && found.usedDriverIds?.includes(driverId)) {
+      return { success: false, message: 'لقد قمت باستخدام كود الإعفاء هذا مسبقاً' };
+    }
+
+    // Record usage
+    const updated = exemptionCodes.map(c => {
+      if (c.id === found.id) {
+        return {
+          ...c,
+          usedDriversCount: c.usedDriversCount + 1,
+          usedDriverIds: driverId ? [...c.usedDriverIds, driverId] : c.usedDriverIds
+        };
+      }
+      return c;
+    });
+    setExemptionCodes(updated);
+    dbService.saveExemptionCodes(updated);
+
+    return {
+      success: true,
+      months: found.months,
+      message: `تم تطبيق كود الإعفاء (${found.months} شهر مجاناً) بنجاح`
+    };
   };
 
   // Initial load from Supabase / DB Service and Service Worker initialization
@@ -284,10 +365,8 @@ export function App() {
   };
 
   // Driver Subscription Update
-  const handleSubscribeSuccess = async (planId: SubscriptionPlanId) => {
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-    const formattedExpiry = expiryDate.toISOString().split('T')[0];
+  const handleSubscribeSuccess = async (planId: SubscriptionPlanId, newExpiry?: string) => {
+    const formattedExpiry = newExpiry || calculateOneMonthExpiry(new Date());
 
     setDrivers(prev => prev.map(drv => {
       if (drv.id === currentDriver.id) {
@@ -303,7 +382,7 @@ export function App() {
 
     setIsSubscriptionOpen(false);
     await dbService.updateDriverSubscription(currentDriver.id, planId, formattedExpiry, 'active');
-    showToast(`🌟 تم تجديد اشتراك السائق وتأكيد الدفع عبر زينة بنجاح حتى ${formattedExpiry}!`);
+    showToast(`🌟 تم تجديد وتفعيل اشتراك السائق بنجاح حتى ${formattedExpiry}!`);
   };
 
   // New Driver Registration & Activation Success
@@ -438,6 +517,7 @@ export function App() {
             onSelectNewDriver={() => setIsDriverRegisterOpen(true)}
             onSelectExistingDriver={() => setCurrentScreen('driver_login')}
             onBackToLanding={() => setCurrentScreen('landing')}
+            subscriptionPrice={subscriptionPrice}
           />
         )}
 
@@ -487,6 +567,7 @@ export function App() {
               setCurrentScreen('landing');
               showToast('👋 تم تسجيل الخروج بنجاح');
             }}
+            subscriptionPrice={subscriptionPrice}
           />
         )}
 
@@ -506,6 +587,12 @@ export function App() {
               drivers={drivers}
               requests={requests}
               onToggleVerifyDriver={handleToggleVerifyDriver}
+              subscriptionPrice={subscriptionPrice}
+              onUpdateSubscriptionPrice={handleUpdateSubscriptionPrice}
+              exemptionCodes={exemptionCodes}
+              onCreateExemptionCode={handleCreateExemptionCode}
+              onDeleteExemptionCode={handleDeleteExemptionCode}
+              onToggleExemptionCode={handleToggleExemptionCode}
             />
           </div>
         )}
@@ -572,6 +659,9 @@ export function App() {
           driver={currentDriver}
           onClose={() => setIsSubscriptionOpen(false)}
           onSubscribeSuccess={handleSubscribeSuccess}
+          subscriptionPrice={subscriptionPrice}
+          exemptionCodes={exemptionCodes}
+          onApplyExemptionCode={handleApplyExemptionCode}
         />
       )}
 
@@ -602,6 +692,9 @@ export function App() {
         <DriverRegistrationModal
           onClose={() => setIsDriverRegisterOpen(false)}
           onRegisterSuccess={handleDriverRegisterSuccess}
+          subscriptionPrice={subscriptionPrice}
+          exemptionCodes={exemptionCodes}
+          onApplyExemptionCode={handleApplyExemptionCode}
         />
       )}
 

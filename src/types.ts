@@ -30,6 +30,18 @@ export interface SubscriptionPlan {
   recommended?: boolean;
 }
 
+export interface ExemptionCode {
+  id: string;
+  code: string; // e.g. 'WASEL2026'
+  months: number; // Exemption duration in months (1, 2, 3, etc.)
+  maxDrivers: number; // Max allowed driver usages
+  usedDriversCount: number; // Current usages count
+  usedDriverIds: string[]; // Driver IDs / phones who redeemed this code
+  isActive: boolean;
+  createdAt: string;
+  notes?: string;
+}
+
 export interface DriverProfile {
   id: string;
   name: string;

@@ -5,12 +5,14 @@ interface DriverPortalGateProps {
   onSelectNewDriver: () => void;
   onSelectExistingDriver: () => void;
   onBackToLanding: () => void;
+  subscriptionPrice?: number;
 }
 
 export const DriverPortalGate: React.FC<DriverPortalGateProps> = ({
   onSelectNewDriver,
   onSelectExistingDriver,
-  onBackToLanding
+  onBackToLanding,
+  subscriptionPrice = 199
 }) => {
   return (
     <div className="min-h-[75vh] flex flex-col justify-center py-4 sm:py-10 max-w-4xl mx-auto w-full px-2 sm:px-4">
@@ -74,7 +76,7 @@ export const DriverPortalGate: React.FC<DriverPortalGateProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-white shrink-0" />
-                <span>اشتراك موحد 199 درهم والدفع الإلكتروني</span>
+                <span>اشتراك موحد {subscriptionPrice} درهم أو كود إعفاء مجاني</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-white shrink-0" />
