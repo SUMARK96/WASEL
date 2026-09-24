@@ -78,6 +78,9 @@ export function App() {
   const [isAdminPasswordOpen, setIsAdminPasswordOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
+  // Customer Active Section State
+  const [customerSection, setCustomerSection] = useState<'new_request' | 'new_offers' | 'my_requests'>('my_requests');
+  
   const [selectedDriverForProfile, setSelectedDriverForProfile] = useState<DriverProfile | DriverOffer | null>(null);
   const [selectedRequestForOffer, setSelectedRequestForOffer] = useState<DeliveryRequest | null>(null);
   const [selectedRequestForRating, setSelectedRequestForRating] = useState<{ request: DeliveryRequest; offer: DriverOffer } | null>(null);
@@ -401,9 +404,21 @@ export function App() {
       <Header
         currentScreen={currentScreen}
         onNavigate={setCurrentScreen}
-        onOpenNewRequest={() => setIsNewRequestOpen(true)}
+        onOpenNewRequest={() => {
+          setCustomerSection('new_request');
+          setIsNewRequestOpen(true);
+        }}
         onOpenSubscription={() => setIsSubscriptionOpen(true)}
         currentDriver={currentDriver}
+        customerSection={customerSection}
+        onSelectCustomerSection={(sec) => {
+          setCustomerSection(sec);
+          if (sec === 'new_request') {
+            setIsNewRequestOpen(true);
+          }
+        }}
+        unreadNotificationsCount={customerNotifications.filter(n => !n.isRead).length}
+        totalOffersCount={requests.reduce((acc, r) => acc + (r.offers ? r.offers.length : 0), 0)}
       />
 
       {/* Main Content Viewport */}
@@ -450,6 +465,8 @@ export function App() {
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
             onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
+            selectedSection={customerSection}
+            onSelectSection={setCustomerSection}
             onLogout={() => {
               setCurrentScreen('landing');
               showToast('👋 تم تسجيل الخروج بنجاح');

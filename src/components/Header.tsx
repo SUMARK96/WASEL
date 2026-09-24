@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { AppScreen, DriverProfile } from '../types';
 import { Logo } from './Logo';
-import { Plus, Sparkles, ShieldCheck, LogOut, ArrowRight, UserCheck, Truck } from 'lucide-react';
+import { 
+  Sparkles, 
+  ShieldCheck, 
+  LogOut, 
+  UserCheck, 
+  Truck, 
+  Bell, 
+  ChevronDown, 
+  Plus, 
+  BellRing, 
+  Package, 
+  Check 
+} from 'lucide-react';
+
+export type CustomerHeaderSection = 'new_request' | 'new_offers' | 'my_requests';
 
 interface HeaderProps {
   currentScreen: AppScreen;
@@ -9,15 +23,46 @@ interface HeaderProps {
   onOpenNewRequest: () => void;
   onOpenSubscription: () => void;
   currentDriver?: DriverProfile;
+  customerSection?: CustomerHeaderSection;
+  onSelectCustomerSection?: (section: CustomerHeaderSection) => void;
+  unreadNotificationsCount?: number;
+  totalOffersCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentScreen,
   onNavigate,
-  onOpenNewRequest,
   onOpenSubscription,
-  currentDriver
+  currentDriver,
+  customerSection = 'my_requests',
+  onSelectCustomerSection,
+  unreadNotificationsCount = 0,
+  totalOffersCount = 0
 }) => {
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+
+  const getCustomerSectionLabel = (sec: CustomerHeaderSection) => {
+    switch (sec) {
+      case 'new_request':
+        return 'طلب جديد';
+      case 'new_offers':
+        return 'العروض الجديدة';
+      case 'my_requests':
+        return 'طلباتي';
+    }
+  };
+
+  const handleCustomerSelect = (sec: CustomerHeaderSection | 'logout') => {
+    setIsCustomerDropdownOpen(false);
+    if (sec === 'logout') {
+      onNavigate('landing');
+      return;
+    }
+    if (onSelectCustomerSection) {
+      onSelectCustomerSection(sec);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-lg border-b border-zinc-800 shadow-lg shadow-black/40">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -32,22 +77,16 @@ export const Header: React.FC<HeaderProps> = ({
             <Logo size="md" />
           </div>
 
-          {/* Current Mode Badge / Breadcrumb for medium/large screens */}
-          {currentScreen !== 'landing' && (
+          {/* Current Mode Badge / Breadcrumb for driver/admin on desktop */}
+          {currentScreen !== 'landing' && currentScreen !== 'customer' && (
             <div className="hidden md:flex items-center gap-2 bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold">
-              {currentScreen === 'customer' && (
-                <span className="text-white flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4 text-white" />
-                  <span>بوابة العميل - نشر واستقبال العروض</span>
-                </span>
-              )}
               {currentScreen === 'driver' && currentDriver && (
                 <span className="text-white flex items-center gap-1.5">
                   <Truck className="w-4 h-4 text-white" />
                   <span>حساب السائق: {currentDriver.name}</span>
                 </span>
               )}
-              {(currentScreen === 'driver_portal' || currentScreen === 'driver_login' || currentScreen === 'driver_register') && (
+              {(currentScreen === 'driver_portal' || currentScreen === 'driver_login') && (
                 <span className="text-zinc-300 flex items-center gap-1.5">
                   <Truck className="w-4 h-4 text-zinc-300" />
                   <span>بوابة السائقين المستقلين</span>
@@ -62,30 +101,124 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          {/* Action Buttons Depending on Current Screen */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Action Area: In Customer Screen -> Dropdown + Bell Icon */}
+          <div className="flex items-center gap-2 sm:gap-3">
             
-            {/* If on Customer screen */}
+            {/* If on Customer screen: Dropdown and Bell Notification Button */}
             {currentScreen === 'customer' && (
-              <>
+              <div className="flex items-center gap-2">
+                
+                {/* 1. Customer Dropdown Selector in Header */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
+                    className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 hover:border-zinc-500 font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                  >
+                    <UserCheck className="w-4 h-4 text-white shrink-0" />
+                    <span>{getCustomerSectionLabel(customerSection)}</span>
+                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Popup Menu */}
+                  {isCustomerDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-30" 
+                        onClick={() => setIsCustomerDropdownOpen(false)} 
+                      />
+                      <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-zinc-950 border-2 border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-zinc-800 text-right">
+                        
+                        {/* Option: طلب جديد */}
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerSelect('new_request')}
+                          className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
+                            customerSection === 'new_request' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Plus className="w-4 h-4 stroke-[2.5]" />
+                            <span>طلب جديد</span>
+                          </div>
+                          {customerSection === 'new_request' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        {/* Option: العروض الجديدة */}
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerSelect('new_offers')}
+                          className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
+                            customerSection === 'new_offers' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <BellRing className="w-4 h-4" />
+                            <span>العروض الجديدة</span>
+                          </div>
+                          {totalOffersCount > 0 && (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                              customerSection === 'new_offers' ? 'bg-black text-white' : 'bg-white text-black'
+                            }`}>
+                              {totalOffersCount}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Option: طلباتي */}
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerSelect('my_requests')}
+                          className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
+                            customerSection === 'my_requests' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            <span>طلباتي</span>
+                          </div>
+                          {customerSection === 'my_requests' && <Check className="w-4 h-4" />}
+                        </button>
+
+                        {/* Option: تسجيل خروج */}
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerSelect('logout')}
+                          className="w-full p-3 flex items-center justify-between text-xs text-white hover:bg-zinc-900 font-bold transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <LogOut className="w-4 h-4" />
+                            <span>تسجيل خروج</span>
+                          </div>
+                        </button>
+
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* 2. Bell Notification Button in Header */}
                 <button
-                  onClick={onOpenNewRequest}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-white hover:bg-zinc-200 text-black font-black px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-md transition-all transform active:scale-95 text-xs sm:text-sm"
+                  type="button"
+                  onClick={() => {
+                    if (onSelectCustomerSection) {
+                      onSelectCustomerSection('new_offers');
+                    }
+                  }}
+                  className="relative p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 transition-all active:scale-95"
+                  title="الإشعارات والعروض الجديدة"
                 >
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-                  <span className="hidden sm:inline">نشر طلب توصيل جديد</span>
-                  <span className="sm:hidden">طلب جديد</span>
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  
+                  {/* Notification Counter Badge */}
+                  {(unreadNotificationsCount > 0 || totalOffersCount > 0) && (
+                    <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                      {unreadNotificationsCount > 0 ? unreadNotificationsCount : totalOffersCount}
+                    </span>
+                  )}
                 </button>
 
-                <button
-                  onClick={() => onNavigate('landing')}
-                  className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-zinc-800 text-xs transition-all active:scale-95"
-                  title="الخروج والعودة للشاشة الرئيسية"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">تسجيل خروج</span>
-                </button>
-              </>
+              </div>
             )}
 
             {/* If on Driver screen */}
@@ -119,29 +252,8 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
 
-            {/* If on Driver portal / login / register */}
-            {(currentScreen === 'driver_portal' || currentScreen === 'driver_login' || currentScreen === 'driver_register') && (
-              <button
-                onClick={() => onNavigate('landing')}
-                className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white font-bold px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border border-zinc-800 text-xs transition-all active:scale-95"
-              >
-                <ArrowRight className="w-4 h-4" />
-                <span>الرئيسية</span>
-              </button>
-            )}
-
-            {/* If on Admin screen */}
-            {currentScreen === 'admin' && (
-              <button
-                onClick={() => onNavigate('landing')}
-                className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-zinc-800 text-xs transition-all active:scale-95"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>خروج</span>
-              </button>
-            )}
-
           </div>
+
         </div>
       </div>
     </header>
