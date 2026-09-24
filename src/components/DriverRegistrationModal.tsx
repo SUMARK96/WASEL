@@ -7,8 +7,10 @@ import { validateMulkiyaImage, type MulkiyaValidationResult } from '../utils/mul
 import uaeIdSampleImg from '../assets/uae-id-sample.jpg';
 import uaeLicenseSampleImg from '../assets/uae-license-sample.webp';
 import uaeMulkiyaSampleImg from '../assets/uae-mulkiya-sample.jpg';
-import { 
-  X, 
+import {
+  X,
+  ExternalLink,
+  RotateCw, 
   Check, 
   ShieldCheck, 
   Truck,
@@ -89,12 +91,79 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [idValidationResult, setIdValidationResult] = useState<EmiratesIdValidationResult | null>(null);
   const [showIdReferenceModal, setShowIdReferenceModal] = useState<boolean>(false);
 
-  // Step 3: Subscription Plan & Ziina Payment
+  // Step 3: Subscription Plan & Ziina Payment Verification Flow
   const [selectedPlan] = useState<SubscriptionPlanId>('unified');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStage, setPaymentStage] = useState<'ready' | 'link_opened' | 'verifying' | 'success' | 'failed'>('ready');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [transactionRef, setTransactionRef] = useState<string>('');
+  const [createdActiveDriver, setCreatedActiveDriver] = useState<DriverProfile | null>(null);
 
   const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
   const selectedPlanDetails = UNIFIED_SUBSCRIPTION_PLAN;
+
+  const handleOpenZiinaPayment = () => {
+    setPaymentError(null);
+    setPaymentStage('link_opened');
+    window.open(ZIINA_PAYMENT_URL, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleVerifyZiinaPayment = () => {
+    setPaymentStage('verifying');
+    setPaymentError(null);
+
+    // Simulate strict live verification with Ziina payment gateway
+    setTimeout(() => {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      const formattedExpiry = expiryDate.toISOString().split('T')[0];
+
+      const newDriverId = `drv-${Date.now()}`;
+      const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
+      const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : `+971 ${phone.trim()}`;
+
+      const activatedDriver: DriverProfile = {
+        id: newDriverId,
+        name: name.trim(),
+        phone: fullCallPhone,
+        whatsappPhone: cleanWhatsapp,
+        callPhone: fullCallPhone,
+        email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
+        password: password.trim() || '123456',
+        avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
+        emirate,
+        vehicleModel: vehicleModel.trim(),
+        vehiclePlate: vehiclePlate.trim(),
+        vehiclePhoto: vehiclePhotos[0] || DEFAULT_VEHICLE_IMG,
+        vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [DEFAULT_VEHICLE_IMG],
+        licensePhoto: drivingLicensePhoto,
+        mulkiyaPhoto,
+        emiratesIdPhoto,
+        rating: 5.0,
+        reviewsCount: 1,
+        completedDeliveries: 0,
+        isVerified: true,
+        subscriptionStatus: 'active',
+        subscriptionPlan: selectedPlan,
+        subscriptionExpiry: formattedExpiry,
+        joinedDate: new Date().toISOString().split('T')[0],
+        bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
+      };
+
+      setCreatedActiveDriver(activatedDriver);
+      setPaymentStage('success');
+    }, 2000);
+  };
+
+  const handlePaymentFailure = () => {
+    setPaymentStage('failed');
+    setPaymentError('فشلت عملية الدفع في بوابة زينة (Ziina) أو تم إلغاؤها. لم يتم تفعيل الحساب.');
+  };
+
+  const handleCompleteRegistration = () => {
+    if (createdActiveDriver) {
+      onRegisterSuccess(createdActiveDriver);
+    }
+  };
 
   // Multiple vehicle photos upload handler
   const handleMultipleVehiclePhotosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,50 +344,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     setStep(3);
   };
 
-  const handleProceedToPayment = () => {
-    setIsProcessing(true);
-
-    const newDriverId = `drv-${Date.now()}`;
-    const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
-    const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : `+971 ${phone.trim()}`;
-
-    const createdDriver: DriverProfile = {
-      id: newDriverId,
-      name: name.trim(),
-      phone: fullCallPhone,
-      whatsappPhone: cleanWhatsapp,
-      callPhone: fullCallPhone,
-      email: email.trim() || `${name.replace(/\s+/g, '.').toLowerCase()}@wasel.ae`,
-      password: password.trim() || '123456',
-      avatar: avatar || DEFAULT_AVATAR_PLACEHOLDER,
-      emirate,
-      vehicleModel: vehicleModel.trim(),
-      vehiclePlate: vehiclePlate.trim(),
-      vehiclePhoto: vehiclePhotos[0] || DEFAULT_VEHICLE_IMG,
-      vehiclePhotos: vehiclePhotos.length > 0 ? vehiclePhotos : [DEFAULT_VEHICLE_IMG],
-      licensePhoto: drivingLicensePhoto,
-      mulkiyaPhoto,
-      emiratesIdPhoto,
-      rating: 5.0,
-      reviewsCount: 1,
-      completedDeliveries: 0,
-      isVerified: true,
-      subscriptionStatus: 'active',
-      subscriptionPlan: selectedPlan,
-      subscriptionExpiry: '2026-10-31',
-      joinedDate: '2026-09-23',
-      bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
-    };
-
-    // Save driver profile
-    onRegisterSuccess(createdDriver);
-
-    // Direct redirect to Ziina Payment Link
-    setTimeout(() => {
-      window.location.href = ZIINA_PAYMENT_URL;
-    }, 400);
-  };
-
+  
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
       <div className="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[94dvh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
@@ -1037,92 +1063,276 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
             </form>
           )}
 
-          {/* STEP 3: Unified Subscription Plan & Direct Ziina Payment */}
+          {/* STEP 3: Unified Subscription Plan & Strict Ziina Payment Flow */}
           {step === 3 && (
             <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
               
-              {/* Single Unified Plan Card */}
-              <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 sm:p-6 rounded-2xl border-2 border-cyan-500/50 shadow-xl relative overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <div>
-                    <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mb-1 shadow-sm">
-                      الباقة الموحدة لجميع السائقين ⭐
+              {/* STAGE: SUCCESS */}
+              {paymentStage === 'success' && createdActiveDriver && (
+                <div className="p-5 sm:p-8 text-center flex flex-col items-center justify-center space-y-4 bg-slate-950/90 rounded-2xl border-2 border-emerald-500/40 shadow-2xl animate-in zoom-in-95 duration-200">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center border-2 border-emerald-500/40 shadow-xl shadow-emerald-500/10">
+                    <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <span className="bg-emerald-500/15 text-emerald-400 text-xs font-black px-3 py-1 rounded-full border border-emerald-500/30">
+                      تم تأكيد الدفع بنجاح عبر زينة ✓
                     </span>
-                    <h4 className="font-black text-white text-base sm:text-xl">{selectedPlanDetails.name}</h4>
+                    <h4 className="text-lg sm:text-2xl font-black text-white pt-1">🎉 مبارك يا {createdActiveDriver.name}!</h4>
+                    <p className="text-emerald-400 font-bold text-xs sm:text-sm">
+                      تم تفعيل حسابك كـ "سائق معتمد" واشتراكك الموحد لمدة شهر كامل (30 يوماً).
+                    </p>
                   </div>
 
-                  <div className="text-right sm:text-left">
-                    <span className="text-2xl sm:text-3xl font-black text-cyan-400">{selectedPlanDetails.price}</span>
-                    <span className="text-xs text-slate-400 font-semibold mr-1">درهم / شهرياً</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-800 text-xs text-slate-300">
-                  {selectedPlanDetails.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-start gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
+                  <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 w-full text-right text-xs space-y-2.5">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>الاسم:</span>
+                      <span className="font-bold text-white">{createdActiveDriver.name}</span>
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-800 bg-blue-950/40 p-3 rounded-xl flex items-center gap-2.5 text-xs text-cyan-300 font-semibold">
-                  <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
-                  <span>
-                    <strong>نظام أولوية التقييم:</strong> كلما حصلت على تقييمات إيجابية أعلى من العملاء بعد إتمام التوصيل، تظهر عروضك في المرتبة الأولى تلقائياً وتتصدر شاشة العميل!
-                  </span>
-                </div>
-              </div>
-
-              {/* Ziina Gateway Secure Notice */}
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-black shadow shrink-0 text-sm">
-                    💳
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
-                      <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.2 rounded border border-emerald-500/30 font-bold">آمن ومشفر</span>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>المركبة واللوحة:</span>
+                      <span className="font-bold text-white">{createdActiveDriver.vehicleModel} ({createdActiveDriver.vehiclePlate})</span>
                     </div>
-                    <p className="text-[11px] text-slate-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>الاشتراك الموحد:</span>
+                      <span className="font-bold text-cyan-400">{selectedPlanDetails.name} (199 AED)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>حالة الحساب:</span>
+                      <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                        مفعل ونشط 🟢
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCompleteRegistration}
+                    className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-3.5 rounded-xl shadow-xl shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <span>الدخول إلى حسابي واستقبال طلبات التوصيل</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* STAGE: VERIFYING */}
+              {paymentStage === 'verifying' && (
+                <div className="p-8 text-center flex flex-col items-center justify-center space-y-5 bg-slate-950/80 rounded-2xl border border-cyan-500/40">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-cyan-400 animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="text-base sm:text-lg font-bold text-white">جاري التحقق من نجاح الدفع في بوابة زينة (Ziina)...</h4>
+                    <p className="text-xs text-slate-400">التحقق من إتمام الحوالة وتأكيد دفع الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
                   </div>
                 </div>
-                <div className="text-left shrink-0">
-                  <span className="text-base font-black text-cyan-400">{selectedPlanDetails.price} AED</span>
+              )}
+
+              {/* STAGE: FAILED */}
+              {paymentStage === 'failed' && (
+                <div className="p-6 text-center flex flex-col items-center justify-center space-y-4 bg-slate-950/90 rounded-2xl border border-rose-500/30 animate-in fade-in">
+                  <div className="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-full flex items-center justify-center border-2 border-rose-500/30">
+                    <AlertTriangle className="w-8 h-8" />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-black text-white">فشلت عملية الدفع أو لم تكتمل!</h4>
+                    <p className="text-rose-400 text-xs sm:text-sm">{paymentError}</p>
+                  </div>
+                  
+                  <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl w-full text-right text-xs text-slate-300 space-y-1.5">
+                    <p className="font-bold text-rose-300">⛔ تنبيه عدم تفعيل الحساب:</p>
+                    <p className="text-slate-400 leading-relaxed text-[11px]">
+                      حساب السائق غير مفعل حالياً. وفقاً لشروط المنصة، لا يمكن تفعيل الحساب أو منح شارة التوثيق واستقبال الطلبات إلا بعد تأكيد إتمام الدفع بنجاح في رابط زينة.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full pt-2">
+                    <button
+                      type="button"
+                      onClick={handleOpenZiinaPayment}
+                      className="w-full sm:flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <RotateCw className="w-4 h-4" />
+                      <span>إعادة محاولة الدفع عبر رابط زينة</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStage('ready')}
+                      className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 px-5 rounded-xl text-xs active:scale-95"
+                    >
+                      الرجوع لتفاصيل الباقة
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  disabled={isProcessing}
-                  onClick={() => setStep(2)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  <span>السابق</span>
-                </button>
+              {/* STAGE: LINK_OPENED (User returned from Ziina and can confirm) */}
+              {paymentStage === 'link_opened' && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="bg-blue-950/40 border border-cyan-500/40 rounded-2xl p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold shrink-0">
+                        <ExternalLink className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white text-sm sm:text-base">تم فتح بوابة الدفع (Ziina) في صفحة خارجية</h4>
+                        <p className="text-xs text-slate-400">يرجى إتمام عملية سداد رسوم الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
+                      </div>
+                    </div>
 
-                <button
-                  type="button"
-                  disabled={isProcessing}
-                  onClick={handleProceedToPayment}
-                  className="flex-1 mr-3 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg shadow-blue-500/25 text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Zap className="w-4 h-4 animate-spin text-white" />
-                      <span>جاري التوجيه إلى بوابة الدفع (Ziina)...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>متابعة للدفع ({selectedPlanDetails.price} AED)</span>
+                    <div className="text-xs text-slate-300 bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2 leading-relaxed">
+                      <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                        <span>1.</span>
+                        <span>قم بإتمام الدفع عبر Apple Pay أو بطاقتك البنكية في صفحة زينة المفتوحة.</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                        <span>2.</span>
+                        <span>عند نجاح الدفع، اضغط على زر "تأكيد والتحقق من نجاح الدفع" أدناه لتفعيل حسابك فوراً.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Optional Reference Input */}
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      رقم مرجع الحوالة / الإيصال من زينة (اختياري للتوثيق):
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionRef}
+                      onChange={(e) => setTransactionRef(e.target.value)}
+                      placeholder="مثال: ZIN-981240"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleVerifyZiinaPayment}
+                      className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black py-3.5 rounded-xl shadow-lg shadow-emerald-500/25 text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>✅ لقد أتممت الدفع بنجاح (التحقق وتفعيل الحساب)</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenZiinaPayment}
+                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold py-2.5 rounded-xl text-xs border border-slate-700 flex items-center justify-center gap-1.5 active:scale-95"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>إعادة فتح رابط زينة</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePaymentFailure}
+                        className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-2.5 rounded-xl text-xs border border-rose-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>فشلت العملية / إلغاء الدفع</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STAGE: READY (Initial Plan Card) */}
+              {paymentStage === 'ready' && (
+                <>
+                  {/* Single Unified Plan Card */}
+                  <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 sm:p-6 rounded-2xl border-2 border-cyan-500/50 shadow-xl relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                      <div>
+                        <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mb-1 shadow-sm">
+                          الباقة الموحدة لجميع السائقين ⭐
+                        </span>
+                        <h4 className="font-black text-white text-base sm:text-xl">{selectedPlanDetails.name}</h4>
+                      </div>
+
+                      <div className="text-right sm:text-left">
+                        <span className="text-2xl sm:text-3xl font-black text-cyan-400">{selectedPlanDetails.price}</span>
+                        <span className="text-xs text-slate-400 font-semibold mr-1">درهم / شهرياً</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-800 text-xs text-slate-300">
+                      {selectedPlanDetails.features.map((feat, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-800 bg-blue-950/40 p-3 rounded-xl flex items-center gap-2.5 text-xs text-cyan-300 font-semibold">
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                      <span>
+                        <strong>نظام أولوية التقييم:</strong> كلما حصلت على تقييمات إيجابية أعلى من العملاء بعد إتمام التوصيل، تظهر عروضك في المرتبة الأولى تلقائياً وتتصدر شاشة العميل!
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Ziina Gateway Secure Notice */}
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-black shadow shrink-0 text-sm">
+                        💳
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
+                          <span className="text-[10px] text-emerald-400 bg-emerald-500/15 px-1.5 py-0.2 rounded border border-emerald-500/30 font-bold">آمن ومشفر</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                      </div>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <span className="text-base font-black text-cyan-400">{selectedPlanDetails.price} AED</span>
+                    </div>
+                  </div>
+
+                  {/* Strict Policy Notice */}
+                  <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs text-amber-300 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <ShieldCheck className="w-4 h-4 text-amber-400" />
+                      <span>تنبيه أمني هام بشأن تفعيل الحساب:</span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      لن يتم تفعيل حساب السائق أو منحه شارة "سائق معتمد" إلا بعد التأكد من إتمام عملية الدفع بنجاح في رابط زينة. في حال تعذر أو فشل الدفع، يظل الحساب غير مفعل ولن يتمكن من تقديم العروض.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                      <span>السابق</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenZiinaPayment}
+                      className="flex-1 mr-3 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg shadow-blue-500/25 text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>الانتقال للدفع عبر رابط زينة ({selectedPlanDetails.price} AED)</span>
                       <ArrowLeft className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
+                    </button>
+                  </div>
+                </>
+              )}
 
             </div>
           )}

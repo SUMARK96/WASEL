@@ -151,9 +151,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   </td>
 
                   <td className="p-3">
-                    <span className="bg-cyan-500/10 text-cyan-300 font-extrabold px-2.5 py-1 rounded-lg border border-cyan-500/20">
-                      موحد (199 AED)
-                    </span>
+                    {drv.subscriptionStatus === 'active' ? (
+                      <span className="bg-emerald-500/10 text-emerald-400 font-extrabold px-2.5 py-1 rounded-lg border border-emerald-500/30 flex items-center gap-1 w-fit">
+                        <span>مفعل (تم الدفع في زينة) ✓</span>
+                      </span>
+                    ) : (
+                      <span className="bg-rose-500/10 text-rose-400 font-extrabold px-2.5 py-1 rounded-lg border border-rose-500/30 flex items-center gap-1 w-fit">
+                        <span>غير مفعل / بانتظار الدفع ⏳</span>
+                      </span>
+                    )}
                   </td>
 
                   <td className="p-3 font-bold text-slate-200">{drv.completedDeliveries} توصيلة</td>

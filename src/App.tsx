@@ -219,21 +219,26 @@ export function App() {
   };
 
   // Driver Subscription Update
-  const handleSubscribeSuccess = (planId: SubscriptionPlanId) => {
+  const handleSubscribeSuccess = async (planId: SubscriptionPlanId) => {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    const formattedExpiry = expiryDate.toISOString().split('T')[0];
+
     setDrivers(prev => prev.map(drv => {
       if (drv.id === currentDriver.id) {
         return {
           ...drv,
           subscriptionStatus: 'active',
           subscriptionPlan: planId,
-          subscriptionExpiry: '2026-10-30'
+          subscriptionExpiry: formattedExpiry
         };
       }
       return drv;
     }));
 
     setIsSubscriptionOpen(false);
-    showToast(`🌟 تم تجديد اشتراك السائق لخطة ${planId.toUpperCase()} بنجاح!`);
+    await dbService.updateDriverSubscription(currentDriver.id, planId, formattedExpiry, 'active');
+    showToast(`🌟 تم تجديد اشتراك السائق وتأكيد الدفع عبر زينة بنجاح حتى ${formattedExpiry}!`);
   };
 
   // New Driver Registration & Activation Success

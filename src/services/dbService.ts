@@ -101,6 +101,23 @@ export const dbService = {
     return true;
   },
 
+  async updateDriverSubscription(driverId: string, planId: string, expiryDate: string, status: 'active' | 'trial' | 'expired' = 'active'): Promise<void> {
+    if (this.isConnected()) {
+      try {
+        await supabase
+          .from('drivers')
+          .update({
+            subscription_status: status,
+            subscription_plan: planId,
+            subscription_expiry: expiryDate
+          })
+          .eq('id', driverId);
+      } catch (err) {
+        console.warn('Supabase updateDriverSubscription failed:', err);
+      }
+    }
+  },
+
   // ==================== DELIVERY REQUESTS ====================
   async getRequests(): Promise<DeliveryRequest[]> {
     if (this.isConnected()) {

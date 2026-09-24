@@ -50,6 +50,15 @@ export const DriverView: React.FC<DriverViewProps> = ({
     }));
   };
 
+  const handleOfferClick = (req: DeliveryRequest) => {
+    if (driver.subscriptionStatus !== 'active') {
+      alert('⚠️ حسابك غير مفعل أو انتهت صلاحية اشتراكك. يجب سداد وتأكيد الاشتراك عبر رابط زينة أولاً لتتمكن من تقديم عروض الأسعار للعملاء.');
+      onOpenSubscription();
+      return;
+    }
+    onOpenSubmitOffer(req);
+  };
+
   const openRequests = requests.filter(r => r.status === 'open');
 
   const filteredRequests = openRequests.filter(r => {
@@ -67,6 +76,33 @@ export const DriverView: React.FC<DriverViewProps> = ({
   return (
     <div className="space-y-6 sm:space-y-8">
       
+      {/* Inactive / Unpaid Account Warning Banner */}
+      {driver.subscriptionStatus !== 'active' && (
+        <div className="bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/50 text-white p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold shrink-0 border border-rose-500/30">
+              <ShieldCheck className="w-6 h-6 text-rose-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 font-black text-sm sm:text-base text-rose-300">
+                <span>⚠️ تنبيه: حساب السائق غير مفعل (بانتظار تأكيد الدفع عبر زينة)</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                وفقاً لسياسة المنصة، لا يمكنك تقديم عروض أسعار للعملاء حتى يتم سداد رسوم الاشتراك الموحد وتأكيدها بنجاح عبر رابط زينة.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onOpenSubscription}
+            className="w-full md:w-auto bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white font-black px-5 py-3 rounded-2xl text-xs transition-all shadow-lg shadow-rose-600/30 shrink-0 flex items-center justify-center gap-2 active:scale-95"
+          >
+            <span>سداد وتفعيل الاشتراك عبر زينة (199 AED)</span>
+            <ArrowRight className="w-4 h-4 rotate-180" />
+          </button>
+        </div>
+      )}
+
       {/* Real-time Broadcast Driver Alert Banner */}
       {latestNotification && (
         <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-white p-3.5 sm:p-4 rounded-3xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in slide-in-from-top duration-300">
@@ -89,7 +125,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
             onClick={() => {
               const targetReq = requests.find(r => r.id === latestNotification.requestId);
               if (targetReq) {
-                onOpenSubmitOffer(targetReq);
+                handleOfferClick(targetReq);
                 onMarkNotificationRead(latestNotification.id);
               }
             }}
@@ -146,11 +182,11 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
             {/* Unified Subscription Widget */}
             <div className="bg-slate-950/80 p-3 sm:p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 flex-1 md:flex-initial">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 shrink-0" />
+              <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 ${driver.subscriptionStatus === 'active' ? 'text-emerald-400' : 'text-rose-400 animate-pulse'}`} />
               <div>
                 <div className="text-[10px] text-slate-400">الاشتراك الموحد (199 AED)</div>
-                <div className="text-xs font-black text-emerald-400">
-                  نشط حتى {driver.subscriptionExpiry}
+                <div className={`text-xs font-black ${driver.subscriptionStatus === 'active' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {driver.subscriptionStatus === 'active' ? `نشط حتى ${driver.subscriptionExpiry}` : 'غير مفعل / بانتظار الدفع'}
                 </div>
               </div>
             </div>
@@ -322,7 +358,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     {targetReq && (
                       <button
                         onClick={() => {
-                          onOpenSubmitOffer(targetReq);
+                          handleOfferClick(targetReq);
                           onMarkNotificationRead(notif.id);
                         }}
                         className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-4 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-blue-500/20 shrink-0 active:scale-95"
@@ -479,7 +515,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                           </div>
                         ) : (
                           <button
-                            onClick={() => onOpenSubmitOffer(req)}
+                            onClick={() => handleOfferClick(req)}
                             className="w-full sm:w-auto bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black px-6 py-3 rounded-xl shadow-lg shadow-blue-500/25 transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
                           >
                             <Send className="w-4 h-4" />
