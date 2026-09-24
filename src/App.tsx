@@ -562,6 +562,36 @@ export function App() {
     showToast('تم تحديث حالة توثيق السائق وحفظها بنجاح.');
   };
 
+  // Admin deletes a driver account completely
+  const handleDeleteDriver = async (driverId: string) => {
+    const target = drivers.find(d => d.id === driverId);
+    const driverName = target?.name || 'السائق';
+    
+    setDrivers(prev => prev.filter(d => d.id !== driverId));
+    if (activeDriverId === driverId) {
+      const remaining = drivers.filter(d => d.id !== driverId);
+      if (remaining.length > 0) setActiveDriverId(remaining[0].id);
+    }
+
+    await dbService.deleteDriver(driverId);
+    showToast(`🗑️ تم حذف حساب ${driverName} نهائياً من سجلات المنصة`);
+  };
+
+  // Admin toggles driver active / suspended status
+  const handleToggleDriverStatus = async (driverId: string, newStatus: 'active' | 'suspended') => {
+    const target = drivers.find(d => d.id === driverId);
+    const driverName = target?.name || 'السائق';
+
+    setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, subscriptionStatus: newStatus } : d));
+    await dbService.toggleDriverSuspension(driverId, newStatus);
+    
+    if (newStatus === 'suspended') {
+      showToast(`⛔ تم تعطيل حساب ${driverName} بنجاح`);
+    } else {
+      showToast(`🟢 تم إعادة تنشيط وتفعيل حساب ${driverName} بنجاح`);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-black text-white font-sans selection:bg-white selection:text-black">
       
@@ -681,6 +711,8 @@ export function App() {
               drivers={drivers}
               requests={requests}
               onToggleVerifyDriver={handleToggleVerifyDriver}
+              onDeleteDriver={handleDeleteDriver}
+              onToggleDriverStatus={handleToggleDriverStatus}
               subscriptionPrice={subscriptionPrice}
               onUpdateSubscriptionPrice={handleUpdateSubscriptionPrice}
               exemptionCodes={exemptionCodes}

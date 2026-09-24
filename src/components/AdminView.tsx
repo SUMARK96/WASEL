@@ -28,13 +28,18 @@ import {
   Calendar,
   ShieldCheck,
   Filter,
-  MapPin
+  MapPin,
+  Power,
+  PowerOff,
+  AlertTriangle
 } from 'lucide-react';
 
 interface AdminViewProps {
   drivers: DriverProfile[];
   requests: DeliveryRequest[];
   onToggleVerifyDriver: (driverId: string) => void;
+  onDeleteDriver?: (driverId: string) => void;
+  onToggleDriverStatus?: (driverId: string, newStatus: 'active' | 'suspended') => void;
   subscriptionPrice?: number;
   onUpdateSubscriptionPrice?: (newPrice: number) => void;
   exemptionCodes?: ExemptionCode[];
@@ -47,6 +52,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   drivers,
   requests,
   onToggleVerifyDriver,
+  onDeleteDriver,
+  onToggleDriverStatus,
   subscriptionPrice = UNIFIED_SUBSCRIPTION_PLAN.price,
   onUpdateSubscriptionPrice,
   exemptionCodes = [],
@@ -55,6 +62,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onToggleExemptionCode
 }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<SubscriptionInvoice | null>(null);
+  const [driverToDelete, setDriverToDelete] = useState<DriverProfile | null>(null);
 
   // Price Edit State
   const [isEditingPrice, setIsEditingPrice] = useState(false);
@@ -576,7 +584,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <th className="p-3">الاشتراك وصلاحية الشهر</th>
                   <th className="p-3">الفاتورة والتذكير</th>
                   <th className="p-3">الرحلات</th>
-                  <th className="p-3 text-center">حالة التوثيق</th>
+                  <th className="p-3 text-center">التوثيق</th>
+                  <th className="p-3 text-center">إدارة الحساب</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
@@ -618,10 +627,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             {isSuspended ? (
                               <div className="space-y-1">
                                 <span className="bg-black text-white font-black px-2.5 py-0.5 rounded-lg border border-white inline-flex items-center gap-1 shadow">
-                                  <span>معلق لانتهاء كود الإعفاء ⛔</span>
+                                  <span>معطل / معلق ⛔</span>
                                 </span>
                                 <div className="text-[10px] text-zinc-400">
-                                  انتهى: <strong className="text-zinc-300">{drv.subscriptionExpiry}</strong>
+                                  الحالة: <strong className="text-zinc-300">غير متاح للطلبات</strong>
                                 </div>
                               </div>
                             ) : isExemption ? (
@@ -714,7 +723,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     <td className="p-3 text-center">
                       <button
                         onClick={() => onToggleVerifyDriver(drv.id)}
-                        className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 ${
+                        className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 text-[11px] ${
                           drv.isVerified
                             ? 'bg-white text-black border border-white'
                             : 'bg-zinc-900 text-zinc-400 border border-zinc-700'
@@ -722,6 +731,43 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       >
                         {drv.isVerified ? '✓ موثق' : 'غير موثق'}
                       </button>
+                    </td>
+
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {/* Suspend / Reactivate Driver Button */}
+                        {drv.subscriptionStatus === 'suspended' ? (
+                          <button
+                            type="button"
+                            onClick={() => onToggleDriverStatus && onToggleDriverStatus(drv.id, 'active')}
+                            className="bg-white hover:bg-zinc-200 text-black font-bold px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 active:scale-95 transition-all shadow"
+                            title="إعادة تنشيط وتفعيل حساب السائق"
+                          >
+                            <Power className="w-3 h-3 text-black" />
+                            <span>تنشيط</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onToggleDriverStatus && onToggleDriverStatus(drv.id, 'suspended')}
+                            className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-2.5 py-1 rounded-lg text-[11px] border border-zinc-700 flex items-center gap-1 active:scale-95 transition-all"
+                            title="تعطيل وتعليق حساب السائق مؤقتاً"
+                          >
+                            <PowerOff className="w-3 h-3 text-zinc-400" />
+                            <span>تعطيل</span>
+                          </button>
+                        )}
+
+                        {/* Delete Driver Account Button */}
+                        <button
+                          type="button"
+                          onClick={() => setDriverToDelete(drv)}
+                          className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white p-1.5 rounded-lg border border-zinc-700 transition-colors active:scale-95"
+                          title="حذف حساب السائق نهائياً من المنصة"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -901,6 +947,71 @@ export const AdminView: React.FC<AdminViewProps> = ({
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Driver Confirmation Modal */}
+      {driverToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border-2 border-zinc-700 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-black px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white font-bold">
+                <Trash2 className="w-5 h-5 text-white" />
+                <span className="text-sm sm:text-base">تأكيد حذف حساب السائق نهائياً</span>
+              </div>
+              <button
+                onClick={() => setDriverToDelete(null)}
+                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-6 space-y-4 text-right">
+              <div className="flex items-center gap-3 bg-zinc-900 p-3 rounded-2xl border border-zinc-800">
+                <img src={driverToDelete.avatar} alt={driverToDelete.name} className="w-12 h-12 rounded-xl object-cover border border-zinc-700" />
+                <div>
+                  <div className="font-bold text-white text-sm sm:text-base">{driverToDelete.name}</div>
+                  <div className="text-xs text-zinc-400">{driverToDelete.phone} • {driverToDelete.emirate}</div>
+                  <div className="text-[11px] text-zinc-400 font-mono">{driverToDelete.vehicleModel} ({driverToDelete.vehiclePlate})</div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-900/60 border border-zinc-800 p-3.5 rounded-xl text-xs text-zinc-300 space-y-1.5">
+                <p className="font-bold text-white flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-white shrink-0" />
+                  <span>تحذير أمني من إدارة المنصة:</span>
+                </p>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                  هل أنت متأكد من رغبتك في حذف حساب هذا السائق نهائياً؟ سيتم مسح بياناته ورقم هاتفه وسجل عروضه من قاعدة البيانات السحابية والتخزين المحلي فوراً ولا يمكن التراجع عن هذا الإجراء.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onDeleteDriver) {
+                      onDeleteDriver(driverToDelete.id);
+                    }
+                    setDriverToDelete(null);
+                  }}
+                  className="flex-1 bg-white hover:bg-zinc-200 text-black font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 shadow transition-all"
+                >
+                  <Trash2 className="w-4 h-4 text-black" />
+                  <span>تأكيد الحذف النهائي</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDriverToDelete(null)}
+                  className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold py-2.5 rounded-xl text-xs border border-zinc-700 active:scale-95 transition-all"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

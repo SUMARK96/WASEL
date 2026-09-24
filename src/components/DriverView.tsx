@@ -96,7 +96,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
       return;
     }
     if (isExpired || driver.subscriptionStatus !== 'active') {
-      alert('⚠️ حسابك غير مفعل أو انتهت صلاحية اشتراكك. يجب سداد وتأكيد الاشتراك عبر رابط زينة أولاً لتتمكن من تقديم عروض الأسعار للعملاء.');
+      alert('⚠️ حسابك غير مفعل أو انتهت صلاحية اشتراكك. يجب سداد وتأكيد الاشتراك عبر بوابة الدفع الإلكتروني أولاً لتتمكن من تقديم عروض الأسعار للعملاء.');
       if (onOpenSubscription) onOpenSubscription();
       else setSelectedSection('subscription');
       return;

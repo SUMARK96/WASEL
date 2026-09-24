@@ -5,6 +5,7 @@ import type { DeliveryRequest, DriverProfile, DriverOffer, ExemptionCode } from 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests';
 const STORAGE_KEY_DRIVERS = 'wasel_drivers_v2';
+const STORAGE_KEY_DELETED_DRIVERS = 'wasel_deleted_drivers_v2';
 const STORAGE_KEY_SUBSCRIPTION_PRICE = 'wasel_subscription_price';
 const STORAGE_KEY_EXEMPTION_CODES = 'wasel_exemption_codes';
 
@@ -12,31 +13,58 @@ export const dbService = {
   // Check if active Supabase connection is available
   isConnected: () => isSupabaseConfigured(),
 
+  getDeletedDriverIds(): Set<string> {
+    try {
+      const deleted = localStorage.getItem(STORAGE_KEY_DELETED_DRIVERS);
+      if (deleted) {
+        const parsed = JSON.parse(deleted);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return new Set();
+  },
+
+  addDeletedDriverId(id: string): void {
+    try {
+      const deletedSet = this.getDeletedDriverIds();
+      deletedSet.add(id);
+      localStorage.setItem(STORAGE_KEY_DELETED_DRIVERS, JSON.stringify(Array.from(deletedSet)));
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
   // ==================== DRIVERS PERSISTENCE ====================
   // Instant synchronous local read for zero-flicker UI initialization
   getLocalDrivers(): DriverProfile[] {
+    const deletedIds = this.getDeletedDriverIds();
     try {
       const local = localStorage.getItem(STORAGE_KEY_DRIVERS);
       if (local) {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          const validLocal = parsed.filter(d => !deletedIds.has(d.id));
           // Merge with initial drivers to ensure baseline accounts exist alongside new registered drivers
-          const existingIds = new Set(parsed.map(d => d.id));
-          const missingInitial = INITIAL_DRIVERS.filter(d => !existingIds.has(d.id));
-          return [...parsed, ...missingInitial];
+          const existingIds = new Set(validLocal.map(d => d.id));
+          const missingInitial = INITIAL_DRIVERS.filter(d => !existingIds.has(d.id) && !deletedIds.has(d.id));
+          return [...validLocal, ...missingInitial];
         }
       }
     } catch (e) {
       console.error('Error reading local drivers:', e);
     }
-    return INITIAL_DRIVERS;
+    return INITIAL_DRIVERS.filter(d => !deletedIds.has(d.id));
   },
 
   // Save drivers list directly to local storage
   saveLocalDrivers(drivers: DriverProfile[]): void {
+    const deletedIds = this.getDeletedDriverIds();
     try {
-      if (Array.isArray(drivers) && drivers.length > 0) {
-        localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(drivers));
+      if (Array.isArray(drivers)) {
+        const filtered = drivers.filter(d => !deletedIds.has(d.id));
+        localStorage.setItem(STORAGE_KEY_DRIVERS, JSON.stringify(filtered));
       }
     } catch (e) {
       console.error('Error saving local drivers:', e);
@@ -44,6 +72,7 @@ export const dbService = {
   },
 
   async getDrivers(): Promise<DriverProfile[]> {
+    const deletedIds = this.getDeletedDriverIds();
     const localDrivers = this.getLocalDrivers();
     let cloudDrivers: DriverProfile[] = [];
 
@@ -55,37 +84,39 @@ export const dbService = {
           .order('rating', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          cloudDrivers = data.map((d: any) => ({
-            id: d.id,
-            name: d.name,
-            phone: d.phone,
-            whatsappPhone: d.whatsapp_phone,
-            callPhone: d.call_phone,
-            email: d.email,
-            password: d.password,
-            avatar: d.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
-            emirate: d.emirate,
-            vehicleType: d.vehicle_type,
-            vehicleModel: d.vehicle_model,
-            vehiclePlate: d.vehicle_plate,
-            vehiclePhoto: d.vehicle_photo,
-            vehiclePhotos: Array.isArray(d.vehicle_photos) ? d.vehicle_photos : (d.vehicle_photo ? [d.vehicle_photo] : []),
-            licensePhoto: d.license_photo,
-            mulkiyaPhoto: d.mulkiya_photo,
-            emiratesIdPhoto: d.emirates_id_photo,
-            rating: Number(d.rating) || 5.0,
-            reviewsCount: d.reviews_count || 0,
-            completedDeliveries: d.completed_deliveries || 0,
-            isVerified: Boolean(d.is_verified),
-            subscriptionStatus: d.subscription_status || 'active',
-            subscriptionPlan: d.subscription_plan || 'unified',
-            subscriptionExpiry: d.subscription_expiry || '2026-12-31',
-            joinedDate: d.joined_date ? (d.joined_date.includes('T') ? new Date(d.joined_date).toLocaleDateString('ar-AE') : d.joined_date) : '2026',
-            lastPaymentDate: d.last_payment_date,
-            usedExemptionCode: d.used_exemption_code,
-            isExemptionActive: Boolean(d.is_exemption_active),
-            bio: d.bio || 'سائق معتمد'
-          }));
+          cloudDrivers = data
+            .filter((d: any) => !deletedIds.has(d.id))
+            .map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              phone: d.phone,
+              whatsappPhone: d.whatsapp_phone,
+              callPhone: d.call_phone,
+              email: d.email,
+              password: d.password,
+              avatar: d.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
+              emirate: d.emirate,
+              vehicleType: d.vehicle_type,
+              vehicleModel: d.vehicle_model,
+              vehiclePlate: d.vehicle_plate,
+              vehiclePhoto: d.vehicle_photo,
+              vehiclePhotos: Array.isArray(d.vehicle_photos) ? d.vehicle_photos : (d.vehicle_photo ? [d.vehicle_photo] : []),
+              licensePhoto: d.license_photo,
+              mulkiyaPhoto: d.mulkiya_photo,
+              emiratesIdPhoto: d.emirates_id_photo,
+              rating: Number(d.rating) || 5.0,
+              reviewsCount: d.reviews_count || 0,
+              completedDeliveries: d.completed_deliveries || 0,
+              isVerified: Boolean(d.is_verified),
+              subscriptionStatus: d.subscription_status || 'active',
+              subscriptionPlan: d.subscription_plan || 'unified',
+              subscriptionExpiry: d.subscription_expiry || '2026-12-31',
+              joinedDate: d.joined_date ? (d.joined_date.includes('T') ? new Date(d.joined_date).toLocaleDateString('ar-AE') : d.joined_date) : '2026',
+              lastPaymentDate: d.last_payment_date,
+              usedExemptionCode: d.used_exemption_code,
+              isExemptionActive: Boolean(d.is_exemption_active),
+              bio: d.bio || 'سائق معتمد'
+            }));
         }
       } catch (err) {
         console.warn('Supabase getDrivers error, relying on local storage:', err);
@@ -95,14 +126,14 @@ export const dbService = {
     // Merge strategy: combine cloud drivers with local drivers so no driver account is ever deleted
     const driverMap = new Map<string, DriverProfile>();
     
-    // 1. Add all initial mock drivers
-    INITIAL_DRIVERS.forEach(d => driverMap.set(d.id, d));
+    // 1. Add baseline mock drivers (if not explicitly deleted)
+    INITIAL_DRIVERS.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
     
     // 2. Add local storage drivers (overrides initial if modified)
-    localDrivers.forEach(d => driverMap.set(d.id, d));
+    localDrivers.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
     
     // 3. Add cloud drivers (most up to date from database)
-    cloudDrivers.forEach(d => driverMap.set(d.id, d));
+    cloudDrivers.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
 
     const merged = Array.from(driverMap.values());
     this.saveLocalDrivers(merged);
@@ -117,6 +148,45 @@ export const dbService = {
     }
 
     return merged;
+  },
+
+  async deleteDriver(driverId: string): Promise<boolean> {
+    // 1. Record ID in deleted set so it's never re-seeded
+    this.addDeletedDriverId(driverId);
+
+    // 2. Remove from local storage
+    const current = this.getLocalDrivers();
+    const updated = current.filter(d => d.id !== driverId);
+    this.saveLocalDrivers(updated);
+
+    // 3. Remove from Supabase
+    if (this.isConnected()) {
+      try {
+        await supabase.from('driver_offers').delete().eq('driver_id', driverId);
+        const { error } = await supabase.from('drivers').delete().eq('id', driverId);
+        if (error) console.error('Supabase deleteDriver error:', error);
+      } catch (err) {
+        console.warn('Supabase deleteDriver failed:', err);
+      }
+    }
+    return true;
+  },
+
+  async toggleDriverSuspension(driverId: string, targetStatus: 'active' | 'suspended'): Promise<void> {
+    const current = this.getLocalDrivers();
+    const updated = current.map(d => d.id === driverId ? { ...d, subscriptionStatus: targetStatus } : d);
+    this.saveLocalDrivers(updated);
+
+    if (this.isConnected()) {
+      try {
+        await supabase
+          .from('drivers')
+          .update({ subscription_status: targetStatus, updated_at: new Date().toISOString() })
+          .eq('id', driverId);
+      } catch (err) {
+        console.warn('Supabase toggleDriverSuspension failed:', err);
+      }
+    }
   },
 
   async registerDriver(driver: DriverProfile): Promise<boolean> {
