@@ -3,12 +3,6 @@ import type { DriverProfile, Emirate, SubscriptionPlanId, SubscriptionInvoice, E
 import { createSubscriptionInvoice, calculateOneMonthExpiry, calculateExpiryByMonths, getWhatsAppInvoiceUrl } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
-import { validateEmiratesIdImage, formatEmiratesIdNumber, type EmiratesIdValidationResult } from '../utils/emiratesIdValidator';
-import { validateDrivingLicenseImage, type DrivingLicenseValidationResult } from '../utils/drivingLicenseValidator';
-import { validateMulkiyaImage, type MulkiyaValidationResult } from '../utils/mulkiyaValidator';
-import uaeIdSampleImg from '../assets/uae-id-sample.jpg';
-import uaeLicenseSampleImg from '../assets/uae-license-sample.webp';
-import uaeMulkiyaSampleImg from '../assets/uae-mulkiya-sample.jpg';
 import {
   X,
   ExternalLink,
@@ -33,8 +27,6 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertTriangle,
-  Scan,
-  Eye,
   Ticket
 } from 'lucide-react';
 
@@ -64,8 +56,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
   // Step 1: Personal & Contact Details + Avatar Upload
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('+971 50 ');
-  const [whatsappPhone, setWhatsappPhone] = useState('97150');
+  const [phone, setPhone] = useState('');
+  const [whatsappPhone, setWhatsappPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emirate, setEmirate] = useState<Emirate>('دبي');
@@ -82,27 +74,14 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
   const [drivingLicensePhoto, setDrivingLicensePhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [drivingLicenseName, setDrivingLicenseName] = useState<string>('uae_driving_license.jpg');
-  const [isScanningLicense, setIsScanningLicense] = useState<boolean>(false);
-  const [licenseScanError, setLicenseScanError] = useState<string | null>(null);
-  const [licenseValidationResult, setLicenseValidationResult] = useState<DrivingLicenseValidationResult | null>(null);
-  const [showLicenseReferenceModal, setShowLicenseReferenceModal] = useState<boolean>(false);
 
   const [mulkiyaPhoto, setMulkiyaPhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [mulkiyaName, setMulkiyaName] = useState<string>('vehicle_mulkiya.jpg');
-  const [isScanningMulkiya, setIsScanningMulkiya] = useState<boolean>(false);
-  const [mulkiyaScanError, setMulkiyaScanError] = useState<string | null>(null);
-  const [mulkiyaValidationResult, setMulkiyaValidationResult] = useState<MulkiyaValidationResult | null>(null);
-  const [showMulkiyaReferenceModal, setShowMulkiyaReferenceModal] = useState<boolean>(false);
 
   const [emiratesIdPhoto, setEmiratesIdPhoto] = useState<string>(DEFAULT_DOC_IMG);
   const [emiratesIdName, setEmiratesIdName] = useState<string>('emirates_id.jpg');
-  const [emiratesIdNumber, setEmiratesIdNumber] = useState<string>('784-1990-1234567-1');
-  const [isScanningId, setIsScanningId] = useState<boolean>(false);
-  const [idScanError, setIdScanError] = useState<string | null>(null);
-  const [idValidationResult, setIdValidationResult] = useState<EmiratesIdValidationResult | null>(null);
-  const [showIdReferenceModal, setShowIdReferenceModal] = useState<boolean>(false);
 
-  // Step 3: Subscription Plan & Ziina Payment Verification Flow
+  // Step 3: Subscription Plan & Electronic Payment Verification Flow
   const [selectedPlan] = useState<SubscriptionPlanId>('unified');
   const [paymentStage, setPaymentStage] = useState<'ready' | 'link_opened' | 'verifying' | 'success' | 'failed'>('ready');
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -117,7 +96,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
 
-  const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
+  const PAYMENT_GATEWAY_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
   const selectedPlanDetails = {
     ...UNIFIED_SUBSCRIPTION_PLAN,
     price: subscriptionPrice
@@ -198,32 +177,22 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         bio: bio.trim() || `سائق معتمد يقدم خدمات التوصيل السريع بين الإمارات بسيارة ${vehicleModel.trim()}.`
       };
 
-      const invoice = createSubscriptionInvoice(
-        activatedDriver,
-        `PROMO-${appliedExemption.code}`,
-        todayStr,
-        formattedExpiry,
-        0,
-        `كود إعفاء ترويجي (${appliedExemption.code} - ${appliedExemption.months} شهر مجاناً)`
-      );
-
-      setGeneratedInvoice(invoice);
       setCreatedActiveDriver(activatedDriver);
       setPaymentStage('success');
-    }, 1200);
+    }, 1500);
   };
 
-  const handleOpenZiinaPayment = () => {
+  const handleOpenPaymentGateway = () => {
     setPaymentError(null);
     setPaymentStage('link_opened');
-    window.open(ZIINA_PAYMENT_URL, '_blank', 'noopener,noreferrer');
+    window.open(PAYMENT_GATEWAY_URL, '_blank', 'noopener,noreferrer');
   };
 
-  const handleVerifyZiinaPayment = () => {
+  const handleVerifyPayment = () => {
     setPaymentStage('verifying');
     setPaymentError(null);
 
-    // Simulate strict live verification with Ziina payment gateway
+    // Simulate verification with payment gateway
     setTimeout(() => {
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
@@ -231,7 +200,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
       const newDriverId = `drv-${Date.now()}`;
       const cleanWhatsapp = whatsappPhone.replace(/[^0-9]/g, '');
-      const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : `+971 ${phone.trim()}`;
+      const fullCallPhone = phone.trim().startsWith('+') ? phone.trim() : (phone.trim().startsWith('0') ? `+971${phone.trim().slice(1)}` : `+971 ${phone.trim()}`);
 
       const activatedDriver: DriverProfile = {
         id: newDriverId,
@@ -266,7 +235,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
       const invoice = createSubscriptionInvoice(
         activatedDriver,
-        transactionRef || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
+        transactionRef || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
         todayStr,
         formattedExpiry,
         subscriptionPrice
@@ -275,12 +244,12 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
       setGeneratedInvoice(invoice);
       setCreatedActiveDriver(activatedDriver);
       setPaymentStage('success');
-    }, 2000);
+    }, 1800);
   };
 
   const handlePaymentFailure = () => {
     setPaymentStage('failed');
-    setPaymentError('فشلت عملية الدفع في بوابة زينة (Ziina) أو تم إلغاؤها. لم يتم تفعيل الحساب.');
+    setPaymentError('فشلت عملية الدفع الإلكتروني أو تم إلغاؤها. لم يتم تفعيل الحساب.');
   };
 
   const handleCompleteRegistration = () => {
@@ -341,94 +310,46 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     }
   };
 
-  // Dedicated Smart UAE Driving License Scanner & Design Validation Handler
+  // Driving License Upload Handler
   const handleDrivingLicenseUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setDrivingLicenseName(file.name);
     const reader = new FileReader();
-    reader.onloadend = async () => {
+    reader.onloadend = () => {
       if (typeof reader.result === 'string') {
-        const base64 = reader.result;
-        setDrivingLicensePhoto(base64);
-        setIsScanningLicense(true);
-        setLicenseScanError(null);
-
-        // Visual AI Scanning effect
-        setTimeout(async () => {
-          const result = await validateDrivingLicenseImage(base64, name, emirate);
-          setIsScanningLicense(false);
-          setLicenseValidationResult(result);
-
-          if (!result.isValid) {
-            setLicenseScanError(result.message);
-          } else {
-            setLicenseScanError(null);
-          }
-        }, 1100);
+        setDrivingLicensePhoto(reader.result);
       }
     };
     reader.readAsDataURL(file);
   };
 
-  // Dedicated Smart UAE Vehicle Mulkiya Scanner & Design Validation Handler
+  // Vehicle Mulkiya Upload Handler
   const handleMulkiyaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setMulkiyaName(file.name);
     const reader = new FileReader();
-    reader.onloadend = async () => {
+    reader.onloadend = () => {
       if (typeof reader.result === 'string') {
-        const base64 = reader.result;
-        setMulkiyaPhoto(base64);
-        setIsScanningMulkiya(true);
-        setMulkiyaScanError(null);
-
-        // Visual AI Scanning effect
-        setTimeout(async () => {
-          const result = await validateMulkiyaImage(base64, vehicleModel, vehiclePlate);
-          setIsScanningMulkiya(false);
-          setMulkiyaValidationResult(result);
-
-          if (!result.isValid) {
-            setMulkiyaScanError(result.message);
-          } else {
-            setMulkiyaScanError(null);
-          }
-        }, 1100);
+        setMulkiyaPhoto(reader.result);
       }
     };
     reader.readAsDataURL(file);
   };
 
-  // Dedicated Smart Emirates ID Scanner & Design Validation Handler
+  // Emirates ID Upload Handler
   const handleEmiratesIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setEmiratesIdName(file.name);
     const reader = new FileReader();
-    reader.onloadend = async () => {
+    reader.onloadend = () => {
       if (typeof reader.result === 'string') {
-        const base64 = reader.result;
-        setEmiratesIdPhoto(base64);
-        setIsScanningId(true);
-        setIdScanError(null);
-
-        // Visual AI Scanning effect
-        setTimeout(async () => {
-          const result = await validateEmiratesIdImage(base64, name);
-          setIsScanningId(false);
-          setIdValidationResult(result);
-
-          if (!result.isValid) {
-            setIdScanError(result.message);
-          } else {
-            setIdScanError(null);
-          }
-        }, 1100);
+        setEmiratesIdPhoto(reader.result);
       }
     };
     reader.readAsDataURL(file);
@@ -447,21 +368,6 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     e.preventDefault();
     if (!vehicleModel.trim() || !vehiclePlate.trim()) {
       alert('يرجى إدخال بيانات موديل ورقم لوحة المركبة.');
-      return;
-    }
-
-    if (drivingLicensePhoto && licenseValidationResult && !licenseValidationResult.isValid) {
-      alert('⚠️ تنبيه: صورة رخصة القيادة المرفقة لا تطابق تصميم وشكل رخصة القيادة الإماراتية الرسمية. يرجى إدراج الرخصة المعتمدة للمتابعة.');
-      return;
-    }
-
-    if (mulkiyaPhoto && mulkiyaValidationResult && !mulkiyaValidationResult.isValid) {
-      alert('⚠️ تنبيه: صورة ملكية المركبة المرفقة لا تطابق تصميم وشكل ملكية المركبة (رخصة مركبة) الإماراتية الرسمية. يرجى إدراج الملكية المعتمدة للمتابعة.');
-      return;
-    }
-
-    if (emiratesIdPhoto && idValidationResult && !idValidationResult.isValid) {
-      alert('⚠️ تنبيه: صورة الهوية الإماراتية المرفقة لا تطابق تصميم وأبعاد بطاقة الهوية الإماراتية الرسمية. يرجى إرفاق الهوية المعتمدة للمتابعة.');
       return;
     }
 
@@ -642,7 +548,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+971 50 123 4567"
+                    placeholder="مثال: 0501234567 أو +971501234567"
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-zinc-500 dir-ltr text-right"
                   />
                 </div>
@@ -657,7 +563,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     required
                     value={whatsappPhone}
                     onChange={(e) => setWhatsappPhone(e.target.value)}
-                    placeholder="971501234567"
+                    placeholder="مثال: 0501234567 أو 971501234567"
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-zinc-500 dir-ltr text-right"
                   />
                 </div>
@@ -830,7 +736,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
                 <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
                   
-                  {/* DOC 1: Smart Validated UAE Driving License (رخصة القيادة الإماراتية الذكية) */}
+                  {/* DOC 1: UAE Driving License */}
                   <div className="bg-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -840,7 +746,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                             alt="Driving License"
                             className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-zinc-700 shadow-md"
                           />
-                          {licenseValidationResult?.isValid && (
+                          {drivingLicensePhoto && drivingLicensePhoto !== DEFAULT_DOC_IMG && (
                             <div className="absolute -top-1.5 -right-1.5 bg-white text-black rounded-full p-0.5 shadow-md">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
@@ -848,116 +754,47 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         </div>
                         <div>
                           <div className="text-xs font-black text-white flex items-center gap-1.5">
-                            <span>1. رخصة القيادة الإماراتية الرسمية</span>
+                            <span>1. رخصة القيادة الرسمية</span>
                             <span className="text-zinc-300 font-normal text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
-                              فحص آلي وتدقيق
+                              مطلوب
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px]">
+                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px]">
                             {drivingLicenseName}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowLicenseReferenceModal(true)}
-                          className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-3 py-2 rounded-xl border border-zinc-700 text-xs transition-colors active:scale-95"
-                          title="معاينة شكل رخصة القيادة المعتمدة"
+                      <div className="relative shrink-0">
+                        <input
+                          type="file"
+                          id="license-upload"
+                          accept="image/*"
+                          onChange={handleDrivingLicenseUpload}
+                          className="sr-only"
+                        />
+                        <label
+                          htmlFor="license-upload"
+                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>معاينة النموذج المعتمد</span>
-                        </button>
-
-                        <div className="relative shrink-0">
-                          <input
-                            type="file"
-                            id="license-upload"
-                            accept="image/*"
-                            onChange={handleDrivingLicenseUpload}
-                            className="sr-only"
-                          />
-                          <label
-                            htmlFor="license-upload"
-                            className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>تحميل صورة الرخصة</span>
-                          </label>
-                        </div>
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{drivingLicensePhoto !== DEFAULT_DOC_IMG ? 'تغيير صورة الرخصة' : 'تحميل صورة الرخصة'}</span>
+                        </label>
                       </div>
                     </div>
 
-                    {/* Scanning In Progress State */}
-                    {isScanningLicense && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex items-center gap-3 animate-pulse">
-                        <Scan className="w-5 h-5 text-white animate-spin" />
-                        <div className="text-xs">
-                          <div className="font-bold text-white">جاري مسح وتدقيق رخصة القيادة الإماراتية آلياً...</div>
-                          <div className="text-[10px] text-zinc-400">التحقق من تطابق شعار صقر الإمارات، جدول بيانات الرخصة، والترويسة الرسمية</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Verification Passed Badge & Data Fields Match Table */}
-                    {!isScanningLicense && licenseValidationResult?.isValid && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3.5 space-y-3 text-xs">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-white font-bold">
-                            <CheckCircle2 className="w-4 h-4 shrink-0" />
-                            <span>تم التحقق: تطابق نوع المستند وحقول بيانات رخصة القيادة الرسمية ✓</span>
-                          </div>
-                          <span className="text-[10px] text-black font-bold bg-white px-2 py-0.5 rounded-full">
-                            مطابقة {licenseValidationResult.score}%
-                          </span>
-                        </div>
-
-                        {/* Fields Match Grid */}
-                        {licenseValidationResult.fields && licenseValidationResult.fields.length > 0 && (
-                          <div className="space-y-1.5 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
-                            <div className="text-[10px] text-zinc-400 font-bold mb-1">جدول تطابق حقول بيانات رخصة القيادة:</div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {licenseValidationResult.fields.map((f, fIdx) => (
-                                <div key={fIdx} className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 flex items-center justify-between text-[11px]">
-                                  <div>
-                                    <span className="text-zinc-400 block text-[9px]">{f.fieldName}</span>
-                                    <span className="text-white font-bold">{f.extractedValue}</span>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
-                                    {f.statusText}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Verification Failed Error Banner */}
-                    {!isScanningLicense && licenseScanError && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 text-white font-bold">
-                          <AlertTriangle className="w-4 h-4 shrink-0" />
-                          <span>تنبيه: تم رفض الصورة - لا تطابق تصميم رخصة القيادة الإماراتية المعتمدة</span>
-                        </div>
-                        <p className="text-zinc-300 text-[11px]">
-                          يجب أن تكون الصورة المرفقة لرخصة القيادة الإماراتية الرسمية (المحتوية على شعار صقر الإمارات، الترويسة باللغتين وعنوان رخصة القيادة، والجدول المعتمد).
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setShowLicenseReferenceModal(true)}
-                          className="text-white underline hover:text-zinc-300 text-[11px] font-bold inline-flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3" />
-                          اضغط هنا لرؤية النموذج المعتمد المطلوب لرخصة القيادة
-                        </button>
+                    {drivingLicensePhoto !== DEFAULT_DOC_IMG && (
+                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-zinc-300">
+                        <span className="flex items-center gap-1.5 text-white font-semibold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>تم إرفاق صورة رخصة القيادة بنجاح</span>
+                        </span>
+                        <span className="text-zinc-400 text-[10px]">جاهز للتوثيق ✓</span>
                       </div>
                     )}
                   </div>
 
-                  {/* DOC 2: Smart Validated UAE Mulkiya (ملكية المركبة الذكية) */}
+                  {/* DOC 2: UAE Mulkiya */}
                   <div className="bg-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -967,7 +804,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                             alt="Mulkiya"
                             className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-zinc-700 shadow-md"
                           />
-                          {mulkiyaValidationResult?.isValid && (
+                          {mulkiyaPhoto && mulkiyaPhoto !== DEFAULT_DOC_IMG && (
                             <div className="absolute -top-1.5 -right-1.5 bg-white text-black rounded-full p-0.5 shadow-md">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
@@ -977,114 +814,45 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                           <div className="text-xs font-black text-white flex items-center gap-1.5">
                             <span>2. ملكية المركبة (رخصة مركبة - الوجه الأمامي)</span>
                             <span className="text-zinc-300 font-normal text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
-                              فحص آلي وتدقيق
+                              مطلوب
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px]">
+                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px]">
                             {mulkiyaName}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowMulkiyaReferenceModal(true)}
-                          className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-3 py-2 rounded-xl border border-zinc-700 text-xs transition-colors active:scale-95"
-                          title="معاينة شكل ملكية المركبة المعتمدة"
+                      <div className="relative shrink-0">
+                        <input
+                          type="file"
+                          id="mulkiya-upload"
+                          accept="image/*"
+                          onChange={handleMulkiyaUpload}
+                          className="sr-only"
+                        />
+                        <label
+                          htmlFor="mulkiya-upload"
+                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>معاينة النموذج المعتمد</span>
-                        </button>
-
-                        <div className="relative shrink-0">
-                          <input
-                            type="file"
-                            id="mulkiya-upload"
-                            accept="image/*"
-                            onChange={handleMulkiyaUpload}
-                            className="sr-only"
-                          />
-                          <label
-                            htmlFor="mulkiya-upload"
-                            className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>تحميل صورة الملكية</span>
-                          </label>
-                        </div>
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{mulkiyaPhoto !== DEFAULT_DOC_IMG ? 'تغيير صورة الملكية' : 'تحميل صورة الملكية'}</span>
+                        </label>
                       </div>
                     </div>
 
-                    {/* Scanning In Progress State */}
-                    {isScanningMulkiya && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex items-center gap-3 animate-pulse">
-                        <Scan className="w-5 h-5 text-white animate-spin" />
-                        <div className="text-xs">
-                          <div className="font-bold text-white">جاري مسح وتدقيق ملكية المركبة الإماراتية آلياً...</div>
-                          <div className="text-[10px] text-zinc-400">التحقق من تطابق نوع المستند، رقم اللوحة، وطراز المركبة والجدول المعتمد</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Verification Passed Badge & Data Fields Match Table */}
-                    {!isScanningMulkiya && mulkiyaValidationResult?.isValid && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3.5 space-y-3 text-xs">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-white font-bold">
-                            <CheckCircle2 className="w-4 h-4 shrink-0" />
-                            <span>تم التحقق: تطابق نوع المستند وحقول بيانات ملكية المركبة الرسمية ✓</span>
-                          </div>
-                          <span className="text-[10px] text-black font-bold bg-white px-2 py-0.5 rounded-full">
-                            مطابقة {mulkiyaValidationResult.score}%
-                          </span>
-                        </div>
-
-                        {/* Fields Match Grid */}
-                        {mulkiyaValidationResult.fields && mulkiyaValidationResult.fields.length > 0 && (
-                          <div className="space-y-1.5 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
-                            <div className="text-[10px] text-zinc-400 font-bold mb-1">جدول تطابق حقول بيانات ملكية المركبة (رخصة مركبة):</div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {mulkiyaValidationResult.fields.map((f, fIdx) => (
-                                <div key={fIdx} className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 flex items-center justify-between text-[11px]">
-                                  <div>
-                                    <span className="text-zinc-400 block text-[9px]">{f.fieldName}</span>
-                                    <span className="text-white font-bold">{f.extractedValue}</span>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
-                                    {f.statusText}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Verification Failed Error Banner */}
-                    {!isScanningMulkiya && mulkiyaScanError && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 text-white font-bold">
-                          <AlertTriangle className="w-4 h-4 shrink-0" />
-                          <span>تنبيه: تم رفض الصورة - لا تطابق تصميم ملكية المركبة (رخصة مركبة) المعتمدة</span>
-                        </div>
-                        <p className="text-zinc-300 text-[11px]">
-                          يجب أن تكون الصورة المرفقة لملكية المركبة الإماراتية الرسمية (المحتوية على الخلفية، شعار الصقر المركزي، ترويسة رخصة مركبة، وجدول البيانات).
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setShowMulkiyaReferenceModal(true)}
-                          className="text-white underline hover:text-zinc-300 text-[11px] font-bold inline-flex items-center gap-1"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          اضغط هنا لرؤية النموذج المعتمد المطلوب لملكية المركبة
-                        </button>
+                    {mulkiyaPhoto !== DEFAULT_DOC_IMG && (
+                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-zinc-300">
+                        <span className="flex items-center gap-1.5 text-white font-semibold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>تم إرفاق صورة ملكية المركبة بنجاح</span>
+                        </span>
+                        <span className="text-zinc-400 text-[10px]">جاهز للتوثيق ✓</span>
                       </div>
                     )}
                   </div>
 
-                  {/* DOC 3: Smart Validated Emirates ID (الهوية الإماراتية الذكية) */}
+                  {/* DOC 3: UAE Emirates ID */}
                   <div className="bg-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -1094,7 +862,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                             alt="Emirates ID"
                             className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-zinc-700 shadow-md"
                           />
-                          {idValidationResult?.isValid && (
+                          {emiratesIdPhoto && emiratesIdPhoto !== DEFAULT_DOC_IMG && (
                             <div className="absolute -top-1.5 -right-1.5 bg-white text-black rounded-full p-0.5 shadow-md">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
@@ -1104,126 +872,40 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                           <div className="text-xs font-black text-white flex items-center gap-1.5">
                             <span>3. بطاقة الهوية الإماراتية (الوجه الأمامي)</span>
                             <span className="text-zinc-300 font-normal text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
-                              فحص آلي وتدقيق
+                              مطلوب
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px]">
+                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px]">
                             {emiratesIdName}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowIdReferenceModal(true)}
-                          className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-3 py-2 rounded-xl border border-zinc-700 text-xs transition-colors active:scale-95"
-                          title="معاينة شكل الهوية المعتمدة"
+                      <div className="relative shrink-0">
+                        <input
+                          type="file"
+                          id="emiratesid-upload"
+                          accept="image/*"
+                          onChange={handleEmiratesIdUpload}
+                          className="sr-only"
+                        />
+                        <label
+                          htmlFor="emiratesid-upload"
+                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>معاينة النموذج المعتمد</span>
-                        </button>
-
-                        <div className="relative shrink-0">
-                          <input
-                            type="file"
-                            id="emiratesid-upload"
-                            accept="image/*"
-                            onChange={handleEmiratesIdUpload}
-                            className="sr-only"
-                          />
-                          <label
-                            htmlFor="emiratesid-upload"
-                            className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>تحميل صورة الهوية</span>
-                          </label>
-                        </div>
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{emiratesIdPhoto !== DEFAULT_DOC_IMG ? 'تغيير صورة الهوية' : 'تحميل صورة الهوية'}</span>
+                        </label>
                       </div>
                     </div>
 
-                    {/* Scanning In Progress State */}
-                    {isScanningId && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 flex items-center gap-3 animate-pulse">
-                        <Scan className="w-5 h-5 text-white animate-spin" />
-                        <div className="text-xs">
-                          <div className="font-bold text-white">جاري مسح وتدقيق الهوية الإماراتية آلياً...</div>
-                          <div className="text-[10px] text-zinc-400">التحقق من تطابق نوع المستند، رقم الهوية الموحد 784، واسم صاحب الهوية</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Verification Passed Badge & Data Fields Match Table */}
-                    {!isScanningId && idValidationResult?.isValid && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3.5 space-y-3 text-xs">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-white font-bold">
-                            <CheckCircle2 className="w-4 h-4 shrink-0" />
-                            <span>تم التحقق: تطابق نوع المستند وحقول بطاقة الهوية الإماراتية الرسمية ✓</span>
-                          </div>
-                          <span className="text-[10px] text-black font-bold bg-white px-2 py-0.5 rounded-full">
-                            مطابقة {idValidationResult.score}%
-                          </span>
-                        </div>
-
-                        {/* Emirates ID number input */}
-                        <div className="bg-black/60 p-2.5 rounded-xl border border-zinc-800 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-bold text-zinc-400">
-                              رقم الهوية الموحد المكتشف:
-                            </label>
-                            <span className="text-[9px] text-zinc-300 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-700">صيغة 784 معتمدة</span>
-                          </div>
-                          <input
-                            type="text"
-                            value={emiratesIdNumber}
-                            onChange={(e) => setEmiratesIdNumber(formatEmiratesIdNumber(e.target.value))}
-                            placeholder="784-1990-1234567-1"
-                            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono font-bold dir-ltr focus:outline-none focus:border-white"
-                          />
-                        </div>
-
-                        {/* Fields Match Grid */}
-                        {idValidationResult.fields && idValidationResult.fields.length > 0 && (
-                          <div className="space-y-1.5 bg-black/60 p-2.5 rounded-xl border border-zinc-800">
-                            <div className="text-[10px] text-zinc-400 font-bold mb-1">جدول تطابق حقول بيانات بطاقة الهوية:</div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {idValidationResult.fields.map((f, fIdx) => (
-                                <div key={fIdx} className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 flex items-center justify-between text-[11px]">
-                                  <div>
-                                    <span className="text-zinc-400 block text-[9px]">{f.fieldName}</span>
-                                    <span className="text-white font-bold">{f.fieldCode === 'ID_NUMBER' ? emiratesIdNumber : f.extractedValue}</span>
-                                  </div>
-                                  <span className="text-[10px] font-bold text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
-                                    {f.statusText}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Verification Failed Error Banner */}
-                    {!isScanningId && idScanError && (
-                      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 text-white font-bold">
-                          <AlertTriangle className="w-4 h-4 shrink-0" />
-                          <span>تنبيه: الصورة المرفقة لا تطابق تصميم بطاقة الهوية الإماراتية المعتمدة</span>
-                        </div>
-                        <p className="text-zinc-300 text-[11px]">
-                          يجب أن تكون الصورة المرفقة لبطاقة الهوية الإماراتية الصادرة من الهيئة الاتحادية للهوية والجنسية (المحتوية على الشعار والعلم والرقم الموحد 784).
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setShowIdReferenceModal(true)}
-                          className="text-white underline hover:text-zinc-300 text-[11px] font-bold inline-flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3" />
-                          اضغط هنا لرؤية النموذج المعتمد المطلوب
-                        </button>
+                    {emiratesIdPhoto !== DEFAULT_DOC_IMG && (
+                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-zinc-300">
+                        <span className="flex items-center gap-1.5 text-white font-semibold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>تم إرفاق صورة بطاقة الهوية بنجاح</span>
+                        </span>
+                        <span className="text-zinc-400 text-[10px]">جاهز للتوثيق ✓</span>
                       </div>
                     )}
                   </div>
@@ -1266,7 +948,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   
                   <div className="space-y-1">
                     <span className="bg-zinc-900 text-zinc-200 text-xs font-black px-3 py-1 rounded-full border border-zinc-700">
-                      تم تأكيد الدفع بنجاح عبر زينة وإصدار الفاتورة الرسمية ✓
+                      تم تأكيد الدفع الإلكتروني بنجاح وإصدار الفاتورة الرسمية ✓
                     </span>
                     <h4 className="text-lg sm:text-2xl font-black text-white pt-1">🎉 مبارك يا {createdActiveDriver.name}!</h4>
                     <p className="text-zinc-300 font-bold text-xs sm:text-sm">
@@ -1355,7 +1037,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <h4 className="text-base sm:text-lg font-bold text-white">جاري التحقق من نجاح الدفع في بوابة زينة (Ziina)...</h4>
+                    <h4 className="text-base sm:text-lg font-bold text-white">جاري التحقق من إتمام عملية الدفع الإلكتروني...</h4>
                     <p className="text-xs text-zinc-400">التحقق من إتمام الحوالة وتأكيد دفع الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
                   </div>
                 </div>
@@ -1376,18 +1058,18 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl w-full text-right text-xs text-zinc-300 space-y-1.5">
                     <p className="font-bold text-white">⛔ تنبيه عدم تفعيل الحساب:</p>
                     <p className="text-zinc-400 leading-relaxed text-[11px]">
-                      حساب السائق غير مفعل حالياً. وفقاً لشروط المنصة، لا يمكن تفعيل الحساب أو منح شارة التوثيق واستقبال الطلبات إلا بعد تأكيد إتمام الدفع بنجاح في رابط زينة.
+                      حساب السائق غير مفعل حالياً. وفقاً لشروط المنصة، لا يمكن تفعيل الحساب أو منح شارة التوثيق واستقبال الطلبات إلا بعد تأكيد إتمام الدفع بنجاح.
                     </p>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-3 w-full pt-2">
                     <button
                       type="button"
-                      onClick={handleOpenZiinaPayment}
+                      onClick={handleOpenPaymentGateway}
                       className="w-full sm:flex-1 bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
                     >
                       <RotateCw className="w-4 h-4" />
-                      <span>إعادة محاولة الدفع عبر رابط زينة</span>
+                      <span>إعادة محاولة الدفع الإلكتروني</span>
                     </button>
                     <button
                       type="button"
@@ -1400,7 +1082,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
               )}
 
-              {/* STAGE: LINK_OPENED (User returned from Ziina and can confirm) */}
+              {/* STAGE: LINK_OPENED (User returned from Payment Gateway and can confirm) */}
               {paymentStage === 'link_opened' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
                   <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 sm:p-5 space-y-3">
@@ -1409,7 +1091,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         <ExternalLink className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-sm sm:text-base">تم فتح بوابة الدفع (Ziina) في صفحة خارجية</h4>
+                        <h4 className="font-bold text-white text-sm sm:text-base">تم فتح صفحة الدفع الإلكتروني المباشر في صفحة خارجية</h4>
                         <p className="text-xs text-zinc-400">يرجى إتمام عملية سداد رسوم الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
                       </div>
                     </div>
@@ -1417,7 +1099,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     <div className="text-xs text-zinc-300 bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-2 leading-relaxed">
                       <div className="flex items-center gap-2 text-white font-bold">
                         <span>1.</span>
-                        <span>قم بإتمام الدفع عبر Apple Pay أو بطاقتك البنكية في صفحة زينة المفتوحة.</span>
+                        <span>قم بإتمام الدفع عبر Apple Pay أو بطاقتك البنكية في صفحة الدفع المفتوحة.</span>
                       </div>
                       <div className="flex items-center gap-2 text-white font-bold">
                         <span>2.</span>
@@ -1429,13 +1111,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   {/* Optional Reference Input */}
                   <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 space-y-2">
                     <label className="block text-xs font-semibold text-zinc-300">
-                      رقم مرجع الحوالة / الإيصال من زينة (اختياري للتوثيق):
+                      رقم مرجع الحوالة / الإيصال (اختياري للتوثيق):
                     </label>
                     <input
                       type="text"
                       value={transactionRef}
                       onChange={(e) => setTransactionRef(e.target.value)}
-                      placeholder="مثال: ZIN-981240"
+                      placeholder="مثال: REF-981240"
                       className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-zinc-500"
                     />
                   </div>
@@ -1444,7 +1126,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   <div className="space-y-2.5 pt-2">
                     <button
                       type="button"
-                      onClick={handleVerifyZiinaPayment}
+                      onClick={handleVerifyPayment}
                       className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                     >
                       <CheckCircle2 className="w-4 h-4" />
@@ -1454,11 +1136,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={handleOpenZiinaPayment}
+                        onClick={handleOpenPaymentGateway}
                         className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold py-2.5 rounded-xl text-xs border border-zinc-700 flex items-center justify-center gap-1.5 active:scale-95"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
-                        <span>إعادة فتح رابط زينة</span>
+                        <span>إعادة فتح صفحة الدفع</span>
                       </button>
 
                       <button
@@ -1606,7 +1288,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         </div>
                         <div>
                           <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span>بوابة الدفع الإلكتروني المباشر (Ziina Pay)</span>
+                            <span>بوابة الدفع الإلكتروني المباشر</span>
                             <span className="text-[10px] text-zinc-300 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700 font-bold">آمن ومشفر</span>
                           </div>
                           <p className="text-[11px] text-zinc-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
@@ -1617,20 +1299,6 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       </div>
                     </div>
                   )}
-
-                  {/* Strict Policy Notice */}
-                  <div className="bg-zinc-900 border border-zinc-700 p-3.5 rounded-xl text-xs text-zinc-300 space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold text-white">
-                      <ShieldCheck className="w-4 h-4 text-white" />
-                      <span>تنبيه أمني هام بشأن تفعيل الحساب:</span>
-                    </div>
-                    <p className="text-zinc-400 text-[11px] leading-relaxed">
-                      {appliedExemption 
-                        ? `سيتم تفعيل حسابك مباشرة ومنحك شارة "سائق معتمد" بالاشتراك المجاني لمدة ${appliedExemption.months} شهر بناءً على كود الإعفاء المدخل فوراً.`
-                        : `لن يتم تفعيل حساب السائق أو منحه شارة "سائق معتمد" إلا بعد التأكد من إتمام عملية الدفع بنجاح في رابط زينة. في حال تعذر أو فشل الدفع، يظل الحساب غير مفعل ولن يتمكن من تقديم العروض.`
-                      }
-                    </p>
-                  </div>
 
                   <div className="flex items-center justify-between pt-2">
                     <button
@@ -1655,11 +1323,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     ) : (
                       <button
                         type="button"
-                        onClick={handleOpenZiinaPayment}
+                        onClick={handleOpenPaymentGateway}
                         className="flex-1 mr-3 bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                       >
                         <ExternalLink className="w-4 h-4" />
-                        <span>الانتقال للدفع عبر رابط زينة ({selectedPlanDetails.price} AED)</span>
+                        <span>الانتقال للدفع الإلكتروني المباشر ({selectedPlanDetails.price} AED)</span>
                         <ArrowLeft className="w-4 h-4" />
                       </button>
                     )}
@@ -1674,206 +1342,6 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
       </div>
 
-      {/* UAE Emirates ID Official Reference Sample Modal */}
-      {showIdReferenceModal && (
-        <div className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="bg-black px-4 sm:px-6 py-3.5 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-white" />
-                <h4 className="text-sm sm:text-base font-bold text-white">النموذج المعتمد لبطاقة الهوية الإماراتية</h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowIdReferenceModal(false)}
-                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                يقوم النظام بالتحقق آلياً من تطابق صورة الهوية مع التصميم والشكل المعتمد الصادر من <strong className="text-white">الهيئة الاتحادية للهوية والجنسية</strong>:
-              </p>
-
-              {/* Sample Card Image */}
-              <div className="relative rounded-2xl overflow-hidden border-2 border-zinc-700 shadow-xl bg-black">
-                <img
-                  src={uaeIdSampleImg}
-                  alt="UAE Emirates ID Standard Sample"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-
-              {/* Required Layout Landmarks */}
-              <div className="space-y-2 text-xs bg-zinc-900 p-3.5 rounded-2xl border border-zinc-800">
-                <div className="font-bold text-white text-xs mb-1.5">المعايير البصرية المطلوبة للقبول الفوري:</div>
-                <div className="space-y-1.5 text-zinc-300 text-[11px]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الترويسة:</strong> ظهور اسم الهيئة باللغتين العربية والإنجليزية.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الشعار والعلم:</strong> وجود شعار صقر الإمارات وعلم الدولة بالأعلى.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>رقم الهوية:</strong> رقم الهوية الموحد المكون من 15 خانة يبدأ بـ 784.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الصورة والوضوح:</strong> ظهور صورة حامل البطاقة وخلفية الزخرفة الأمنية.</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowIdReferenceModal(false)}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95"
-              >
-                فهمت ذلك، العودة لإرفاق الهوية
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* UAE Driving License Official Reference Sample Modal */}
-      {showLicenseReferenceModal && (
-        <div className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="bg-black px-4 sm:px-6 py-3.5 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-white" />
-                <h4 className="text-sm sm:text-base font-bold text-white">النموذج المعتمد لرخصة القيادة الإماراتية</h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowLicenseReferenceModal(false)}
-                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                يقوم النظام بالتحقق آلياً من تطابق صورة رخصة القيادة مع التصميم والجدول المعتمد رسمياً في <strong className="text-white">دولة الإمارات العربية المتحدة</strong>:
-              </p>
-
-              {/* Sample Card Image */}
-              <div className="relative rounded-2xl overflow-hidden border-2 border-zinc-700 shadow-xl bg-black">
-                <img
-                  src={uaeLicenseSampleImg}
-                  alt="UAE Driving License Standard Sample"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-
-              {/* Required Layout Landmarks */}
-              <div className="space-y-2 text-xs bg-zinc-900 p-3.5 rounded-2xl border border-zinc-800">
-                <div className="font-bold text-white text-xs mb-1.5">المعايير البصرية المطلوبة للقبول الفوري:</div>
-                <div className="space-y-1.5 text-zinc-300 text-[11px]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الترويسة:</strong> ترويسة الإمارات وعنوان "Driving License / رخصة قيادة".</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الشعارات:</strong> وجود شعار صقر الإمارات وشعار المرور بالزوايا العلوية.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>جدول البيانات:</strong> الجدول الموحد للبيانات (رقم الرخصة، الاسم، الجنسية، التواريخ).</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الصورة والوضوح:</strong> ظهور صورة السائق واضحة بالجانب الأيسر.</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowLicenseReferenceModal(false)}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95"
-              >
-                فهمت ذلك، العودة لإرفاق الرخصة
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* UAE Mulkiya Official Reference Sample Modal */}
-      {showMulkiyaReferenceModal && (
-        <div className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="bg-black px-4 sm:px-6 py-3.5 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-white" />
-                <h4 className="text-sm sm:text-base font-bold text-white">النموذج المعتمد لملكية المركبة (رخصة مركبة)</h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowMulkiyaReferenceModal(false)}
-                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                يقوم النظام بالتحقق آلياً من تطابق صورة ملكية المركبة مع التصميم والجدول المعتمد رسمياً في <strong className="text-white">دولة الإمارات العربية المتحدة</strong>:
-              </p>
-
-              {/* Sample Card Image */}
-              <div className="relative rounded-2xl overflow-hidden border-2 border-zinc-700 shadow-xl bg-black">
-                <img
-                  src={uaeMulkiyaSampleImg}
-                  alt="UAE Vehicle License (Mulkiya) Standard Sample"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-
-              {/* Required Layout Landmarks */}
-              <div className="space-y-2 text-xs bg-zinc-900 p-3.5 rounded-2xl border border-zinc-800">
-                <div className="font-bold text-white text-xs mb-1.5">المعايير البصرية المطلوبة للقبول الفوري:</div>
-                <div className="space-y-1.5 text-zinc-300 text-[11px]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الخلفية والزخرفة:</strong> الخلفية الأمنية المميزة لملكية المركبات.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الشعار المركزي:</strong> وجود شعار صقر الإمارات وعلم الدولة في أعلى المنتصف.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>الترويسة:</strong> ظهور عبارة "UAE Vehicle License / رخصة مركبة".</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">✓</span>
-                    <span><strong>جدول الترخيص:</strong> شبكة الجدول الشامل لبيانات اللوحة، المالك، وتواريخ التأمين.</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowMulkiyaReferenceModal(false)}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95"
-              >
-                فهمت ذلك، العودة لإرفاق الملكية
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Official Invoice Modal */}
       {showInvoiceModal && generatedInvoice && (
         <InvoiceModal
