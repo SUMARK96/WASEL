@@ -14,18 +14,69 @@ interface PushNotificationOptions {
   data?: Record<string, unknown>;
 }
 
+export const STORAGE_KEY_PWA_INSTALLED = 'wasel_pwa_installed';
+export const STORAGE_KEY_NOTIF_ENABLED = 'wasel_notifications_enabled';
+export const STORAGE_KEY_BANNER_DISMISSED = 'wasel_notification_banner_dismissed';
+
 // Check if notification features are supported
 export const isNotificationSupported = (): boolean => {
   return typeof window !== 'undefined' && 'Notification' in window;
 };
 
-// Check if PWA is installed on Home Screen
+// Check if PWA is installed on Home Screen (standalone display mode or persistent flag)
 export const isPwaInstalled = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return (
+  const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as unknown as { standalone?: boolean }).standalone === true
-  );
+    (navigator as unknown as { standalone?: boolean }).standalone === true ||
+    localStorage.getItem(STORAGE_KEY_PWA_INSTALLED) === 'true';
+  return isStandalone;
+};
+
+// Set persistent PWA installed flag
+export const setPwaInstalledFlag = (installed: boolean = true): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY_PWA_INSTALLED, installed ? 'true' : 'false');
+    window.dispatchEvent(new Event('wasel-pwa-state-changed'));
+  }
+};
+
+// Check if notifications are enabled/granted
+export const isNotificationEnabled = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  if (isNotificationSupported() && Notification.permission === 'granted') return true;
+  return localStorage.getItem(STORAGE_KEY_NOTIF_ENABLED) === 'true';
+};
+
+// Set persistent notification enabled flag
+export const setNotificationEnabledFlag = (enabled: boolean = true): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY_NOTIF_ENABLED, enabled ? 'true' : 'false');
+    window.dispatchEvent(new Event('wasel-notif-state-changed'));
+  }
+};
+
+// Check if user dismissed banner permanently
+export const isNotificationBannerDismissed = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_KEY_BANNER_DISMISSED) === 'true';
+};
+
+// Set persistent banner dismissed flag
+export const setNotificationBannerDismissedFlag = (dismissed: boolean = true): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY_BANNER_DISMISSED, dismissed ? 'true' : 'false');
+    window.dispatchEvent(new Event('wasel-banner-dismissed-changed'));
+  }
+};
+
+// Check if banner should be completely hidden on ALL pages
+export const shouldHideNotificationBanner = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  if (isNotificationBannerDismissed()) return true;
+  // If both notifications are activated AND app is installed, NEVER show banner again on any page
+  if (isNotificationEnabled() && isPwaInstalled()) return true;
+  return false;
 };
 
 // Get current permission status
@@ -64,6 +115,7 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       console.log('🔔 Notifications permission granted by user.');
+      setNotificationEnabledFlag(true);
       // Play a quick pleasant test chime
       playNotificationChime('general');
       return true;

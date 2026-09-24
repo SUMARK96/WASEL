@@ -3,7 +3,13 @@ import { Bell, BellRing, Smartphone, CheckCircle2, X } from 'lucide-react';
 import { 
   getNotificationPermissionState, 
   requestNotificationPermission, 
-  isPwaInstalled 
+  isPwaInstalled,
+  setPwaInstalledFlag,
+  isNotificationEnabled,
+  setNotificationEnabledFlag,
+  isNotificationBannerDismissed,
+  setNotificationBannerDismissedFlag,
+  shouldHideNotificationBanner
 } from '../utils/pushNotificationService';
 
 interface NotificationBannerProps {
@@ -11,15 +17,20 @@ interface NotificationBannerProps {
 }
 
 export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole = 'general' }) => {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>(() => getNotificationPermissionState());
+  const [isInstalled, setIsInstalled] = useState<boolean>(() => isPwaInstalled());
+  const [isDismissed, setIsDismissed] = useState<boolean>(() => isNotificationBannerDismissed());
   const [showPwaGuide, setShowPwaGuide] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    setPermission(getNotificationPermissionState());
-    setIsInstalled(isPwaInstalled());
+    const updateState = () => {
+      setPermission(getNotificationPermissionState());
+      setIsInstalled(isPwaInstalled());
+      setIsDismissed(isNotificationBannerDismissed());
+    };
+
+    updateState();
 
     // Listen for beforeinstallprompt event on Android/Chrome
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -27,10 +38,24 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
       setDeferredPrompt(e);
     };
 
+    // Listen for native PWA installation completion
+    const handleAppInstalled = () => {
+      setPwaInstalledFlag(true);
+      setIsInstalled(true);
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('wasel-pwa-state-changed', updateState);
+    window.addEventListener('wasel-notif-state-changed', updateState);
+    window.addEventListener('wasel-banner-dismissed-changed', updateState);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('wasel-pwa-state-changed', updateState);
+      window.removeEventListener('wasel-notif-state-changed', updateState);
+      window.removeEventListener('wasel-banner-dismissed-changed', updateState);
     };
   }, []);
 
@@ -38,6 +63,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
     const granted = await requestNotificationPermission();
     if (granted) {
       setPermission('granted');
+      setNotificationEnabledFlag(true);
     } else {
       setPermission(getNotificationPermissionState());
     }
@@ -48,6 +74,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
       if (choiceResult.outcome === 'accepted') {
+        setPwaInstalledFlag(true);
         setIsInstalled(true);
       }
       setDeferredPrompt(null);
@@ -56,7 +83,18 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
     }
   };
 
-  if (isDismissed) return null;
+  const handleDismissBanner = () => {
+    setNotificationBannerDismissedFlag(true);
+    setIsDismissed(true);
+  };
+
+  // NEVER show the banner if:
+  // 1. User dismissed it permanently
+  // 2. Both app is installed AND notifications are granted/enabled
+  // 3. shouldHideNotificationBanner() evaluates to true
+  if (isDismissed || shouldHideNotificationBanner() || (isInstalled && (permission === 'granted' || isNotificationEnabled()))) {
+    return null;
+  }
 
   return (
     <>
@@ -122,9 +160,9 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
             )}
 
             <button
-              onClick={() => setIsDismissed(true)}
+              onClick={handleDismissBanner}
               className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
-              title="إخفاء مؤقت"
+              title="إغلاق وعدم العرض مرة أخرى"
             >
               <X className="w-4 h-4" />
             </button>
@@ -188,11 +226,13 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
               <button
                 onClick={() => {
                   handleEnableNotifications();
+                  setPwaInstalledFlag(true);
+                  setIsInstalled(true);
                   setShowPwaGuide(false);
                 }}
                 className="flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 rounded-xl text-xs shadow-md transition-all"
               >
-                تفعيل الإشعارات والبدء
+                تفعيل الإشعارات وتأكيد التثبيت
               </button>
               <button
                 onClick={() => setShowPwaGuide(false)}
