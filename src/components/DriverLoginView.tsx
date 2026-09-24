@@ -36,30 +36,25 @@ export const DriverLoginView: React.FC<DriverLoginViewProps> = ({
 
     setTimeout(() => {
       setIsLoading(false);
-      // Find driver by email or phone or match existing
+      // Strict check: find registered driver by email or phone
       const found = drivers.find(
-        d => d.email.toLowerCase() === cleanEmail || d.phone.includes(cleanEmail)
+        d => d.email.toLowerCase() === cleanEmail || d.phone.replace(/[^0-9]/g, '') === cleanEmail.replace(/[^0-9]/g, '')
       );
 
-      if (found) {
-        if (found.password && found.password !== cleanPass && cleanPass !== '123456') {
-          setErrorMessage('كلمة المرور غير صحيحة. كلمة المرور الافتراضية هي 123456');
-          return;
-        }
-        onLoginSuccess(found);
-      } else {
-        const firstDriver = drivers[0];
-        if (firstDriver) {
-          onLoginSuccess({
-            ...firstDriver,
-            email: cleanEmail,
-            name: cleanEmail.split('@')[0] || firstDriver.name
-          });
-        } else {
-          setErrorMessage('لم يتم العثور على حساب سائق بهذا البريد.');
-        }
+      if (!found) {
+        setErrorMessage('❌ هذا الحساب غير مسجل مسبقاً في المنصة. يرجى التسجيل كسائق جديد وتفعيل الاشتراك.');
+        return;
       }
-    }, 600);
+
+      // Check password
+      const expectedPassword = found.password || '123456';
+      if (cleanPass !== expectedPassword) {
+        setErrorMessage('❌ كلمة المرور غير صحيحة. يرجى التأكد والمحاولة مرة أخرى.');
+        return;
+      }
+
+      onLoginSuccess(found);
+    }, 400);
   };
 
   return (
