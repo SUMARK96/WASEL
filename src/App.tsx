@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
-import { INITIAL_DRIVERS, INITIAL_REQUESTS } from './data/mockData';
-import { dbService } from './services/dbService';
+import { INITIAL_DRIVERS } from './data/mockData';
+import { dbService, onSyncEvent } from './services/dbService';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
 
@@ -33,7 +34,7 @@ export function App() {
     const local = dbService.getLocalDrivers();
     return local[0]?.id || INITIAL_DRIVERS[0].id;
   });
-  const [requests, setRequests] = useState<DeliveryRequest[]>(INITIAL_REQUESTS);
+  const [requests, setRequests] = useState<DeliveryRequest[]>(() => dbService.getLocalRequests());
   
   // Real-time Driver Notifications Broadcast Store
   const [notifications, setNotifications] = useState<DriverNotification[]>([
@@ -181,10 +182,11 @@ export function App() {
     };
   };
 
-  // Initial load from Supabase / DB Service and Service Worker initialization
+  // 1. Initial load & Real-Time Live Sync Engine (BroadcastChannel + Supabase Realtime + Periodic Polling)
   useEffect(() => {
     initNotificationService();
     
+    // Initial fetch from DB Service
     const loadInitialData = async () => {
       try {
         const [loadedDrivers, loadedRequests] = await Promise.all([
@@ -202,6 +204,172 @@ export function App() {
       }
     };
     loadInitialData();
+
+    // 2. Instant Cross-Tab Sync via BroadcastChannel & Local Storage
+    const unsubscribeLocalSync = onSyncEvent(async (event) => {
+      if (event.type === 'NEW_REQUEST' && event.payload) {
+        const newReq: DeliveryRequest = event.payload;
+        setRequests(prev => {
+          if (prev.some(r => r.id === newReq.id)) return prev;
+          return [newReq, ...prev];
+        });
+        setNotifications(prev => [
+          {
+            id: `notif-${newReq.id}`,
+            requestId: newReq.id,
+            title: newReq.title,
+            pickupEmirate: newReq.pickupEmirate,
+            deliveryEmirate: newReq.deliveryEmirate,
+            timestamp: 'الآن',
+            isRead: false
+          },
+          ...prev.filter(n => n.requestId !== newReq.id)
+        ]);
+      } else if (event.type === 'NEW_OFFER' && event.payload) {
+        const newOffer: DriverOffer = event.payload;
+        setRequests(prev => prev.map(req => {
+          if (req.id === newOffer.requestId) {
+            const existingOffers = req.offers || [];
+            if (existingOffers.some(o => o.id === newOffer.id)) return req;
+            return {
+              ...req,
+              offers: [newOffer, ...existingOffers]
+            };
+          }
+          return req;
+        }));
+        setCustomerNotifications(prev => [
+          {
+            id: `cust-notif-${newOffer.id}`,
+            requestId: newOffer.requestId,
+            requestTitle: 'عرض سعر جديد',
+            offerId: newOffer.id,
+            driverName: newOffer.driverName,
+            driverAvatar: newOffer.driverAvatar,
+            driverRating: newOffer.driverRating,
+            driverPhone: newOffer.driverPhone,
+            driverWhatsappPhone: newOffer.driverWhatsappPhone,
+            price: newOffer.price,
+            timestamp: 'الآن',
+            isRead: false,
+            type: 'new_offer'
+          },
+          ...prev.filter(n => n.offerId !== newOffer.id)
+        ]);
+      } else if (event.type === 'ACCEPT_OFFER' && event.payload) {
+        const { requestId, offerId } = event.payload;
+        setRequests(prev => prev.map(req => {
+          if (req.id === requestId) {
+            return {
+              ...req,
+              selectedOfferId: offerId,
+              status: 'assigned',
+              offers: (req.offers || []).map(o => o.id === offerId ? { ...o, status: 'accepted' } : o)
+            };
+          }
+          return req;
+        }));
+      } else if (event.type === 'DRIVERS_UPDATED') {
+        const updatedDrivers = dbService.getLocalDrivers();
+        if (updatedDrivers && updatedDrivers.length > 0) {
+          setDrivers(updatedDrivers);
+        }
+      } else if (event.type === 'SYNC_ALL') {
+        const localReqs = dbService.getLocalRequests();
+        const localDrvs = dbService.getLocalDrivers();
+        setRequests(localReqs);
+        setDrivers(localDrvs);
+      }
+    });
+
+    // 3. Supabase Realtime Postgres Changes Subscription
+    let realtimeChannel: any = null;
+    if (isSupabaseConfigured()) {
+      try {
+        realtimeChannel = supabase
+          .channel('wasel-realtime-live-sync')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'delivery_requests' },
+            async () => {
+              const latestReqs = await dbService.getRequests();
+              if (latestReqs && latestReqs.length > 0) {
+                setRequests(latestReqs);
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'driver_offers' },
+            async () => {
+              const latestReqs = await dbService.getRequests();
+              if (latestReqs && latestReqs.length > 0) {
+                setRequests(latestReqs);
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'drivers' },
+            async () => {
+              const latestDrivers = await dbService.getDrivers();
+              if (latestDrivers && latestDrivers.length > 0) {
+                setDrivers(latestDrivers);
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'driver_notifications' },
+            (payload: any) => {
+              if (payload.new) {
+                const notif = payload.new;
+                setNotifications(prev => [
+                  {
+                    id: notif.id || `notif-${Date.now()}`,
+                    requestId: notif.request_id,
+                    title: notif.title,
+                    pickupEmirate: notif.pickup_emirate,
+                    deliveryEmirate: notif.delivery_emirate,
+                    timestamp: 'الآن',
+                    isRead: false
+                  },
+                  ...prev.filter(n => n.id !== notif.id)
+                ]);
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Supabase realtime channel subscription failed:', err);
+      }
+    }
+
+    // 4. Background Polling Fallback (Every 3.5 seconds) for seamless multi-device live sync
+    const pollingInterval = setInterval(async () => {
+      try {
+        const [refreshedRequests, refreshedDrivers] = await Promise.all([
+          dbService.getRequests(),
+          dbService.getDrivers()
+        ]);
+        if (refreshedRequests && refreshedRequests.length > 0) {
+          setRequests(refreshedRequests);
+        }
+        if (refreshedDrivers && refreshedDrivers.length > 0) {
+          setDrivers(refreshedDrivers);
+        }
+      } catch (err) {
+        // Silent background sync
+      }
+    }, 3500);
+
+    return () => {
+      unsubscribeLocalSync();
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+      }
+      clearInterval(pollingInterval);
+    };
   }, []);
 
   // Automated 5-day Exemption Expiry Reminders and Account Suspension for Unpaid Exemption Accounts

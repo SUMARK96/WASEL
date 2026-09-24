@@ -3,11 +3,80 @@ import { INITIAL_DRIVERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUB
 import type { DeliveryRequest, DriverProfile, DriverOffer, ExemptionCode } from '../types';
 
 // Keys for local backup
-const STORAGE_KEY_REQUESTS = 'wasel_requests';
+const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
 const STORAGE_KEY_DRIVERS = 'wasel_drivers_v2';
 const STORAGE_KEY_DELETED_DRIVERS = 'wasel_deleted_drivers_v2';
 const STORAGE_KEY_SUBSCRIPTION_PRICE = 'wasel_subscription_price';
 const STORAGE_KEY_EXEMPTION_CODES = 'wasel_exemption_codes';
+
+// Broadcast channel for instantaneous cross-tab communication
+let syncBroadcastChannel: BroadcastChannel | null = null;
+try {
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    syncBroadcastChannel = new BroadcastChannel('wasel_sync_channel');
+  }
+} catch (e) {
+  console.warn('BroadcastChannel not supported:', e);
+}
+
+export interface WaselSyncEvent {
+  type: 'NEW_REQUEST' | 'NEW_OFFER' | 'ACCEPT_OFFER' | 'RATE_DRIVER' | 'DRIVERS_UPDATED' | 'SYNC_ALL';
+  payload?: any;
+  timestamp: number;
+}
+
+export const broadcastSyncEvent = (type: WaselSyncEvent['type'], payload?: any) => {
+  const event: WaselSyncEvent = { type, payload, timestamp: Date.now() };
+  try {
+    if (syncBroadcastChannel) {
+      syncBroadcastChannel.postMessage(event);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('wasel_local_sync', { detail: event }));
+    }
+  } catch (e) {
+    console.error('Error broadcasting sync event:', e);
+  }
+};
+
+export const onSyncEvent = (callback: (event: WaselSyncEvent) => void): (() => void) => {
+  const handleBroadcastMessage = (e: MessageEvent) => {
+    if (e.data && e.data.type) {
+      callback(e.data as WaselSyncEvent);
+    }
+  };
+
+  const handleCustomEvent = (e: Event) => {
+    const customEvent = e as CustomEvent<WaselSyncEvent>;
+    if (customEvent.detail && customEvent.detail.type) {
+      callback(customEvent.detail);
+    }
+  };
+
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY_REQUESTS || e.key === STORAGE_KEY_DRIVERS) {
+      callback({ type: 'SYNC_ALL', timestamp: Date.now() });
+    }
+  };
+
+  if (syncBroadcastChannel) {
+    syncBroadcastChannel.addEventListener('message', handleBroadcastMessage);
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('wasel_local_sync', handleCustomEvent);
+    window.addEventListener('storage', handleStorageChange);
+  }
+
+  return () => {
+    if (syncBroadcastChannel) {
+      syncBroadcastChannel.removeEventListener('message', handleBroadcastMessage);
+    }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('wasel_local_sync', handleCustomEvent);
+      window.removeEventListener('storage', handleStorageChange);
+    }
+  };
+};
 
 export const dbService = {
   // Check if active Supabase connection is available
@@ -158,6 +227,7 @@ export const dbService = {
     const current = this.getLocalDrivers();
     const updated = current.filter(d => d.id !== driverId);
     this.saveLocalDrivers(updated);
+    broadcastSyncEvent('DRIVERS_UPDATED');
 
     // 3. Remove from Supabase
     if (this.isConnected()) {
@@ -176,6 +246,7 @@ export const dbService = {
     const current = this.getLocalDrivers();
     const updated = current.map(d => d.id === driverId ? { ...d, subscriptionStatus: targetStatus } : d);
     this.saveLocalDrivers(updated);
+    broadcastSyncEvent('DRIVERS_UPDATED');
 
     if (this.isConnected()) {
       try {
@@ -194,6 +265,7 @@ export const dbService = {
     const current = this.getLocalDrivers();
     const updated = [driver, ...current.filter(d => d.id !== driver.id)];
     this.saveLocalDrivers(updated);
+    broadcastSyncEvent('DRIVERS_UPDATED');
 
     // 2. Persist to Supabase
     if (this.isConnected()) {
@@ -264,6 +336,7 @@ export const dbService = {
       return d;
     });
     this.saveLocalDrivers(updated);
+    broadcastSyncEvent('DRIVERS_UPDATED');
 
     // 2. Update Supabase
     if (this.isConnected()) {
@@ -287,7 +360,33 @@ export const dbService = {
   },
 
   // ==================== DELIVERY REQUESTS ====================
+  getLocalRequests(): DeliveryRequest[] {
+    try {
+      const local = localStorage.getItem(STORAGE_KEY_REQUESTS);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error reading local requests:', e);
+    }
+    return INITIAL_REQUESTS;
+  },
+
+  saveLocalRequests(requests: DeliveryRequest[]): void {
+    try {
+      if (Array.isArray(requests)) {
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(requests));
+      }
+    } catch (e) {
+      console.error('Error saving local requests:', e);
+    }
+  },
+
   async getRequests(): Promise<DeliveryRequest[]> {
+    let cloudRequests: DeliveryRequest[] = [];
     if (this.isConnected()) {
       try {
         const { data: reqData, error: reqErr } = await supabase
@@ -299,7 +398,7 @@ export const dbService = {
           .order('created_at', { ascending: false });
 
         if (!reqErr && reqData) {
-          return reqData.map((r: any) => ({
+          cloudRequests = reqData.map((r: any) => ({
             id: r.id,
             title: r.title,
             customerName: r.customer_name,
@@ -315,7 +414,7 @@ export const dbService = {
             urgency: r.urgency,
             notes: r.notes || '',
             status: r.status || 'open',
-            createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString('ar-AE') : 'الآن',
+            createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
             selectedOfferId: r.selected_offer_id,
             isCustomerRated: Boolean(r.is_customer_rated),
             customerRating: r.customer_rating,
@@ -337,7 +436,7 @@ export const dbService = {
               price: Number(o.price),
               estimatedDeliveryTime: o.estimated_delivery_time,
               note: o.note || '',
-              createdAt: o.created_at ? 'الآن' : 'منذ قليل',
+              createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
               status: o.status || 'pending'
             }))
           }));
@@ -347,18 +446,29 @@ export const dbService = {
       }
     }
 
-    const local = localStorage.getItem(STORAGE_KEY_REQUESTS);
-    if (local) {
-      try {
-        return JSON.parse(local);
-      } catch (e) {
-        console.error(e);
-      }
+    const localRequests = this.getLocalRequests();
+
+    if (cloudRequests.length > 0) {
+      // Merge strategy: map by id to combine any local pending requests
+      const requestMap = new Map<string, DeliveryRequest>();
+      localRequests.forEach(r => requestMap.set(r.id, r));
+      cloudRequests.forEach(r => requestMap.set(r.id, r));
+      const merged = Array.from(requestMap.values());
+      this.saveLocalRequests(merged);
+      return merged;
     }
-    return INITIAL_REQUESTS;
+
+    return localRequests;
   },
 
   async createRequest(request: DeliveryRequest): Promise<void> {
+    // 1. Immediately persist locally
+    const current = this.getLocalRequests();
+    const updated = [request, ...current.filter(r => r.id !== request.id)];
+    this.saveLocalRequests(updated);
+    broadcastSyncEvent('NEW_REQUEST', request);
+
+    // 2. Persist to Supabase
     if (this.isConnected()) {
       try {
         await supabase.from('delivery_requests').insert({
@@ -379,7 +489,7 @@ export const dbService = {
           status: request.status
         });
 
-        // Add initial notification for drivers
+        // Add initial notification for drivers in Supabase
         await supabase.from('driver_notifications').insert({
           id: `notif-${Date.now()}`,
           request_id: request.id,
@@ -396,6 +506,22 @@ export const dbService = {
 
   // ==================== DRIVER OFFERS ====================
   async submitOffer(offer: DriverOffer): Promise<void> {
+    // 1. Immediately persist locally
+    const current = this.getLocalRequests();
+    const updated = current.map(req => {
+      if (req.id === offer.requestId) {
+        const existingOffers = req.offers || [];
+        return {
+          ...req,
+          offers: [offer, ...existingOffers.filter(o => o.id !== offer.id)]
+        };
+      }
+      return req;
+    });
+    this.saveLocalRequests(updated);
+    broadcastSyncEvent('NEW_OFFER', offer);
+
+    // 2. Persist to Supabase
     if (this.isConnected()) {
       try {
         await supabase.from('driver_offers').insert({
@@ -425,6 +551,23 @@ export const dbService = {
 
   // ==================== UPDATE STATUS & RATING ====================
   async acceptOffer(requestId: string, offerId: string): Promise<void> {
+    // 1. Update locally
+    const current = this.getLocalRequests();
+    const updated: DeliveryRequest[] = current.map(req => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          selectedOfferId: offerId,
+          status: 'assigned' as const,
+          offers: (req.offers || []).map(o => o.id === offerId ? { ...o, status: 'accepted' as const } : o)
+        };
+      }
+      return req;
+    });
+    this.saveLocalRequests(updated);
+    broadcastSyncEvent('ACCEPT_OFFER', { requestId, offerId });
+
+    // 2. Update Supabase
     if (this.isConnected()) {
       try {
         await supabase
@@ -444,8 +587,8 @@ export const dbService = {
 
   async rateDriver(requestId: string, driverId: string, rating: number, note: string): Promise<void> {
     // 1. Update local storage
-    const current = this.getLocalDrivers();
-    const updated = current.map(d => {
+    const currentDrivers = this.getLocalDrivers();
+    const updatedDrivers = currentDrivers.map(d => {
       if (d.id === driverId) {
         const currentCount = d.reviewsCount || 0;
         const currentRating = d.rating || 5.0;
@@ -461,7 +604,23 @@ export const dbService = {
       }
       return d;
     });
-    this.saveLocalDrivers(updated);
+    this.saveLocalDrivers(updatedDrivers);
+
+    const currentReqs = this.getLocalRequests();
+    const updatedReqs = currentReqs.map(r => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          isCustomerRated: true,
+          customerRating: rating,
+          customerReviewNote: note,
+          status: 'delivered' as const
+        };
+      }
+      return r;
+    });
+    this.saveLocalRequests(updatedReqs);
+    broadcastSyncEvent('RATE_DRIVER', { requestId, driverId, rating });
 
     // 2. Update Supabase
     if (this.isConnected()) {
@@ -511,6 +670,7 @@ export const dbService = {
     const current = this.getLocalDrivers();
     const updated = current.map(d => d.id === driverId ? { ...d, isVerified } : d);
     this.saveLocalDrivers(updated);
+    broadcastSyncEvent('DRIVERS_UPDATED');
 
     // 2. Supabase update
     if (this.isConnected()) {
