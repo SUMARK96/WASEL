@@ -13,12 +13,12 @@ export const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
-  // Default admin passcode
-  const CORRECT_PASSWORD = 'wasel2026';
+  // Admin passcode
+  const CORRECT_PASSWORD = 'admin123';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === CORRECT_PASSWORD || password === '123456' || password === 'admin') {
+    if (password === CORRECT_PASSWORD) {
       setError(false);
       onSuccess();
     } else {
@@ -61,7 +61,7 @@ export const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
                   setPassword(e.target.value);
                   setError(false);
                 }}
-                placeholder="أدخل كلمة السر هنا (wasel2026)"
+                placeholder="أدخل كلمة المرور"
                 className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-white font-mono dir-ltr"
                 autoFocus
                 required
@@ -71,19 +71,15 @@ export const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
           </div>
 
           {error && (
-            <div className="bg-zinc-900 border border-zinc-700 p-3 rounded-xl text-xs text-zinc-200 flex items-center gap-2">
+            <div className="bg-zinc-900 border border-zinc-700 p-3 rounded-xl text-xs text-zinc-200 flex items-center gap-2 animate-in fade-in">
               <ShieldAlert className="w-4 h-4 text-white shrink-0" />
-              <span>كلمة السر غير صحيحة. يرجى المحاولة مرة أخرى (كلمة السر: wasel2026).</span>
+              <span>كلمة السر غير صحيحة. يرجى إعادة المحاولة.</span>
             </div>
           )}
 
-          <div className="bg-black p-3 rounded-xl border border-zinc-800 text-[11px] text-zinc-400">
-            💡 <strong className="text-white">تنويه:</strong> كلمة المرور المعتمدة للوحة الإدارة هي <code className="bg-zinc-900 px-1.5 py-0.5 rounded text-white font-bold">wasel2026</code>.
-          </div>
-
           <button
             type="submit"
-            className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3 rounded-xl shadow-lg transition-all text-xs sm:text-sm active:scale-95"
+            className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-lg transition-all text-xs sm:text-sm active:scale-95"
           >
             تأكيد وفتح لوحة الإدارة
           </button>
