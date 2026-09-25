@@ -21,6 +21,11 @@ try {
   console.warn('BroadcastChannel not supported:', e);
 }
 
+// High-Concurrency In-Flight Promise Collapsing (Prevents Thundering Herd / DB Choking)
+let pendingDriversPromise: Promise<DriverProfile[]> | null = null;
+let pendingRequestsPromise: Promise<DeliveryRequest[]> | null = null;
+let pendingCustomersPromise: Promise<CustomerProfile[]> | null = null;
+
 // Global Supabase Realtime WebSocket Broadcast Channel (Sub-50ms Cross-Device Sync)
 let globalRealtimeChannel: any = null;
 export const getGlobalRealtimeChannel = () => {
@@ -182,82 +187,93 @@ export const dbService = {
   },
 
   async getDrivers(): Promise<DriverProfile[]> {
-    const deletedIds = this.getDeletedDriverIds();
-    const localDrivers = this.getLocalDrivers();
-    let cloudDrivers: DriverProfile[] = [];
+    if (pendingDriversPromise) {
+      return pendingDriversPromise;
+    }
 
-    if (this.isConnected()) {
-      try {
-        const { data, error } = await supabase
-          .from('drivers')
-          .select('*')
-          .order('rating', { ascending: false });
+    pendingDriversPromise = (async () => {
+      const deletedIds = this.getDeletedDriverIds();
+      const localDrivers = this.getLocalDrivers();
+      let cloudDrivers: DriverProfile[] = [];
 
-        if (!error && data && data.length > 0) {
-          cloudDrivers = data
-            .filter((d: any) => !deletedIds.has(d.id))
-            .map((d: any) => ({
-              id: d.id,
-              name: d.name,
-              phone: d.phone,
-              whatsappPhone: d.whatsapp_phone,
-              callPhone: d.call_phone,
-              email: d.email,
-              password: d.password,
-              avatar: d.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
-              emirate: d.emirate,
-              vehicleType: d.vehicle_type,
-              vehicleModel: d.vehicle_model,
-              vehiclePlate: d.vehicle_plate,
-              vehiclePhoto: d.vehicle_photo,
-              vehiclePhotos: Array.isArray(d.vehicle_photos) ? d.vehicle_photos : (d.vehicle_photo ? [d.vehicle_photo] : []),
-              licensePhoto: d.license_photo,
-              mulkiyaPhoto: d.mulkiya_photo,
-              emiratesIdPhoto: d.emirates_id_photo,
-              rating: Number(d.rating) || 5.0,
-              reviewsCount: d.reviews_count || 0,
-              completedDeliveries: d.completed_deliveries || 0,
-              isVerified: Boolean(d.is_verified),
-              subscriptionStatus: d.subscription_status || 'active',
-              subscriptionPlan: d.subscription_plan || 'unified',
-              subscriptionExpiry: d.subscription_expiry || '2026-12-31',
-              joinedDate: d.joined_date ? (d.joined_date.includes('T') ? new Date(d.joined_date).toLocaleDateString('ar-AE') : d.joined_date) : '2026',
-              lastPaymentDate: d.last_payment_date,
-              usedExemptionCode: d.used_exemption_code,
-              isExemptionActive: Boolean(d.is_exemption_active),
-              bio: d.bio || 'سائق معتمد'
-            }));
+      if (this.isConnected()) {
+        try {
+          const { data, error } = await supabase
+            .from('drivers')
+            .select('*')
+            .order('rating', { ascending: false })
+            .limit(100);
+
+          if (!error && data && data.length > 0) {
+            cloudDrivers = data
+              .filter((d: any) => !deletedIds.has(d.id))
+              .map((d: any) => ({
+                id: d.id,
+                name: d.name,
+                phone: d.phone,
+                whatsappPhone: d.whatsapp_phone,
+                callPhone: d.call_phone,
+                email: d.email,
+                password: d.password,
+                avatar: d.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
+                emirate: d.emirate,
+                vehicleType: d.vehicle_type,
+                vehicleModel: d.vehicle_model,
+                vehiclePlate: d.vehicle_plate,
+                vehiclePhoto: d.vehicle_photo,
+                vehiclePhotos: Array.isArray(d.vehicle_photos) ? d.vehicle_photos : (d.vehicle_photo ? [d.vehicle_photo] : []),
+                licensePhoto: d.license_photo,
+                mulkiyaPhoto: d.mulkiya_photo,
+                emiratesIdPhoto: d.emirates_id_photo,
+                rating: Number(d.rating) || 5.0,
+                reviewsCount: d.reviews_count || 0,
+                completedDeliveries: d.completed_deliveries || 0,
+                isVerified: Boolean(d.is_verified),
+                subscriptionStatus: d.subscription_status || 'active',
+                subscriptionPlan: d.subscription_plan || 'unified',
+                subscriptionExpiry: d.subscription_expiry || '2026-12-31',
+                joinedDate: d.joined_date ? (d.joined_date.includes('T') ? new Date(d.joined_date).toLocaleDateString('ar-AE') : d.joined_date) : '2026',
+                lastPaymentDate: d.last_payment_date,
+                usedExemptionCode: d.used_exemption_code,
+                isExemptionActive: Boolean(d.is_exemption_active),
+                bio: d.bio || 'سائق معتمد'
+              }));
+          }
+        } catch (err) {
+          console.warn('Supabase getDrivers error, relying on local storage:', err);
         }
-      } catch (err) {
-        console.warn('Supabase getDrivers error, relying on local storage:', err);
       }
-    }
 
-    // Merge strategy: combine cloud drivers with local drivers so no driver account is ever deleted
-    const driverMap = new Map<string, DriverProfile>();
-    
-    // 1. Add baseline mock drivers (if not explicitly deleted)
-    INITIAL_DRIVERS.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
-    
-    // 2. Add local storage drivers (overrides initial if modified)
-    localDrivers.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
-    
-    // 3. Add cloud drivers (most up to date from database)
-    cloudDrivers.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
+      // Merge strategy: combine cloud drivers with local drivers so no driver account is ever deleted
+      const driverMap = new Map<string, DriverProfile>();
+      
+      // 1. Add baseline mock drivers (if not explicitly deleted)
+      INITIAL_DRIVERS.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
+      
+      // 2. Add local storage drivers (overrides initial if modified)
+      localDrivers.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
+      
+      // 3. Add cloud drivers (most up to date from database)
+      cloudDrivers.filter(d => !deletedIds.has(d.id)).forEach(d => driverMap.set(d.id, d));
 
-    const merged = Array.from(driverMap.values());
-    this.saveLocalDrivers(merged);
+      const merged = Array.from(driverMap.values());
+      this.saveLocalDrivers(merged);
 
-    // If there are drivers in local storage not yet in cloud, sync them to Supabase in background
-    if (this.isConnected() && cloudDrivers.length > 0) {
-      const cloudIds = new Set(cloudDrivers.map(c => c.id));
-      const pendingSync = merged.filter(d => !cloudIds.has(d.id));
-      for (const d of pendingSync) {
-        this.registerDriver(d).catch(console.error);
+      // If there are drivers in local storage not yet in cloud, sync them to Supabase in background
+      if (this.isConnected() && cloudDrivers.length > 0) {
+        const cloudIds = new Set(cloudDrivers.map(c => c.id));
+        const pendingSync = merged.filter(d => !cloudIds.has(d.id));
+        for (const d of pendingSync) {
+          this.registerDriver(d).catch(console.error);
+        }
       }
-    }
 
-    return merged;
+      return merged;
+    })().finally(() => {
+      pendingDriversPromise = null;
+    });
+
+    return pendingDriversPromise;
   },
 
   async deleteDriver(driverId: string): Promise<boolean> {
@@ -431,107 +447,117 @@ export const dbService = {
   },
 
   async getRequests(): Promise<DeliveryRequest[]> {
-    let cloudRequests: DeliveryRequest[] = [];
-    if (this.isConnected()) {
-      try {
-        const [reqRes, offRes] = await Promise.all([
-          supabase.from('delivery_requests').select('*').order('created_at', { ascending: false }),
-          supabase.from('driver_offers').select('*').order('created_at', { ascending: false })
-        ]);
+    if (pendingRequestsPromise) {
+      return pendingRequestsPromise;
+    }
 
-        if (!reqRes.error && reqRes.data) {
-          const allOffers = (!offRes.error && offRes.data) ? offRes.data : [];
+    pendingRequestsPromise = (async () => {
+      let cloudRequests: DeliveryRequest[] = [];
+      if (this.isConnected()) {
+        try {
+          const [reqRes, offRes] = await Promise.all([
+            supabase.from('delivery_requests').select('*').order('created_at', { ascending: false }).limit(100),
+            supabase.from('driver_offers').select('*').order('created_at', { ascending: false }).limit(200)
+          ]);
 
-          cloudRequests = reqRes.data.map((r: any) => {
-            const finalTimestamp = getRequestTimestamp(r);
-            const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id);
+          if (!reqRes.error && reqRes.data) {
+            const allOffers = (!offRes.error && offRes.data) ? offRes.data : [];
 
-            return {
-              id: r.id,
-              title: r.title,
-              customerId: r.customer_id,
-              customerName: r.customer_name,
-              customerPhone: r.customer_phone,
-              pickupEmirate: r.pickup_emirate,
-              pickupArea: r.pickup_area,
-              deliveryEmirate: r.delivery_emirate,
-              deliveryArea: r.delivery_area,
-              packageType: r.package_type,
-              packageSize: r.package_size,
-              packageWeight: r.package_weight,
-              deliveryDate: r.delivery_date,
-              urgency: r.urgency,
-              notes: r.notes || '',
-              status: r.status || 'open',
-              createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
-              createdAtTimestamp: finalTimestamp,
-              selectedOfferId: r.selected_offer_id,
-              isCustomerRated: Boolean(r.is_customer_rated),
-              customerRating: r.customer_rating,
-              customerReviewNote: r.customer_review_note,
-              offers: sortOffersDeterministically(matchingOffers.map((o: any) => ({
-                id: o.id,
-                requestId: o.request_id,
-                driverId: o.driver_id,
-                driverName: o.driver_name,
-                driverAvatar: o.driver_avatar,
-                driverRating: Number(o.driver_rating) || 5.0,
-                driverVehicle: o.driver_vehicle,
-                driverVehicleType: o.driver_vehicle_type,
-                driverPhone: o.driver_phone,
-                driverWhatsappPhone: o.driver_whatsapp_phone,
-                driverCallPhone: o.driver_call_phone,
-                driverCompletedCount: o.driver_completed_count || 0,
-                driverVerified: Boolean(o.driver_verified),
-                price: Number(o.price),
-                estimatedDeliveryTime: o.estimated_delivery_time,
-                note: o.note || '',
-                createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
-                status: o.status || 'pending'
-              })))
-            };
-          });
+            cloudRequests = reqRes.data.map((r: any) => {
+              const finalTimestamp = getRequestTimestamp(r);
+              const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id);
+
+              return {
+                id: r.id,
+                title: r.title,
+                customerId: r.customer_id,
+                customerName: r.customer_name,
+                customerPhone: r.customer_phone,
+                pickupEmirate: r.pickup_emirate,
+                pickupArea: r.pickup_area,
+                deliveryEmirate: r.delivery_emirate,
+                deliveryArea: r.delivery_area,
+                packageType: r.package_type,
+                packageSize: r.package_size,
+                packageWeight: r.package_weight,
+                deliveryDate: r.delivery_date,
+                urgency: r.urgency,
+                notes: r.notes || '',
+                status: r.status || 'open',
+                createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
+                createdAtTimestamp: finalTimestamp,
+                selectedOfferId: r.selected_offer_id,
+                isCustomerRated: Boolean(r.is_customer_rated),
+                customerRating: r.customer_rating,
+                customerReviewNote: r.customer_review_note,
+                offers: sortOffersDeterministically(matchingOffers.map((o: any) => ({
+                  id: o.id,
+                  requestId: o.request_id,
+                  driverId: o.driver_id,
+                  driverName: o.driver_name,
+                  driverAvatar: o.driver_avatar,
+                  driverRating: Number(o.driver_rating) || 5.0,
+                  driverVehicle: o.driver_vehicle,
+                  driverVehicleType: o.driver_vehicle_type,
+                  driverPhone: o.driver_phone,
+                  driverWhatsappPhone: o.driver_whatsapp_phone,
+                  driverCallPhone: o.driver_call_phone,
+                  driverCompletedCount: o.driver_completed_count || 0,
+                  driverVerified: Boolean(o.driver_verified),
+                  price: Number(o.price),
+                  estimatedDeliveryTime: o.estimated_delivery_time,
+                  note: o.note || '',
+                  createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
+                  status: o.status || 'pending'
+                })))
+              };
+            });
+          }
+        } catch (err) {
+          console.warn('Supabase getRequests error, using local fallback:', err);
         }
-      } catch (err) {
-        console.warn('Supabase getRequests error, using local fallback:', err);
       }
-    }
 
-    const localRequests = this.getLocalRequests();
+      const localRequests = this.getLocalRequests();
 
-    if (cloudRequests.length > 0) {
-      // Merge strategy: map by id and merge offers so newly submitted driver offers are never wiped out
-      const requestMap = new Map<string, DeliveryRequest>();
-      
-      // 1. Load cloud requests first
-      cloudRequests.forEach(r => requestMap.set(r.id, r));
+      if (cloudRequests.length > 0) {
+        // Merge strategy: map by id and merge offers so newly submitted driver offers are never wiped out
+        const requestMap = new Map<string, DeliveryRequest>();
+        
+        // 1. Load cloud requests first
+        cloudRequests.forEach(r => requestMap.set(r.id, r));
 
-      // 2. Merge with local requests to preserve any pending local offers
-      localRequests.forEach(localReq => {
-        const cloudReq = requestMap.get(localReq.id);
-        if (!cloudReq) {
-          requestMap.set(localReq.id, localReq);
-        } else {
-          // Merge offers by offer ID
-          const offerMap = new Map<string, DriverOffer>();
-          (cloudReq.offers || []).forEach(o => offerMap.set(o.id, o));
-          (localReq.offers || []).forEach(o => offerMap.set(o.id, o));
+        // 2. Merge with local requests to preserve any pending local offers
+        localRequests.forEach(localReq => {
+          const cloudReq = requestMap.get(localReq.id);
+          if (!cloudReq) {
+            requestMap.set(localReq.id, localReq);
+          } else {
+            // Merge offers by offer ID
+            const offerMap = new Map<string, DriverOffer>();
+            (cloudReq.offers || []).forEach(o => offerMap.set(o.id, o));
+            (localReq.offers || []).forEach(o => offerMap.set(o.id, o));
 
-          requestMap.set(localReq.id, {
-            ...cloudReq,
-            createdAt: localReq.createdAt === 'الآن' ? 'الآن' : (cloudReq.createdAt || localReq.createdAt),
-            createdAtTimestamp: getRequestTimestamp(cloudReq) || getRequestTimestamp(localReq),
-            offers: sortOffersDeterministically(Array.from(offerMap.values()))
-          });
-        }
-      });
+            requestMap.set(localReq.id, {
+              ...cloudReq,
+              createdAt: localReq.createdAt === 'الآن' ? 'الآن' : (cloudReq.createdAt || localReq.createdAt),
+              createdAtTimestamp: getRequestTimestamp(cloudReq) || getRequestTimestamp(localReq),
+              offers: sortOffersDeterministically(Array.from(offerMap.values()))
+            });
+          }
+        });
 
-      const merged = sortRequestsNewestFirst(Array.from(requestMap.values()));
-      this.saveLocalRequests(merged);
-      return merged;
-    }
+        const merged = sortRequestsNewestFirst(Array.from(requestMap.values()));
+        this.saveLocalRequests(merged);
+        return merged;
+      }
 
-    return sortRequestsNewestFirst(localRequests);
+      return sortRequestsNewestFirst(localRequests);
+    })().finally(() => {
+      pendingRequestsPromise = null;
+    });
+
+    return pendingRequestsPromise;
   },
 
   async createRequest(request: DeliveryRequest): Promise<void> {
@@ -853,50 +879,61 @@ export const dbService = {
   },
 
   async getCustomers(): Promise<CustomerProfile[]> {
-    const localCustomers = this.getLocalCustomers();
-    let cloudCustomers: CustomerProfile[] = [];
+    if (pendingCustomersPromise) {
+      return pendingCustomersPromise;
+    }
 
-    if (this.isConnected()) {
-      try {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .order('created_at', { ascending: false });
+    pendingCustomersPromise = (async () => {
+      const localCustomers = this.getLocalCustomers();
+      let cloudCustomers: CustomerProfile[] = [];
 
-        if (!error && data && data.length > 0) {
-          cloudCustomers = data.map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            emirate: c.emirate,
-            phone: c.phone,
-            email: c.email,
-            password: c.password,
-            joinedDate: c.joined_date || (c.created_at ? new Date(c.created_at).toLocaleDateString('ar-AE') : '2026')
-          }));
+      if (this.isConnected()) {
+        try {
+          const { data, error } = await supabase
+            .from('customers')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+          if (!error && data && data.length > 0) {
+            cloudCustomers = data.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              emirate: c.emirate,
+              phone: c.phone,
+              email: c.email,
+              password: c.password,
+              joinedDate: c.joined_date || (c.created_at ? new Date(c.created_at).toLocaleDateString('ar-AE') : '2026')
+            }));
+          }
+        } catch (err) {
+          console.warn('Supabase getCustomers error:', err);
         }
-      } catch (err) {
-        console.warn('Supabase getCustomers error:', err);
       }
-    }
 
-    const customerMap = new Map<string, CustomerProfile>();
-    INITIAL_CUSTOMERS.forEach(c => customerMap.set(c.id, c));
-    localCustomers.forEach(c => customerMap.set(c.id, c));
-    cloudCustomers.forEach(c => customerMap.set(c.id, c));
+      const customerMap = new Map<string, CustomerProfile>();
+      INITIAL_CUSTOMERS.forEach(c => customerMap.set(c.id, c));
+      localCustomers.forEach(c => customerMap.set(c.id, c));
+      cloudCustomers.forEach(c => customerMap.set(c.id, c));
 
-    const merged = Array.from(customerMap.values());
-    this.saveLocalCustomers(merged);
+      const merged = Array.from(customerMap.values());
+      this.saveLocalCustomers(merged);
 
-    // Sync local customers to cloud in background if any pending
-    if (this.isConnected() && cloudCustomers.length > 0) {
-      const cloudIds = new Set(cloudCustomers.map(c => c.id));
-      const pendingSync = merged.filter(c => !cloudIds.has(c.id));
-      for (const c of pendingSync) {
-        this.registerCustomer(c).catch(console.error);
+      // Sync local customers to cloud in background if any pending
+      if (this.isConnected() && cloudCustomers.length > 0) {
+        const cloudIds = new Set(cloudCustomers.map(c => c.id));
+        const pendingSync = merged.filter(d => !cloudIds.has(d.id));
+        for (const c of pendingSync) {
+          this.registerCustomer(c).catch(console.error);
+        }
       }
-    }
 
-    return merged;
+      return merged;
+    })().finally(() => {
+      pendingCustomersPromise = null;
+    });
+
+    return pendingCustomersPromise;
   },
 
   async registerCustomer(customer: CustomerProfile): Promise<boolean> {

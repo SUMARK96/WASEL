@@ -480,8 +480,13 @@ export function App() {
       }
     }
 
-    // 4. Background Polling Fallback (Every 6 seconds) with strict deep-equality checking
-    const pollingInterval = setInterval(async () => {
+    // 4. Background Polling Fallback with Smart Visibility & Connectivity Awareness (Zero-Waste Scaling)
+    const runBackgroundSync = async () => {
+      // Skip polling if the user switched tabs or minimized the browser
+      if (typeof document !== 'undefined' && document.hidden) return;
+      // Skip polling if the user is offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+
       try {
         const [refreshedRequests, refreshedDrivers, refreshedCustomers] = await Promise.all([
           dbService.getRequests(),
@@ -506,7 +511,23 @@ export function App() {
       } catch (err) {
         // Silent background sync
       }
-    }, 6000);
+    };
+
+    // 20s interval (lightweight fallback while WebSocket handles instant real-time events)
+    const pollingInterval = setInterval(runBackgroundSync, 20000);
+
+    // Immediate sync whenever user switches back to this tab
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        runBackgroundSync();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', runBackgroundSync);
+    }
 
     return () => {
       unsubscribeLocalSync();
@@ -514,6 +535,12 @@ export function App() {
         supabase.removeChannel(realtimeChannel);
       }
       clearInterval(pollingInterval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', runBackgroundSync);
+      }
     };
   }, []);
 
