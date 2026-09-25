@@ -87,11 +87,13 @@ export function App() {
   const [customers, setCustomers] = useState<CustomerProfile[]>(() => dbService.getLocalCustomers());
   const [activeCustomerId, setActiveCustomerId] = useState<string | null>(() => {
     const saved = localStorage.getItem('wasel_active_customer_id');
-    const local = dbService.getLocalCustomers();
-    if (saved && local.some(c => c.id === saved)) {
-      return saved;
+    if (saved) {
+      const local = dbService.getLocalCustomers();
+      if (local.some(c => c.id === saved)) {
+        return saved;
+      }
     }
-    return local[0]?.id || null;
+    return null;
   });
   const currentCustomer = customers.find(c => c.id === activeCustomerId) || null;
 
@@ -880,8 +882,8 @@ export function App() {
         {/* 1. Landing Screen (2 options only: Customer or Driver) */}
         {currentScreen === 'landing' && (
           <LandingView
-            onSelectCustomer={() => setCurrentScreen(activeCustomerId ? 'customer' : 'customer_portal')}
-            onSelectDriver={() => setCurrentScreen(activeDriverId ? 'driver' : 'driver_portal')}
+            onSelectCustomer={() => setCurrentScreen('customer_portal')}
+            onSelectDriver={() => setCurrentScreen('driver_portal')}
           />
         )}
 
