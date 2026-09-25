@@ -5,6 +5,7 @@ import { dbService, onSyncEvent } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
+import { sortRequestsNewestFirst } from './utils/requestUtils';
 
 import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
 import { LandingView } from './components/LandingView';
@@ -238,7 +239,7 @@ export function App() {
         const newReq: DeliveryRequest = event.payload;
         setRequests(prev => {
           if (prev.some(r => r.id === newReq.id)) return prev;
-          return [newReq, ...prev];
+          return sortRequestsNewestFirst([newReq, ...prev]);
         });
         setNotifications(prev => [
           {
@@ -528,18 +529,20 @@ export function App() {
 
   // Customer creates a new request -> AUTOMATIC BROADCAST TO ALL DRIVERS (Device Push + Sound)
   const handleCreateRequest = async (reqData: Omit<DeliveryRequest, 'id' | 'createdAt' | 'offers' | 'status'>) => {
-    const newId = `req-${Date.now()}`;
+    const now = Date.now();
+    const newId = `req-${now}`;
     const newReq: DeliveryRequest = {
       ...reqData,
       customerId: currentCustomer?.id || reqData.customerId,
       id: newId,
       status: 'open',
       createdAt: 'الآن',
+      createdAtTimestamp: now,
       offers: []
     };
 
-    // 1. Add new request in UI
-    setRequests(prev => [newReq, ...prev]);
+    // 1. Add new request in UI (guaranteed newest first)
+    setRequests(prev => sortRequestsNewestFirst([newReq, ...prev.filter(r => r.id !== newId)]));
 
     // 2. Broadcast Instant Notification to all registered drivers
     const newNotif: DriverNotification = {

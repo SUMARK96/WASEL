@@ -127,6 +127,7 @@ export interface DeliveryRequest {
   notes: string;
   status: 'open' | 'assigned' | 'in_transit' | 'delivered' | 'cancelled';
   createdAt: string;
+  createdAtTimestamp?: number;
   selectedOfferId?: string;
   isCustomerRated?: boolean;
   customerRating?: number;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { DeliveryRequest, DriverOffer, DriverProfile, CustomerProfile, CustomerNotification } from '../types';
+import { sortRequestsNewestFirst } from '../utils/requestUtils';
 import { EmirateBadge } from './EmirateBadge';
 import { NotificationBanner } from './NotificationBanner';
 import { 
@@ -62,17 +63,19 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     }));
   };
 
-  // Filter requests belonging specifically to the logged-in customer
-  const customerRequests = currentCustomer
-    ? requests.filter(r => {
-        if (r.customerId && r.customerId === currentCustomer.id) return true;
-        const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
-        const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-        if (normPhone1 && normPhone2 && normPhone1 === normPhone2) return true;
-        if (r.customerName && currentCustomer.name && r.customerName === currentCustomer.name) return true;
-        return false;
-      })
-    : requests;
+  // Filter requests belonging specifically to the logged-in customer (sorted newest first)
+  const customerRequests = sortRequestsNewestFirst(
+    currentCustomer
+      ? requests.filter(r => {
+          if (r.customerId && r.customerId === currentCustomer.id) return true;
+          const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
+          const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
+          if (normPhone1 && normPhone2 && normPhone1 === normPhone2) return true;
+          if (r.customerName && currentCustomer.name && r.customerName === currentCustomer.name) return true;
+          return false;
+        })
+      : requests
+  );
 
   const unreadNotifications = customerNotifications.filter(n => !n.isRead);
   const requestsWithOffers = customerRequests.filter(r => r.offers && r.offers.length > 0);

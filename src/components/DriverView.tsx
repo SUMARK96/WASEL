@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { DeliveryRequest, DriverProfile, DriverNotification } from '../types';
 import { UAE_EMIRATES } from '../data/mockData';
+import { sortRequestsNewestFirst } from '../utils/requestUtils';
 import { 
   getWhatsAppInvoiceUrl, 
   createSubscriptionInvoice,
@@ -85,16 +86,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
     driver.isExemptionActive ? 0 : subscriptionPrice
   );
 
-  const openRequests = requests.filter(r => r.status === 'open');
+  // Sort all requests newest first (الطلبات الأحدث تظهر أولاً دائماً)
+  const openRequests = sortRequestsNewestFirst(requests.filter(r => r.status === 'open'));
 
-  const filteredRequests = openRequests.filter(r => {
-    const matchPickup = filterPickup === 'all' || r.pickupEmirate === filterPickup;
-    const matchDelivery = filterDelivery === 'all' || r.deliveryEmirate === filterDelivery;
-    return matchPickup && matchDelivery;
-  });
+  const filteredRequests = sortRequestsNewestFirst(
+    openRequests.filter(r => {
+      const matchPickup = filterPickup === 'all' || r.pickupEmirate === filterPickup;
+      const matchDelivery = filterDelivery === 'all' || r.deliveryEmirate === filterDelivery;
+      return matchPickup && matchDelivery;
+    })
+  );
 
-  const myBids = requests.filter(r => r.offers.some(o => o.driverId === driver.id));
-  const activeJobs = requests.filter(r => r.selectedOfferId && r.offers.some(o => o.id === r.selectedOfferId && o.driverId === driver.id));
+  const myBids = sortRequestsNewestFirst(requests.filter(r => r.offers.some(o => o.driverId === driver.id)));
+  const activeJobs = sortRequestsNewestFirst(requests.filter(r => r.selectedOfferId && r.offers.some(o => o.id === r.selectedOfferId && o.driverId === driver.id)));
 
   const handleOfferClick = (req: DeliveryRequest) => {
     if (isSuspended) {

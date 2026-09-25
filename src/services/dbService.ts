@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_DRIVERS, INITIAL_CUSTOMERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode } from '../types';
+import { sortRequestsNewestFirst } from '../utils/requestUtils';
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
@@ -417,6 +418,7 @@ export const dbService = {
             notes: r.notes || '',
             status: r.status || 'open',
             createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
+            createdAtTimestamp: r.created_at ? new Date(r.created_at).getTime() : undefined,
             selectedOfferId: r.selected_offer_id,
             isCustomerRated: Boolean(r.is_customer_rated),
             customerRating: r.customer_rating,
@@ -455,20 +457,24 @@ export const dbService = {
       const requestMap = new Map<string, DeliveryRequest>();
       localRequests.forEach(r => requestMap.set(r.id, r));
       cloudRequests.forEach(r => requestMap.set(r.id, r));
-      const merged = Array.from(requestMap.values());
+      const merged = sortRequestsNewestFirst(Array.from(requestMap.values()));
       this.saveLocalRequests(merged);
       return merged;
     }
 
-    return localRequests;
+    return sortRequestsNewestFirst(localRequests);
   },
 
   async createRequest(request: DeliveryRequest): Promise<void> {
-    // 1. Immediately persist locally
+    const reqWithTimestamp: DeliveryRequest = {
+      ...request,
+      createdAtTimestamp: request.createdAtTimestamp || Date.now()
+    };
+    // 1. Immediately persist locally (sorted newest-first)
     const current = this.getLocalRequests();
-    const updated = [request, ...current.filter(r => r.id !== request.id)];
+    const updated = sortRequestsNewestFirst([reqWithTimestamp, ...current.filter(r => r.id !== request.id)]);
     this.saveLocalRequests(updated);
-    broadcastSyncEvent('NEW_REQUEST', request);
+    broadcastSyncEvent('NEW_REQUEST', reqWithTimestamp);
 
     // 2. Persist to Supabase
     if (this.isConnected()) {
