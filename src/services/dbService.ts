@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_DRIVERS, INITIAL_CUSTOMERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode } from '../types';
-import { sortRequestsNewestFirst } from '../utils/requestUtils';
+import { sortRequestsNewestFirst, getRequestTimestamp } from '../utils/requestUtils';
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
@@ -380,7 +380,11 @@ export const dbService = {
   saveLocalRequests(requests: DeliveryRequest[]): void {
     try {
       if (Array.isArray(requests)) {
-        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(requests));
+        const current = localStorage.getItem(STORAGE_KEY_REQUESTS);
+        const nextJson = JSON.stringify(requests);
+        if (current !== nextJson) {
+          localStorage.setItem(STORAGE_KEY_REQUESTS, nextJson);
+        }
       }
     } catch (e) {
       console.error('Error saving local requests:', e);
@@ -400,50 +404,56 @@ export const dbService = {
           .order('created_at', { ascending: false });
 
         if (!reqErr && reqData) {
-          cloudRequests = reqData.map((r: any) => ({
-            id: r.id,
-            title: r.title,
-            customerId: r.customer_id,
-            customerName: r.customer_name,
-            customerPhone: r.customer_phone,
-            pickupEmirate: r.pickup_emirate,
-            pickupArea: r.pickup_area,
-            deliveryEmirate: r.delivery_emirate,
-            deliveryArea: r.delivery_area,
-            packageType: r.package_type,
-            packageSize: r.package_size,
-            packageWeight: r.package_weight,
-            deliveryDate: r.delivery_date,
-            urgency: r.urgency,
-            notes: r.notes || '',
-            status: r.status || 'open',
-            createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
-            createdAtTimestamp: r.created_at ? new Date(r.created_at).getTime() : undefined,
-            selectedOfferId: r.selected_offer_id,
-            isCustomerRated: Boolean(r.is_customer_rated),
-            customerRating: r.customer_rating,
-            customerReviewNote: r.customer_review_note,
-            offers: (r.offers || []).map((o: any) => ({
-              id: o.id,
-              requestId: o.request_id,
-              driverId: o.driver_id,
-              driverName: o.driver_name,
-              driverAvatar: o.driver_avatar,
-              driverRating: Number(o.driver_rating) || 5.0,
-              driverVehicle: o.driver_vehicle,
-              driverVehicleType: o.driver_vehicle_type,
-              driverPhone: o.driver_phone,
-              driverWhatsappPhone: o.driver_whatsapp_phone,
-              driverCallPhone: o.driver_call_phone,
-              driverCompletedCount: o.driver_completed_count || 0,
-              driverVerified: Boolean(o.driver_verified),
-              price: Number(o.price),
-              estimatedDeliveryTime: o.estimated_delivery_time,
-              note: o.note || '',
-              createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
-              status: o.status || 'pending'
-            }))
-          }));
+          cloudRequests = reqData.map((r: any) => {
+            const parsedTime = r.created_at ? new Date(r.created_at).getTime() : 0;
+            const numericIdTime = r.id ? parseInt(r.id.replace(/[^0-9]/g, ''), 10) : 0;
+            const finalTimestamp = parsedTime > 0 ? parsedTime : (numericIdTime > 1000000000 ? numericIdTime : getRequestTimestamp(r));
+
+            return {
+              id: r.id,
+              title: r.title,
+              customerId: r.customer_id,
+              customerName: r.customer_name,
+              customerPhone: r.customer_phone,
+              pickupEmirate: r.pickup_emirate,
+              pickupArea: r.pickup_area,
+              deliveryEmirate: r.delivery_emirate,
+              deliveryArea: r.delivery_area,
+              packageType: r.package_type,
+              packageSize: r.package_size,
+              packageWeight: r.package_weight,
+              deliveryDate: r.delivery_date,
+              urgency: r.urgency,
+              notes: r.notes || '',
+              status: r.status || 'open',
+              createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
+              createdAtTimestamp: finalTimestamp,
+              selectedOfferId: r.selected_offer_id,
+              isCustomerRated: Boolean(r.is_customer_rated),
+              customerRating: r.customer_rating,
+              customerReviewNote: r.customer_review_note,
+              offers: (r.offers || []).map((o: any) => ({
+                id: o.id,
+                requestId: o.request_id,
+                driverId: o.driver_id,
+                driverName: o.driver_name,
+                driverAvatar: o.driver_avatar,
+                driverRating: Number(o.driver_rating) || 5.0,
+                driverVehicle: o.driver_vehicle,
+                driverVehicleType: o.driver_vehicle_type,
+                driverPhone: o.driver_phone,
+                driverWhatsappPhone: o.driver_whatsapp_phone,
+                driverCallPhone: o.driver_call_phone,
+                driverCompletedCount: o.driver_completed_count || 0,
+                driverVerified: Boolean(o.driver_verified),
+                price: Number(o.price),
+                estimatedDeliveryTime: o.estimated_delivery_time,
+                note: o.note || '',
+                createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
+                status: o.status || 'pending'
+              }))
+            };
+          });
         }
       } catch (err) {
         console.warn('Supabase getRequests error, using local fallback:', err);

@@ -5,7 +5,7 @@ import { dbService, onSyncEvent } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
-import { sortRequestsNewestFirst } from './utils/requestUtils';
+import { sortRequestsNewestFirst, areRequestListsEqual } from './utils/requestUtils';
 
 import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
 import { LandingView } from './components/LandingView';
@@ -225,7 +225,10 @@ export function App() {
           setCustomers(loadedCustomers);
         }
         if (loadedRequests && loadedRequests.length > 0) {
-          setRequests(loadedRequests);
+          setRequests(prev => {
+            const sorted = sortRequestsNewestFirst(loadedRequests);
+            return areRequestListsEqual(prev, sorted) ? prev : sorted;
+          });
         }
       } catch (err) {
         console.warn('Could not load from DB service:', err);
@@ -305,8 +308,14 @@ export function App() {
       } else if (event.type === 'SYNC_ALL') {
         const localReqs = dbService.getLocalRequests();
         const localDrvs = dbService.getLocalDrivers();
-        setRequests(localReqs);
-        setDrivers(localDrvs);
+        setRequests(prev => {
+          const sorted = sortRequestsNewestFirst(localReqs);
+          return areRequestListsEqual(prev, sorted) ? prev : sorted;
+        });
+        setDrivers(prev => {
+          const isDiff = JSON.stringify(prev) !== JSON.stringify(localDrvs);
+          return isDiff ? localDrvs : prev;
+        });
       }
     });
 
@@ -322,7 +331,10 @@ export function App() {
             async () => {
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
-                setRequests(latestReqs);
+                setRequests(prev => {
+                  const sorted = sortRequestsNewestFirst(latestReqs);
+                  return areRequestListsEqual(prev, sorted) ? prev : sorted;
+                });
               }
             }
           )
@@ -332,7 +344,10 @@ export function App() {
             async () => {
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
-                setRequests(latestReqs);
+                setRequests(prev => {
+                  const sorted = sortRequestsNewestFirst(latestReqs);
+                  return areRequestListsEqual(prev, sorted) ? prev : sorted;
+                });
               }
             }
           )
@@ -373,7 +388,7 @@ export function App() {
       }
     }
 
-    // 4. Background Polling Fallback (Every 5 seconds) for seamless multi-device live sync with change check
+    // 4. Background Polling Fallback (Every 6 seconds) with strict deep-equality checking
     const pollingInterval = setInterval(async () => {
       try {
         const [refreshedRequests, refreshedDrivers, refreshedCustomers] = await Promise.all([
@@ -383,8 +398,8 @@ export function App() {
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
           setRequests(prev => {
-            const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedRequests);
-            return isDifferent ? refreshedRequests : prev;
+            const sorted = sortRequestsNewestFirst(refreshedRequests);
+            return areRequestListsEqual(prev, sorted) ? prev : sorted;
           });
         }
         if (refreshedDrivers && refreshedDrivers.length > 0) {
@@ -402,7 +417,7 @@ export function App() {
       } catch (err) {
         // Silent background sync
       }
-    }, 5000);
+    }, 6000);
 
     return () => {
       unsubscribeLocalSync();

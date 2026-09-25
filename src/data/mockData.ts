@@ -216,6 +216,7 @@ export const INITIAL_REQUESTS: DeliveryRequest[] = [
     notes: 'الصندوق يحتوي على قطع غيار جديدة ومغلفة جيدا. يرجى توخي الحذر أثناء النقل والاستلام من المعرض مباشرة.',
     status: 'open',
     createdAt: 'منذ ساعتين',
+    createdAtTimestamp: 1600000002010,
     offers: [
       {
         id: 'off-301',
@@ -276,6 +277,7 @@ export const INITIAL_REQUESTS: DeliveryRequest[] = [
     notes: 'مغلف رسمي مغلق، يتطلب توقيع المستلم.',
     status: 'open',
     createdAt: 'منذ 4 ساعات',
+    createdAtTimestamp: 1600000002020,
     offers: [
       {
         id: 'off-303',
