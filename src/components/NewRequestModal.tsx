@@ -47,6 +47,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
     const finalTitle = `توصيل ${effectivePackageType} من ${pickupEmirate} إلى ${deliveryEmirate}`;
     onSubmit({
       title: finalTitle,
+      customerId: customer?.id,
       customerName,
       customerPhone,
       pickupEmirate,

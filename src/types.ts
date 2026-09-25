@@ -112,6 +112,7 @@ export interface DriverOffer {
 export interface DeliveryRequest {
   id: string;
   title: string;
+  customerId?: string;
   customerName: string;
   customerPhone: string;
   pickupEmirate: Emirate;

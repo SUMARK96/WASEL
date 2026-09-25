@@ -62,8 +62,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     }));
   };
 
+  // Filter requests belonging specifically to the logged-in customer
+  const customerRequests = currentCustomer
+    ? requests.filter(r => {
+        if (r.customerId && r.customerId === currentCustomer.id) return true;
+        const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
+        const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
+        if (normPhone1 && normPhone2 && normPhone1 === normPhone2) return true;
+        if (r.customerName && currentCustomer.name && r.customerName === currentCustomer.name) return true;
+        return false;
+      })
+    : requests;
+
   const unreadNotifications = customerNotifications.filter(n => !n.isRead);
-  const requestsWithOffers = requests.filter(r => r.offers && r.offers.length > 0);
+  const requestsWithOffers = customerRequests.filter(r => r.offers && r.offers.length > 0);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -432,7 +444,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       {selectedSection === 'my_requests' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           
-          {requests.length === 0 ? (
+          {customerRequests.length === 0 ? (
             <div className="bg-zinc-950 rounded-3xl p-8 sm:p-12 text-center border border-zinc-800 space-y-3">
               <Package className="w-14 h-14 text-zinc-600 mx-auto stroke-[1.5]" />
               <h3 className="text-base sm:text-lg font-bold text-white">لا توجد طلبات لديك حالياً</h3>
@@ -448,7 +460,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
           ) : (
             <div className="space-y-5">
-              {requests.map((req) => {
+              {customerRequests.map((req) => {
                 const hasAssignedDriver = req.selectedOfferId !== undefined;
                 const acceptedOffer = req.offers.find(o => o.id === req.selectedOfferId);
                 const whatsappNumber = acceptedOffer?.driverWhatsappPhone || acceptedOffer?.driverPhone.replace(/[^0-9]/g, '') || '';

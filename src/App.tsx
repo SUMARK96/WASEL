@@ -531,6 +531,7 @@ export function App() {
     const newId = `req-${Date.now()}`;
     const newReq: DeliveryRequest = {
       ...reqData,
+      customerId: currentCustomer?.id || reqData.customerId,
       id: newId,
       status: 'open',
       createdAt: 'الآن',
@@ -673,6 +674,13 @@ export function App() {
       dbService.saveLocalDrivers(drivers);
     }
   }, [drivers]);
+
+  // Auto-sync customers to local storage on any state update
+  useEffect(() => {
+    if (customers && customers.length > 0) {
+      dbService.saveLocalCustomers(customers);
+    }
+  }, [customers]);
 
   // Driver Subscription Update (Computed from moment of payment / renewal)
   const handleSubscribeSuccess = async (planId: SubscriptionPlanId, newExpiry?: string, usedPromoCode?: string, isExemption?: boolean) => {
@@ -836,6 +844,20 @@ export function App() {
     }
   };
 
+  // Filter requests specifically belonging to the logged-in customer for header counts
+  const customerFilteredRequests = currentCustomer
+    ? requests.filter(r => {
+        if (r.customerId && r.customerId === currentCustomer.id) return true;
+        const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
+        const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
+        if (normPhone1 && normPhone2 && normPhone1 === normPhone2) return true;
+        if (r.customerName && currentCustomer.name && r.customerName === currentCustomer.name) return true;
+        return false;
+      })
+    : requests;
+
+  const customerTotalOffersCount = customerFilteredRequests.reduce((acc, r) => acc + (r.offers ? r.offers.length : 0), 0);
+
   return (
     <div className="min-h-screen flex flex-col bg-black text-white font-sans selection:bg-white selection:text-black">
       
@@ -872,7 +894,7 @@ export function App() {
         }}
         unreadNotificationsCount={customerNotifications.filter(n => !n.isRead).length}
         unreadDriverNotificationsCount={notifications.filter(n => !n.isRead).length}
-        totalOffersCount={requests.reduce((acc, r) => acc + (r.offers ? r.offers.length : 0), 0)}
+        totalOffersCount={customerTotalOffersCount}
         openRequestsCount={requests.filter(r => r.status === 'open').length}
       />
 

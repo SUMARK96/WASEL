@@ -402,6 +402,7 @@ export const dbService = {
           cloudRequests = reqData.map((r: any) => ({
             id: r.id,
             title: r.title,
+            customerId: r.customer_id,
             customerName: r.customer_name,
             customerPhone: r.customer_phone,
             pickupEmirate: r.pickup_emirate,
@@ -474,6 +475,7 @@ export const dbService = {
       try {
         await supabase.from('delivery_requests').insert({
           id: request.id,
+          customer_id: request.customerId || null,
           title: request.title,
           customer_name: request.customerName,
           customer_phone: request.customerPhone,
