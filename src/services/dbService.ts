@@ -1,10 +1,11 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { INITIAL_DRIVERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
-import type { DeliveryRequest, DriverProfile, DriverOffer, ExemptionCode } from '../types';
+import { INITIAL_DRIVERS, INITIAL_CUSTOMERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
+import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode } from '../types';
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
 const STORAGE_KEY_DRIVERS = 'wasel_drivers_v2';
+const STORAGE_KEY_CUSTOMERS = 'wasel_customers_v1';
 const STORAGE_KEY_DELETED_DRIVERS = 'wasel_deleted_drivers_v2';
 const STORAGE_KEY_SUBSCRIPTION_PRICE = 'wasel_subscription_price';
 const STORAGE_KEY_EXEMPTION_CODES = 'wasel_exemption_codes';
@@ -683,6 +684,135 @@ export const dbService = {
         console.warn('Supabase updateDriverVerification failed:', err);
       }
     }
+  },
+
+  // ==================== CUSTOMERS PERSISTENCE ====================
+  getLocalCustomers(): CustomerProfile[] {
+    try {
+      const local = localStorage.getItem(STORAGE_KEY_CUSTOMERS);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const existingIds = new Set(parsed.map(c => c.id));
+          const missingInitial = INITIAL_CUSTOMERS.filter(c => !existingIds.has(c.id));
+          return [...parsed, ...missingInitial];
+        }
+      }
+    } catch (e) {
+      console.error('Error reading local customers:', e);
+    }
+    return INITIAL_CUSTOMERS;
+  },
+
+  saveLocalCustomers(customers: CustomerProfile[]): void {
+    try {
+      if (Array.isArray(customers)) {
+        localStorage.setItem(STORAGE_KEY_CUSTOMERS, JSON.stringify(customers));
+      }
+    } catch (e) {
+      console.error('Error saving local customers:', e);
+    }
+  },
+
+  async getCustomers(): Promise<CustomerProfile[]> {
+    const localCustomers = this.getLocalCustomers();
+    let cloudCustomers: CustomerProfile[] = [];
+
+    if (this.isConnected()) {
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          cloudCustomers = data.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            emirate: c.emirate,
+            phone: c.phone,
+            email: c.email,
+            password: c.password,
+            joinedDate: c.joined_date || (c.created_at ? new Date(c.created_at).toLocaleDateString('ar-AE') : '2026')
+          }));
+        }
+      } catch (err) {
+        console.warn('Supabase getCustomers error:', err);
+      }
+    }
+
+    const customerMap = new Map<string, CustomerProfile>();
+    INITIAL_CUSTOMERS.forEach(c => customerMap.set(c.id, c));
+    localCustomers.forEach(c => customerMap.set(c.id, c));
+    cloudCustomers.forEach(c => customerMap.set(c.id, c));
+
+    const merged = Array.from(customerMap.values());
+    this.saveLocalCustomers(merged);
+
+    // Sync local customers to cloud in background if any pending
+    if (this.isConnected() && cloudCustomers.length > 0) {
+      const cloudIds = new Set(cloudCustomers.map(c => c.id));
+      const pendingSync = merged.filter(c => !cloudIds.has(c.id));
+      for (const c of pendingSync) {
+        this.registerCustomer(c).catch(console.error);
+      }
+    }
+
+    return merged;
+  },
+
+  async registerCustomer(customer: CustomerProfile): Promise<boolean> {
+    // 1. Save locally
+    const current = this.getLocalCustomers();
+    const updated = [customer, ...current.filter(c => c.id !== customer.id)];
+    this.saveLocalCustomers(updated);
+    broadcastSyncEvent('SYNC_ALL');
+
+    // 2. Save to Supabase
+    if (this.isConnected()) {
+      try {
+        const { error } = await supabase.from('customers').upsert({
+          id: customer.id,
+          name: customer.name,
+          emirate: customer.emirate,
+          phone: customer.phone,
+          email: customer.email,
+          password: customer.password,
+          joined_date: customer.joinedDate
+        }, { onConflict: 'id' });
+        if (error) console.error('Supabase registerCustomer upsert error:', error);
+      } catch (err) {
+        console.warn('Supabase registerCustomer failed:', err);
+      }
+    }
+    return true;
+  },
+
+  async updateCustomer(customer: CustomerProfile): Promise<boolean> {
+    // 1. Save locally
+    const current = this.getLocalCustomers();
+    const updated = current.map(c => c.id === customer.id ? customer : c);
+    this.saveLocalCustomers(updated);
+    broadcastSyncEvent('SYNC_ALL');
+
+    // 2. Save to Supabase
+    if (this.isConnected()) {
+      try {
+        const { error } = await supabase.from('customers').upsert({
+          id: customer.id,
+          name: customer.name,
+          emirate: customer.emirate,
+          phone: customer.phone,
+          email: customer.email,
+          password: customer.password,
+          joined_date: customer.joinedDate
+        }, { onConflict: 'id' });
+        if (error) console.error('Supabase updateCustomer error:', error);
+      } catch (err) {
+        console.warn('Supabase updateCustomer failed:', err);
+      }
+    }
+    return true;
   },
 
   // ==================== SUBSCRIPTION PRICE & EXEMPTION CODES ====================

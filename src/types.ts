@@ -11,12 +11,25 @@ export type UserRole = 'customer' | 'driver' | 'admin';
 
 export type AppScreen = 
   | 'landing' 
+  | 'customer_portal' 
+  | 'customer_register' 
+  | 'customer_login' 
   | 'customer' 
   | 'driver_portal' 
   | 'driver_register' 
   | 'driver_login' 
   | 'driver' 
   | 'admin';
+
+export interface CustomerProfile {
+  id: string;
+  name: string;
+  emirate: Emirate;
+  phone: string;
+  email: string;
+  password?: string;
+  joinedDate: string;
+}
 
 export type VehicleType = 'sedan' | 'suv' | 'van' | 'pickup';
 

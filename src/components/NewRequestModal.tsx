@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Emirate, DeliveryRequest } from '../types';
+import type { Emirate, DeliveryRequest, CustomerProfile } from '../types';
 import { UAE_EMIRATES, PACKAGE_TYPES } from '../data/mockData';
 import { 
   X, 
@@ -7,23 +7,27 @@ import {
   MapPin, 
   ChevronDown, 
   Sparkles,
-  Clock
+  Clock,
+  User,
+  Phone
 } from 'lucide-react';
 
 interface NewRequestModalProps {
+  customer?: CustomerProfile | null;
   onClose: () => void;
   onSubmit: (requestData: Omit<DeliveryRequest, 'id' | 'createdAt' | 'offers' | 'status'>) => void;
 }
 
 export const NewRequestModal: React.FC<NewRequestModalProps> = ({
+  customer,
   onClose,
   onSubmit
 }) => {
-  const customerName = 'سعيد المزروعي';
-  const customerPhone = '+971 50 111 2233';
+  const customerName = customer?.name || 'عميل واصل';
+  const customerPhone = customer?.phone || '+971 50 111 2233';
   const packageSize = 'medium' as const;
   const urgency = 'express' as const;
-  const [pickupEmirate, setPickupEmirate] = useState<Emirate>('أبوظبي');
+  const [pickupEmirate, setPickupEmirate] = useState<Emirate>(customer?.emirate || 'أبوظبي');
   const [pickupArea, setPickupArea] = useState('منطقة الخالدية');
   const [deliveryEmirate, setDeliveryEmirate] = useState<Emirate>('الشارقة');
   const [deliveryArea, setDeliveryArea] = useState('منطقة المجاز 2');
@@ -92,6 +96,18 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
         {/* Form Body */}
         <form id="new-request-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 overscroll-contain touch-pan-y">
           
+          {/* Customer Publishing Info */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-white" />
+              <span className="text-zinc-300">الطلب ينشر باسم: <strong className="text-white">{customerName}</strong></span>
+            </div>
+            <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[11px] dir-ltr">
+              <Phone className="w-3.5 h-3.5 text-zinc-400" />
+              <span>{customerPhone}</span>
+            </div>
+          </div>
+
           {/* Step 1: Route Selection */}
           <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">

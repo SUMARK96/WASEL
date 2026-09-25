@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { AppScreen, DriverProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
+import type { AppScreen, DriverProfile, CustomerProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
 import { INITIAL_DRIVERS } from './data/mockData';
 import { dbService, onSyncEvent } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -8,6 +8,9 @@ import { initNotificationService, sendDeviceNotification } from './utils/pushNot
 
 import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
 import { LandingView } from './components/LandingView';
+import { CustomerPortalGate } from './components/CustomerPortalGate';
+import { CustomerLoginView } from './components/CustomerLoginView';
+import { CustomerRegistrationModal } from './components/CustomerRegistrationModal';
 import { DriverPortalGate } from './components/DriverPortalGate';
 import { DriverLoginView } from './components/DriverLoginView';
 import { CustomerView } from './components/CustomerView';
@@ -18,6 +21,7 @@ import { NewRequestModal } from './components/NewRequestModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { SubmitOfferModal } from './components/SubmitOfferModal';
 import { DriverProfileModal } from './components/DriverProfileModal';
+import { CustomerProfileModal } from './components/CustomerProfileModal';
 import { AdminPasswordModal } from './components/AdminPasswordModal';
 import { DriverRegistrationModal } from './components/DriverRegistrationModal';
 import { RateDriverModal } from './components/RateDriverModal';
@@ -31,7 +35,11 @@ export function App() {
   
   const [drivers, setDrivers] = useState<DriverProfile[]>(() => dbService.getLocalDrivers());
   const [activeDriverId, setActiveDriverId] = useState<string>(() => {
+    const saved = localStorage.getItem('wasel_active_driver_id');
     const local = dbService.getLocalDrivers();
+    if (saved && local.some(d => d.id === saved)) {
+      return saved;
+    }
     return local[0]?.id || INITIAL_DRIVERS[0].id;
   });
   const [requests, setRequests] = useState<DeliveryRequest[]>(() => dbService.getLocalRequests());
@@ -76,10 +84,23 @@ export function App() {
     }
   ]);
 
+  const [customers, setCustomers] = useState<CustomerProfile[]>(() => dbService.getLocalCustomers());
+  const [activeCustomerId, setActiveCustomerId] = useState<string | null>(() => {
+    const saved = localStorage.getItem('wasel_active_customer_id');
+    const local = dbService.getLocalCustomers();
+    if (saved && local.some(c => c.id === saved)) {
+      return saved;
+    }
+    return local[0]?.id || null;
+  });
+  const currentCustomer = customers.find(c => c.id === activeCustomerId) || null;
+
   // Modals state
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   const [isDriverRegisterOpen, setIsDriverRegisterOpen] = useState(false);
+  const [isCustomerRegisterOpen, setIsCustomerRegisterOpen] = useState(false);
+  const [isCustomerProfileOpen, setIsCustomerProfileOpen] = useState(false);
   const [isAdminPasswordOpen, setIsAdminPasswordOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
@@ -189,12 +210,16 @@ export function App() {
     // Initial fetch from DB Service
     const loadInitialData = async () => {
       try {
-        const [loadedDrivers, loadedRequests] = await Promise.all([
+        const [loadedDrivers, loadedCustomers, loadedRequests] = await Promise.all([
           dbService.getDrivers(),
+          dbService.getCustomers(),
           dbService.getRequests()
         ]);
         if (loadedDrivers && loadedDrivers.length > 0) {
           setDrivers(loadedDrivers);
+        }
+        if (loadedCustomers && loadedCustomers.length > 0) {
+          setCustomers(loadedCustomers);
         }
         if (loadedRequests && loadedRequests.length > 0) {
           setRequests(loadedRequests);
@@ -348,15 +373,19 @@ export function App() {
     // 4. Background Polling Fallback (Every 3.5 seconds) for seamless multi-device live sync
     const pollingInterval = setInterval(async () => {
       try {
-        const [refreshedRequests, refreshedDrivers] = await Promise.all([
+        const [refreshedRequests, refreshedDrivers, refreshedCustomers] = await Promise.all([
           dbService.getRequests(),
-          dbService.getDrivers()
+          dbService.getDrivers(),
+          dbService.getCustomers()
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
           setRequests(refreshedRequests);
         }
         if (refreshedDrivers && refreshedDrivers.length > 0) {
           setDrivers(refreshedDrivers);
+        }
+        if (refreshedCustomers && refreshedCustomers.length > 0) {
+          setCustomers(refreshedCustomers);
         }
       } catch (err) {
         // Silent background sync
@@ -438,6 +467,40 @@ export function App() {
   }, [drivers]);
 
   const currentDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
+
+  // Customer Authentication & Profile Handlers
+  const handleCustomerLoginSuccess = (customer: CustomerProfile) => {
+    setActiveCustomerId(customer.id);
+    localStorage.setItem('wasel_active_customer_id', customer.id);
+    setCurrentScreen('customer');
+    showToast(`👋 أهلاً بك يا ${customer.name}! تم تسجيل الدخول بنجاح`);
+  };
+
+  const handleCustomerRegisterSuccess = async (customer: CustomerProfile) => {
+    const updated = [customer, ...customers.filter(c => c.id !== customer.id)];
+    setCustomers(updated);
+    setActiveCustomerId(customer.id);
+    localStorage.setItem('wasel_active_customer_id', customer.id);
+    setIsCustomerRegisterOpen(false);
+    setCurrentScreen('customer');
+    await dbService.registerCustomer(customer);
+    showToast(`🎉 تم إنشاء حسابك بنجاح! مرحباً بك يا ${customer.name}`);
+  };
+
+  const handleCustomerLogout = () => {
+    setActiveCustomerId(null);
+    localStorage.removeItem('wasel_active_customer_id');
+    setIsCustomerProfileOpen(false);
+    setCurrentScreen('landing');
+    showToast('👋 تم تسجيل الخروج من حساب العميل بنجاح');
+  };
+
+  const handleUpdateCustomer = async (updatedCustomer: CustomerProfile) => {
+    const updated = customers.map(c => c.id === updatedCustomer.id ? updatedCustomer : c);
+    setCustomers(updated);
+    await dbService.updateCustomer(updatedCustomer);
+    showToast('✨ تم حفظ وتحديث بيانات حسابك بنجاح');
+  };
 
   // Admin Access Handler
   const handleOpenAdmin = () => {
@@ -650,6 +713,7 @@ export function App() {
   const handleDriverRegisterSuccess = async (newDriver: DriverProfile) => {
     setDrivers(prev => [newDriver, ...prev.filter(d => d.id !== newDriver.id)]);
     setActiveDriverId(newDriver.id);
+    localStorage.setItem('wasel_active_driver_id', newDriver.id);
     setCurrentScreen('driver');
     setIsDriverRegisterOpen(false);
 
@@ -662,8 +726,16 @@ export function App() {
   // Driver Login Success
   const handleDriverLoginSuccess = (driver: DriverProfile) => {
     setActiveDriverId(driver.id);
+    localStorage.setItem('wasel_active_driver_id', driver.id);
     setCurrentScreen('driver');
     showToast(`👋 مرحباً بعودتك يا ${driver.name}! تم تسجيل الدخول بنجاح.`);
+  };
+
+  // Driver Logout Handler
+  const handleDriverLogout = () => {
+    localStorage.removeItem('wasel_active_driver_id');
+    setCurrentScreen('landing');
+    showToast('👋 تم تسجيل الخروج بنجاح');
   };
 
   // Customer rates a driver after delivery / accepted offer
@@ -782,7 +854,9 @@ export function App() {
           setIsNewRequestOpen(true);
         }}
         onOpenSubscription={() => setIsSubscriptionOpen(true)}
+        onOpenCustomerProfile={() => setIsCustomerProfileOpen(true)}
         currentDriver={currentDriver}
+        currentCustomer={currentCustomer}
         customerSection={customerSection}
         onSelectCustomerSection={(sec) => {
           setCustomerSection(sec);
@@ -806,12 +880,34 @@ export function App() {
         {/* 1. Landing Screen (2 options only: Customer or Driver) */}
         {currentScreen === 'landing' && (
           <LandingView
-            onSelectCustomer={() => setCurrentScreen('customer')}
-            onSelectDriver={() => setCurrentScreen('driver_portal')}
+            onSelectCustomer={() => setCurrentScreen(activeCustomerId ? 'customer' : 'customer_portal')}
+            onSelectDriver={() => setCurrentScreen(activeDriverId ? 'driver' : 'driver_portal')}
           />
         )}
 
-        {/* 2. Driver Portal Gate (2 options: New Driver or I Have an Account) */}
+        {/* 2. Customer Portal Gate (2 options: New Customer or I Have an Account) */}
+        {currentScreen === 'customer_portal' && (
+          <CustomerPortalGate
+            onSelectNewCustomer={() => setIsCustomerRegisterOpen(true)}
+            onSelectExistingCustomer={() => setCurrentScreen('customer_login')}
+            onBackToLanding={() => setCurrentScreen('landing')}
+          />
+        )}
+
+        {/* 3. Customer Login View (Email & Password) */}
+        {currentScreen === 'customer_login' && (
+          <CustomerLoginView
+            customers={customers}
+            onLoginSuccess={handleCustomerLoginSuccess}
+            onGoToRegister={() => {
+              setCurrentScreen('customer_portal');
+              setIsCustomerRegisterOpen(true);
+            }}
+            onBackToPortal={() => setCurrentScreen('customer_portal')}
+          />
+        )}
+
+        {/* 4. Driver Portal Gate (2 options: New Driver or I Have an Account) */}
         {currentScreen === 'driver_portal' && (
           <DriverPortalGate
             onSelectNewDriver={() => setIsDriverRegisterOpen(true)}
@@ -821,7 +917,7 @@ export function App() {
           />
         )}
 
-        {/* 3. Driver Login View (Email & Password) */}
+        {/* 5. Driver Login View (Email & Password) */}
         {currentScreen === 'driver_login' && (
           <DriverLoginView
             drivers={drivers}
@@ -834,27 +930,26 @@ export function App() {
           />
         )}
 
-        {/* 4. Customer View */}
+        {/* 6. Customer View */}
         {currentScreen === 'customer' && (
           <CustomerView
+            currentCustomer={currentCustomer}
             requests={requests}
             drivers={drivers}
             customerNotifications={customerNotifications}
             onMarkCustomerNotificationRead={handleMarkCustomerNotificationRead}
             onOpenNewRequest={() => setIsNewRequestOpen(true)}
+            onOpenProfile={() => setIsCustomerProfileOpen(true)}
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
             onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
             selectedSection={customerSection}
             onSelectSection={setCustomerSection}
-            onLogout={() => {
-              setCurrentScreen('landing');
-              showToast('👋 تم تسجيل الخروج بنجاح');
-            }}
+            onLogout={handleCustomerLogout}
           />
         )}
 
-        {/* 5. Driver View */}
+        {/* 7. Driver View */}
         {currentScreen === 'driver' && (
           <DriverView
             driver={currentDriver}
@@ -865,10 +960,7 @@ export function App() {
             onOpenSubscription={() => setIsSubscriptionOpen(true)}
             onOpenSubmitOffer={(req) => setSelectedRequestForOffer(req)}
             onMarkNotificationRead={handleMarkNotificationRead}
-            onLogout={() => {
-              setCurrentScreen('landing');
-              showToast('👋 تم تسجيل الخروج بنجاح');
-            }}
+            onLogout={handleDriverLogout}
             subscriptionPrice={subscriptionPrice}
           />
         )}
@@ -953,8 +1045,19 @@ export function App() {
       {/* Modals */}
       {isNewRequestOpen && (
         <NewRequestModal
+          customer={currentCustomer}
           onClose={() => setIsNewRequestOpen(false)}
           onSubmit={handleCreateRequest}
+        />
+      )}
+
+      {isCustomerProfileOpen && currentCustomer && (
+        <CustomerProfileModal
+          customer={currentCustomer}
+          requests={requests}
+          onClose={() => setIsCustomerProfileOpen(false)}
+          onUpdateCustomer={handleUpdateCustomer}
+          onLogout={handleCustomerLogout}
         />
       )}
 
@@ -989,6 +1092,14 @@ export function App() {
         <DriverProfileModal
           driver={selectedDriverForProfile}
           onClose={() => setSelectedDriverForProfile(null)}
+        />
+      )}
+
+      {isCustomerRegisterOpen && (
+        <CustomerRegistrationModal
+          existingCustomers={customers}
+          onClose={() => setIsCustomerRegisterOpen(false)}
+          onRegisterSuccess={handleCustomerRegisterSuccess}
         />
       )}
 

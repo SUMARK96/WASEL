@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { DeliveryRequest, DriverOffer, DriverProfile, CustomerNotification } from '../types';
+import type { DeliveryRequest, DriverOffer, DriverProfile, CustomerProfile, CustomerNotification } from '../types';
 import { EmirateBadge } from './EmirateBadge';
 import { NotificationBanner } from './NotificationBanner';
 import { 
@@ -8,23 +8,27 @@ import {
   Plus, 
   Star, 
   Phone, 
-  ShieldCheck,
-  Award,
-  CheckCircle2,
-  BellRing,
-  Check,
-  ChevronDown,
-  ChevronUp
+  ShieldCheck, 
+  Award, 
+  CheckCircle2, 
+  BellRing, 
+  Check, 
+  ChevronDown, 
+  ChevronUp,
+  User,
+  LogOut
 } from 'lucide-react';
 
-export type CustomerDashboardSection = 'new_request' | 'new_offers' | 'my_requests';
+export type CustomerDashboardSection = 'profile' | 'new_request' | 'new_offers' | 'my_requests';
 
 interface CustomerViewProps {
+  currentCustomer?: CustomerProfile | null;
   requests: DeliveryRequest[];
   drivers: DriverProfile[];
   customerNotifications?: CustomerNotification[];
   onMarkCustomerNotificationRead?: (id: string) => void;
   onOpenNewRequest: () => void;
+  onOpenProfile?: () => void;
   onAcceptOffer: (requestId: string, offerId: string) => void;
   onViewDriverProfile: (driver: DriverOffer) => void;
   onOpenRateDriver?: (request: DeliveryRequest, offer: DriverOffer) => void;
@@ -34,17 +38,19 @@ interface CustomerViewProps {
 }
 
 export const CustomerView: React.FC<CustomerViewProps> = ({
+  currentCustomer,
   requests,
   drivers: _drivers,
   customerNotifications = [],
   onMarkCustomerNotificationRead,
   onOpenNewRequest,
+  onOpenProfile,
   onAcceptOffer,
   onViewDriverProfile,
   onOpenRateDriver,
   selectedSection = 'my_requests',
   onSelectSection,
-  onLogout: _onLogout
+  onLogout
 }) => {
   // Track expanded offer IDs for the accordion behavior
   const [expandedOfferIds, setExpandedOfferIds] = useState<Record<string, boolean>>({});
@@ -64,6 +70,59 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       
       {/* PWA & System Notifications Enable Banner */}
       <NotificationBanner userRole="customer" />
+
+      {/* Logged-in Customer Status Bar */}
+      {currentCustomer && (
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="w-11 h-11 rounded-2xl bg-white text-black font-black flex items-center justify-center text-lg shadow-md shrink-0">
+              {currentCustomer.name.charAt(0)}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-white text-sm sm:text-base">{currentCustomer.name}</span>
+                <span className="text-[11px] bg-zinc-900 text-zinc-300 px-2 py-0.5 rounded-full border border-zinc-700 font-bold">
+                  {currentCustomer.emirate}
+                </span>
+              </div>
+              <div className="text-xs text-zinc-400 font-mono dir-ltr text-right">
+                {currentCustomer.phone}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {onOpenProfile && (
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white px-3.5 py-2 rounded-xl border border-zinc-700 text-xs font-bold transition-all active:scale-95"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>الملف الشخصي</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onOpenNewRequest}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-md"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>طلب جديد</span>
+            </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl border border-zinc-800 transition-all active:scale-95"
+                title="تسجيل الخروج"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 1. SECTION: طلب جديد (NEW REQUEST) */}

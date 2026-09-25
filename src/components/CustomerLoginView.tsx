@@ -1,0 +1,197 @@
+import React, { useState } from 'react';
+import type { CustomerProfile } from '../types';
+import { LogIn, ArrowRight, Mail, Lock, AlertCircle, UserPlus, Eye, EyeOff, Sparkles, User } from 'lucide-react';
+
+interface CustomerLoginViewProps {
+  customers: CustomerProfile[];
+  onLoginSuccess: (customer: CustomerProfile) => void;
+  onGoToRegister: () => void;
+  onBackToPortal: () => void;
+}
+
+export const CustomerLoginView: React.FC<CustomerLoginViewProps> = ({
+  customers,
+  onLoginSuccess,
+  onGoToRegister,
+  onBackToPortal
+}) => {
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const cleanInput = emailOrPhone.trim().toLowerCase();
+    const cleanPhoneDigits = cleanInput.replace(/[^0-9]/g, '');
+    const cleanPass = password.trim();
+
+    if (!cleanInput || !cleanPass) {
+      setErrorMessage('يرجى إدخال البريد الإلكتروني أو رقم الهاتف وكلمة المرور.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      setIsLoading(false);
+      // Find registered customer by email or phone
+      const found = customers.find(c => {
+        const matchEmail = c.email.toLowerCase() === cleanInput;
+        const matchPhone = cleanPhoneDigits.length > 5 && c.phone.replace(/[^0-9]/g, '').includes(cleanPhoneDigits);
+        return matchEmail || matchPhone;
+      });
+
+      if (!found) {
+        setErrorMessage('❌ هذا الحساب غير مسجل مسبقاً. يمكنك إنشاء حساب عميل جديد خلال لحظات.');
+        return;
+      }
+
+      // Check password
+      const expectedPassword = found.password || '123456';
+      if (cleanPass !== expectedPassword) {
+        setErrorMessage('❌ كلمة المرور غير صحيحة. يرجى التأكد والمحاولة مرة أخرى.');
+        return;
+      }
+
+      onLoginSuccess(found);
+    }, 350);
+  };
+
+  const handleQuickFill = (c: CustomerProfile) => {
+    setEmailOrPhone(c.email);
+    setPassword(c.password || '123456');
+    setErrorMessage(null);
+  };
+
+  return (
+    <div className="min-h-[75vh] flex flex-col justify-center py-4 sm:py-10 max-w-xl mx-auto w-full px-2 sm:px-4">
+      
+      {/* Back Button */}
+      <div className="mb-5 flex items-center justify-between">
+        <button
+          onClick={onBackToPortal}
+          className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white px-3.5 py-2 sm:py-2.5 rounded-2xl border border-zinc-800 text-xs font-bold transition-all active:scale-95 shadow-md"
+        >
+          <ArrowRight className="w-4 h-4" />
+          <span>الرجوع لبوابة العملاء</span>
+        </button>
+
+        <span className="text-xs text-white font-bold bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
+          تسجيل دخول العميل
+        </span>
+      </div>
+
+      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-5 relative overflow-hidden">
+        {/* Header */}
+        <div className="text-center space-y-2 relative z-10">
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white text-black flex items-center justify-center font-black mx-auto shadow-lg">
+            <LogIn className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.5]" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white">تسجيل الدخول إلى حساب العميل</h2>
+          <p className="text-zinc-400 text-xs">أدخل بريدك الإلكتروني أو رقم هاتفك وكلمة المرور للانتقال إلى لوحة طلباتك</p>
+        </div>
+
+        {/* Demo Fast Accounts Selector */}
+        {customers.length > 0 && (
+          <div className="bg-black p-3.5 rounded-2xl border border-zinc-800 space-y-2">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
+              <span>حسابات تجريبية سريعة للتجربة:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {customers.slice(0, 2).map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleQuickFill(c)}
+                  className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white px-2.5 py-1.5 rounded-xl border border-zinc-700 text-xs font-bold transition-all active:scale-95"
+                >
+                  <User className="w-3 h-3 text-white" />
+                  <span>{c.name} ({c.emirate})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="bg-zinc-900 border border-zinc-700 text-zinc-200 p-3 rounded-2xl text-xs flex items-center gap-2.5 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-white shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-4 relative z-10">
+          <div>
+            <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-white" />
+              <span>البريد الإلكتروني أو رقم الهاتف:</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={emailOrPhone}
+              onChange={(e) => setEmailOrPhone(e.target.value)}
+              placeholder="مثال: a.shamsi@gmail.com أو 0501122334"
+              className="w-full bg-black border border-zinc-700 focus:border-white rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors dir-ltr text-right"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-white" />
+              <span>كلمة المرور:</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-black border border-zinc-700 focus:border-white rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors dir-ltr text-right pl-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 px-6 rounded-2xl shadow-xl transition-all text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 mt-2"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>{isLoading ? 'جاري التحقق والدخول...' : 'دخول لحساب العميل'}</span>
+          </button>
+        </form>
+
+        {/* Switch to Register */}
+        <div className="pt-4 border-t border-zinc-900 text-center relative z-10 space-y-2">
+          <p className="text-xs text-zinc-400">ليس لديك حساب عميل حتى الآن؟</p>
+          <button
+            type="button"
+            onClick={onGoToRegister}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-white hover:text-zinc-300 transition-colors bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-700 active:scale-95"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>إنشاء حساب عميل جديد مجاناً</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  );
+};

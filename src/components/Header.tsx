@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { AppScreen, DriverProfile } from '../types';
+import type { AppScreen, DriverProfile, CustomerProfile } from '../types';
 import { Logo } from './Logo';
 import { 
   ShieldCheck, 
@@ -15,7 +15,7 @@ import {
   Check 
 } from 'lucide-react';
 
-export type CustomerHeaderSection = 'new_request' | 'new_offers' | 'my_requests';
+export type CustomerHeaderSection = 'profile' | 'new_request' | 'new_offers' | 'my_requests';
 export type DriverHeaderSection = 'profile' | 'new_requests' | 'subscription';
 
 interface HeaderProps {
@@ -23,7 +23,9 @@ interface HeaderProps {
   onNavigate: (screen: AppScreen) => void;
   onOpenNewRequest: () => void;
   onOpenSubscription?: () => void;
+  onOpenCustomerProfile?: () => void;
   currentDriver?: DriverProfile;
+  currentCustomer?: CustomerProfile | null;
   customerSection?: CustomerHeaderSection;
   onSelectCustomerSection?: (section: CustomerHeaderSection) => void;
   driverSection?: DriverHeaderSection;
@@ -38,7 +40,9 @@ export const Header: React.FC<HeaderProps> = ({
   currentScreen,
   onNavigate,
   onOpenSubscription: _onOpenSubscription,
+  onOpenCustomerProfile,
   currentDriver,
+  currentCustomer,
   customerSection = 'my_requests',
   onSelectCustomerSection,
   driverSection = 'new_requests',
@@ -53,6 +57,8 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getCustomerSectionLabel = (sec: CustomerHeaderSection) => {
     switch (sec) {
+      case 'profile':
+        return 'الملف الشخصي';
       case 'new_request':
         return 'طلب جديد';
       case 'new_offers':
@@ -77,6 +83,10 @@ export const Header: React.FC<HeaderProps> = ({
     setIsCustomerDropdownOpen(false);
     if (sec === 'logout') {
       onNavigate('landing');
+      return;
+    }
+    if (sec === 'profile' && onOpenCustomerProfile) {
+      onOpenCustomerProfile();
       return;
     }
     if (onSelectCustomerSection) {
@@ -109,9 +119,21 @@ export const Header: React.FC<HeaderProps> = ({
             <Logo size="md" />
           </div>
 
-          {/* Current Mode Badge / Breadcrumb for driver/admin on desktop */}
-          {currentScreen !== 'landing' && currentScreen !== 'customer' && (
+          {/* Current Mode Badge / Breadcrumb for driver/customer/admin on desktop */}
+          {currentScreen !== 'landing' && (
             <div className="hidden md:flex items-center gap-2 bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold">
+              {currentScreen === 'customer' && currentCustomer && (
+                <span className="text-white flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-white" />
+                  <span>حساب العميل: {currentCustomer.name} ({currentCustomer.emirate})</span>
+                </span>
+              )}
+              {(currentScreen === 'customer_portal' || currentScreen === 'customer_login') && (
+                <span className="text-zinc-300 flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-zinc-300" />
+                  <span>بوابة العملاء وطالبي التوصيل</span>
+                </span>
+              )}
               {currentScreen === 'driver' && currentDriver && (
                 <span className="text-white flex items-center gap-1.5">
                   <Truck className="w-4 h-4 text-white" />
@@ -161,7 +183,24 @@ export const Header: React.FC<HeaderProps> = ({
                       />
                       <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-zinc-950 border-2 border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-zinc-800 text-right">
                         
-                        {/* Option: طلب جديد */}
+                        {/* Option 1: الملف الشخصي */}
+                        <button
+                          type="button"
+                          onClick={() => handleCustomerSelect('profile')}
+                          className="w-full p-3 flex items-center justify-between text-xs text-white hover:bg-zinc-900 font-bold transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            <span>الملف الشخصي</span>
+                          </div>
+                          {currentCustomer && (
+                            <span className="text-[10px] text-zinc-400 font-normal truncate max-w-[80px]">
+                              {currentCustomer.name}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Option 2: طلب جديد */}
                         <button
                           type="button"
                           onClick={() => handleCustomerSelect('new_request')}
@@ -176,7 +215,7 @@ export const Header: React.FC<HeaderProps> = ({
                           {customerSection === 'new_request' && <Check className="w-4 h-4" />}
                         </button>
 
-                        {/* Option: العروض الجديدة */}
+                        {/* Option 3: العروض الجديدة */}
                         <button
                           type="button"
                           onClick={() => handleCustomerSelect('new_offers')}
@@ -197,7 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
                           )}
                         </button>
 
-                        {/* Option: طلباتي */}
+                        {/* Option 4: طلباتي */}
                         <button
                           type="button"
                           onClick={() => handleCustomerSelect('my_requests')}
@@ -212,7 +251,7 @@ export const Header: React.FC<HeaderProps> = ({
                           {customerSection === 'my_requests' && <Check className="w-4 h-4" />}
                         </button>
 
-                        {/* Option: تسجيل خروج */}
+                        {/* Option 5: تسجيل خروج */}
                         <button
                           type="button"
                           onClick={() => handleCustomerSelect('logout')}
