@@ -157,3 +157,41 @@ export const areRequestListsEqual = (listA: DeliveryRequest[] | null | undefined
 
   return true;
 };
+
+/**
+ * Merges previous in-memory requests with incoming requests.
+ * Guarantees that no in-flight request or newly received offer is ever dropped or shaken.
+ */
+export const mergeRequestLists = (prevList: DeliveryRequest[] | undefined | null, incomingList: DeliveryRequest[] | undefined | null): DeliveryRequest[] => {
+  const prev = Array.isArray(prevList) ? prevList : [];
+  const incoming = Array.isArray(incomingList) ? incomingList : [];
+
+  const map = new Map<string, DeliveryRequest>();
+
+  // 1. Load all incoming requests from DB / fetch
+  incoming.forEach(r => map.set(r.id, r));
+
+  // 2. Merge with previous in-memory state to preserve uncommitted or fast-received offers
+  prev.forEach(prevReq => {
+    const incomingReq = map.get(prevReq.id);
+    if (!incomingReq) {
+      map.set(prevReq.id, prevReq);
+    } else {
+      const offerMap = new Map<string, DriverOffer>();
+      (incomingReq.offers || []).forEach(o => offerMap.set(o.id, o));
+      (prevReq.offers || []).forEach(o => offerMap.set(o.id, o));
+
+      map.set(prevReq.id, {
+        ...incomingReq,
+        selectedOfferId: incomingReq.selectedOfferId || prevReq.selectedOfferId,
+        status: incomingReq.status !== 'open' ? incomingReq.status : prevReq.status,
+        createdAt: prevReq.createdAt === 'الآن' ? 'الآن' : (incomingReq.createdAt || prevReq.createdAt),
+        createdAtTimestamp: getRequestTimestamp(incomingReq) || getRequestTimestamp(prevReq),
+        offers: sortOffersDeterministically(Array.from(offerMap.values()))
+      });
+    }
+  });
+
+  const merged = sortRequestsNewestFirst(Array.from(map.values()));
+  return areRequestListsEqual(prev, merged) ? prev : merged;
+};

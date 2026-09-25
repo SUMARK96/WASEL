@@ -5,7 +5,7 @@ import { dbService, onSyncEvent } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
-import { sortRequestsNewestFirst, areRequestListsEqual } from './utils/requestUtils';
+import { areRequestListsEqual, mergeRequestLists, sortOffersDeterministically } from './utils/requestUtils';
 
 import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
 import { LandingView } from './components/LandingView';
@@ -225,10 +225,7 @@ export function App() {
           setCustomers(loadedCustomers);
         }
         if (loadedRequests && loadedRequests.length > 0) {
-          setRequests(prev => {
-            const sorted = sortRequestsNewestFirst(loadedRequests);
-            return areRequestListsEqual(prev, sorted) ? prev : sorted;
-          });
+          setRequests(prev => mergeRequestLists(prev, loadedRequests));
         }
       } catch (err) {
         console.warn('Could not load from DB service:', err);
@@ -240,10 +237,7 @@ export function App() {
     const unsubscribeLocalSync = onSyncEvent(async (event) => {
       if (event.type === 'NEW_REQUEST' && event.payload) {
         const newReq: DeliveryRequest = event.payload;
-        setRequests(prev => {
-          if (prev.some(r => r.id === newReq.id)) return prev;
-          return sortRequestsNewestFirst([newReq, ...prev]);
-        });
+        setRequests(prev => mergeRequestLists(prev, [newReq]));
         setNotifications(prev => [
           {
             id: `notif-${newReq.id}`,
@@ -265,17 +259,17 @@ export function App() {
         });
       } else if (event.type === 'NEW_OFFER' && event.payload) {
         const newOffer: DriverOffer = event.payload;
-        setRequests(prev => prev.map(req => {
-          if (req.id === newOffer.requestId) {
-            const existingOffers = req.offers || [];
-            if (existingOffers.some(o => o.id === newOffer.id)) return req;
-            return {
-              ...req,
-              offers: [newOffer, ...existingOffers]
-            };
-          }
-          return req;
-        }));
+        setRequests(prev => {
+          const targetReq = prev.find(r => r.id === newOffer.requestId);
+          if (!targetReq) return prev;
+          const existingOffers = targetReq.offers || [];
+          if (existingOffers.some(o => o.id === newOffer.id)) return prev;
+          const updatedReq: DeliveryRequest = {
+            ...targetReq,
+            offers: sortOffersDeterministically([newOffer, ...existingOffers])
+          };
+          return mergeRequestLists(prev, [updatedReq]);
+        });
         setCustomerNotifications(prev => [
           {
             id: `cust-notif-${newOffer.id}`,
@@ -303,17 +297,20 @@ export function App() {
         });
       } else if (event.type === 'ACCEPT_OFFER' && event.payload) {
         const { requestId, offerId, customerPhone, customerName, requestTitle, price, pickupEmirate, deliveryEmirate } = event.payload;
-        setRequests(prev => prev.map(req => {
-          if (req.id === requestId) {
-            return {
-              ...req,
-              selectedOfferId: offerId,
-              status: 'assigned',
-              offers: (req.offers || []).map(o => o.id === offerId ? { ...o, status: 'accepted' } : o)
-            };
-          }
-          return req;
-        }));
+        setRequests(prev => {
+          const updated = prev.map(req => {
+            if (req.id === requestId) {
+              return {
+                ...req,
+                selectedOfferId: offerId,
+                status: 'assigned' as const,
+                offers: (req.offers || []).map(o => o.id === offerId ? { ...o, status: 'accepted' as const } : o)
+              };
+            }
+            return req;
+          });
+          return areRequestListsEqual(prev, updated) ? prev : updated;
+        });
 
         setNotifications(prev => [
           {
@@ -348,10 +345,7 @@ export function App() {
       } else if (event.type === 'SYNC_ALL') {
         const localReqs = dbService.getLocalRequests();
         const localDrvs = dbService.getLocalDrivers();
-        setRequests(prev => {
-          const sorted = sortRequestsNewestFirst(localReqs);
-          return areRequestListsEqual(prev, sorted) ? prev : sorted;
-        });
+        setRequests(prev => mergeRequestLists(prev, localReqs));
         setDrivers(prev => {
           const isDiff = JSON.stringify(prev) !== JSON.stringify(localDrvs);
           return isDiff ? localDrvs : prev;
@@ -371,10 +365,7 @@ export function App() {
             async (payload: any) => {
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
-                setRequests(prev => {
-                  const sorted = sortRequestsNewestFirst(latestReqs);
-                  return areRequestListsEqual(prev, sorted) ? prev : sorted;
-                });
+                setRequests(prev => mergeRequestLists(prev, latestReqs));
               }
 
               // Alert drivers if new delivery request was created
@@ -396,10 +387,7 @@ export function App() {
             async (payload: any) => {
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
-                setRequests(prev => {
-                  const sorted = sortRequestsNewestFirst(latestReqs);
-                  return areRequestListsEqual(prev, sorted) ? prev : sorted;
-                });
+                setRequests(prev => mergeRequestLists(prev, latestReqs));
               }
 
               // Instant notification & sound for customer when driver submits an offer
@@ -501,10 +489,7 @@ export function App() {
           dbService.getCustomers()
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
-          setRequests(prev => {
-            const sorted = sortRequestsNewestFirst(refreshedRequests);
-            return areRequestListsEqual(prev, sorted) ? prev : sorted;
-          });
+          setRequests(prev => mergeRequestLists(prev, refreshedRequests));
         }
         if (refreshedDrivers && refreshedDrivers.length > 0) {
           setDrivers(prev => {
@@ -669,8 +654,8 @@ export function App() {
       offers: []
     };
 
-    // 1. Add new request in UI (guaranteed newest first)
-    setRequests(prev => sortRequestsNewestFirst([newReq, ...prev.filter(r => r.id !== newId)]));
+    // 1. Add new request in UI (guaranteed newest first and non-flickering)
+    setRequests(prev => mergeRequestLists(prev, [newReq]));
 
     // 2. Broadcast Instant Notification to all registered drivers
     const newNotif: DriverNotification = {
@@ -727,15 +712,19 @@ export function App() {
       status: 'pending'
     };
 
-    setRequests(prev => prev.map(req => {
-      if (req.id === selectedRequestForOffer.id) {
-        return {
-          ...req,
-          offers: [newOffer, ...req.offers]
-        };
-      }
-      return req;
-    }));
+    setRequests(prev => {
+      const updated = prev.map(req => {
+        if (req.id === selectedRequestForOffer.id) {
+          const existing = req.offers || [];
+          return {
+            ...req,
+            offers: sortOffersDeterministically([newOffer, ...existing.filter(o => o.id !== newOffer.id)])
+          };
+        }
+        return req;
+      });
+      return mergeRequestLists(prev, updated);
+    });
 
     // 1. Add Customer Notification
     const newCustomerNotif: CustomerNotification = {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { DeliveryRequest, DriverOffer, DriverProfile, CustomerProfile, CustomerNotification } from '../types';
-import { sortRequestsNewestFirst } from '../utils/requestUtils';
+import { sortRequestsNewestFirst, sortOffersDeterministically } from '../utils/requestUtils';
 import { EmirateBadge } from './EmirateBadge';
 import { NotificationBanner } from './NotificationBanner';
 import { 
@@ -269,20 +269,8 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           ) : (
             <div className="space-y-6">
               {requestsWithOffers.map((req) => {
-                // Sort offers deterministically (highest rating, highest completed, stable ID tie-breaker)
-                const sortedOffers = [...req.offers].sort((a, b) => {
-                  const ratingA = a.driverRating || 0;
-                  const ratingB = b.driverRating || 0;
-                  if (ratingB !== ratingA) {
-                    return ratingB - ratingA;
-                  }
-                  const countA = a.driverCompletedCount || 0;
-                  const countB = b.driverCompletedCount || 0;
-                  if (countB !== countA) {
-                    return countB - countA;
-                  }
-                  return (b.id || '').localeCompare(a.id || '');
-                });
+                // Sort offers deterministically (accepted first, highest rating, highest completed, stable ID tie-breaker)
+                const sortedOffers = sortOffersDeterministically(req.offers || []);
 
                 return (
                   <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 space-y-4 shadow-xl">
