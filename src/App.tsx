@@ -328,7 +328,7 @@ export function App() {
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'delivery_requests' },
-            async () => {
+            async (payload: any) => {
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
                 setRequests(prev => {
@@ -336,18 +336,69 @@ export function App() {
                   return areRequestListsEqual(prev, sorted) ? prev : sorted;
                 });
               }
+
+              // Alert drivers if new delivery request was created
+              if (payload && payload.eventType === 'INSERT' && payload.new) {
+                const newReq = payload.new;
+                sendDeviceNotification({
+                  title: `🔔 طلب توصيل جديد: من ${newReq.pickup_emirate || ''} إلى ${newReq.delivery_emirate || ''}`,
+                  body: `${newReq.title || 'طرد جديد'} - اضغط لتقديم عرض سعرك فوراً!`,
+                  tag: `new-req-${newReq.id}`,
+                  soundType: 'new_request',
+                  url: '/?action=driver_portal'
+                });
+              }
             }
           )
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'driver_offers' },
-            async () => {
+            async (payload: any) => {
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
                 setRequests(prev => {
                   const sorted = sortRequestsNewestFirst(latestReqs);
                   return areRequestListsEqual(prev, sorted) ? prev : sorted;
                 });
+              }
+
+              // Instant notification & sound for customer when driver submits an offer
+              if (payload && (payload.eventType === 'INSERT' || payload.new)) {
+                const o = payload.new;
+                if (o && o.request_id) {
+                  const targetReq = latestReqs.find(r => r.id === o.request_id);
+                  const offerPrice = Number(o.price) || 0;
+                  const driverName = o.driver_name || 'سائق معتمد';
+
+                  const newCustNotif: CustomerNotification = {
+                    id: `cust-notif-${o.id || Date.now()}`,
+                    requestId: o.request_id,
+                    requestTitle: targetReq?.title || 'طلب توصيل',
+                    offerId: o.id,
+                    driverName,
+                    driverAvatar: o.driver_avatar,
+                    driverRating: Number(o.driver_rating) || 5.0,
+                    driverPhone: o.driver_phone,
+                    driverWhatsappPhone: o.driver_whatsapp_phone,
+                    price: offerPrice,
+                    timestamp: 'الآن',
+                    isRead: false,
+                    type: 'new_offer'
+                  };
+
+                  setCustomerNotifications(prev => {
+                    if (prev.some(n => n.offerId === o.id || n.id === newCustNotif.id)) return prev;
+                    return [newCustNotif, ...prev];
+                  });
+
+                  sendDeviceNotification({
+                    title: `💬 عرض سعر جديد (${offerPrice} AED) من الكابتن ${driverName}`,
+                    body: `قدم عرض توصيل لطلبك: "${targetReq?.title || 'طلبك'}". اضغط للمعاينة والتواصل المباشر.`,
+                    tag: `offer-${o.id}`,
+                    soundType: 'new_offer',
+                    url: '/?action=customer'
+                  });
+                }
               }
             }
           )

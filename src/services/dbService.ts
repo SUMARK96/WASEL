@@ -395,19 +395,20 @@ export const dbService = {
     let cloudRequests: DeliveryRequest[] = [];
     if (this.isConnected()) {
       try {
-        const { data: reqData, error: reqErr } = await supabase
-          .from('delivery_requests')
-          .select(`
-            *,
-            offers:driver_offers(*)
-          `)
-          .order('created_at', { ascending: false });
+        const [reqRes, offRes] = await Promise.all([
+          supabase.from('delivery_requests').select('*').order('created_at', { ascending: false }),
+          supabase.from('driver_offers').select('*').order('created_at', { ascending: false })
+        ]);
 
-        if (!reqErr && reqData) {
-          cloudRequests = reqData.map((r: any) => {
+        if (!reqRes.error && reqRes.data) {
+          const allOffers = (!offRes.error && offRes.data) ? offRes.data : [];
+
+          cloudRequests = reqRes.data.map((r: any) => {
             const parsedTime = r.created_at ? new Date(r.created_at).getTime() : 0;
             const numericIdTime = r.id ? parseInt(r.id.replace(/[^0-9]/g, ''), 10) : 0;
             const finalTimestamp = parsedTime > 0 ? parsedTime : (numericIdTime > 1000000000 ? numericIdTime : getRequestTimestamp(r));
+
+            const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id);
 
             return {
               id: r.id,
@@ -432,7 +433,7 @@ export const dbService = {
               isCustomerRated: Boolean(r.is_customer_rated),
               customerRating: r.customer_rating,
               customerReviewNote: r.customer_review_note,
-              offers: (r.offers || []).map((o: any) => ({
+              offers: matchingOffers.map((o: any) => ({
                 id: o.id,
                 requestId: o.request_id,
                 driverId: o.driver_id,
@@ -511,7 +512,7 @@ export const dbService = {
     // 2. Persist to Supabase
     if (this.isConnected()) {
       try {
-        await supabase.from('delivery_requests').insert({
+        const { error: reqErr } = await supabase.from('delivery_requests').upsert({
           id: request.id,
           customer_id: request.customerId || null,
           title: request.title,
@@ -528,17 +529,21 @@ export const dbService = {
           urgency: request.urgency,
           notes: request.notes,
           status: request.status
-        });
+        }, { onConflict: 'id' });
+
+        if (reqErr) {
+          console.error('Supabase createRequest upsert error:', reqErr);
+        }
 
         // Add initial notification for drivers in Supabase
-        await supabase.from('driver_notifications').insert({
-          id: `notif-${Date.now()}`,
+        await supabase.from('driver_notifications').upsert({
+          id: `notif-${request.id}`,
           request_id: request.id,
           title: request.title,
           pickup_emirate: request.pickupEmirate,
           delivery_emirate: request.deliveryEmirate,
           is_read: false
-        });
+        }, { onConflict: 'id' });
       } catch (err) {
         console.warn('Supabase createRequest failed:', err);
       }
@@ -565,25 +570,58 @@ export const dbService = {
     // 2. Persist to Supabase
     if (this.isConnected()) {
       try {
-        await supabase.from('driver_offers').insert({
+        // Guarantee the parent delivery request exists in Supabase
+        const targetReq = current.find(r => r.id === offer.requestId);
+        if (targetReq) {
+          const { data: existingReq } = await supabase
+            .from('delivery_requests')
+            .select('id')
+            .eq('id', offer.requestId)
+            .maybeSingle();
+
+          if (!existingReq) {
+            await this.createRequest(targetReq);
+          }
+        }
+
+        // Guarantee the driver profile exists in Supabase
+        const currentDrivers = this.getLocalDrivers();
+        const targetDriver = currentDrivers.find(d => d.id === offer.driverId);
+        if (targetDriver) {
+          const { data: existingDriver } = await supabase
+            .from('drivers')
+            .select('id')
+            .eq('id', offer.driverId)
+            .maybeSingle();
+
+          if (!existingDriver) {
+            await this.registerDriver(targetDriver);
+          }
+        }
+
+        const { error } = await supabase.from('driver_offers').upsert({
           id: offer.id,
           request_id: offer.requestId,
           driver_id: offer.driverId,
           driver_name: offer.driverName,
           driver_avatar: offer.driverAvatar,
-          driver_rating: offer.driverRating,
+          driver_rating: Number(offer.driverRating) || 5.0,
           driver_vehicle: offer.driverVehicle,
           driver_vehicle_type: offer.driverVehicleType,
           driver_phone: offer.driverPhone,
           driver_whatsapp_phone: offer.driverWhatsappPhone,
           driver_call_phone: offer.driverCallPhone,
-          driver_completed_count: offer.driverCompletedCount,
-          driver_verified: offer.driverVerified,
-          price: offer.price,
+          driver_completed_count: offer.driverCompletedCount || 0,
+          driver_verified: Boolean(offer.driverVerified),
+          price: Number(offer.price) || 0,
           estimated_delivery_time: offer.estimatedDeliveryTime,
-          note: offer.note,
-          status: offer.status
-        });
+          note: offer.note || '',
+          status: offer.status || 'pending'
+        }, { onConflict: 'id' });
+
+        if (error) {
+          console.error('Supabase submitOffer error:', error);
+        }
       } catch (err) {
         console.warn('Supabase submitOffer failed:', err);
       }
