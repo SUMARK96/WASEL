@@ -89,7 +89,14 @@ export const getNotificationPermissionState = (): NotificationPermission => {
 let swRegistration: ServiceWorkerRegistration | null = null;
 
 export const initNotificationService = async (): Promise<ServiceWorkerRegistration | null> => {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  // Initialize audio gesture unlock for mobile & desktop
+  initAudioUnlock();
+
+  if (!('serviceWorker' in navigator)) {
     return null;
   }
 
@@ -104,6 +111,45 @@ export const initNotificationService = async (): Promise<ServiceWorkerRegistrati
   }
 };
 
+// Global shared AudioContext instance for cross-device high performance
+let sharedAudioCtx: AudioContext | null = null;
+
+const getAudioContext = (): AudioContext | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return null;
+
+    if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+      sharedAudioCtx = new AudioContextClass();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    return sharedAudioCtx;
+  } catch (e) {
+    console.warn('Could not initialize AudioContext:', e);
+    return null;
+  }
+};
+
+// Automatic audio unlock on first user gesture for mobile and desktop browsers
+export const initAudioUnlock = () => {
+  if (typeof window === 'undefined') return;
+  const unlock = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    window.removeEventListener('click', unlock);
+    window.removeEventListener('touchstart', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('click', unlock, { once: true, passive: true });
+  window.addEventListener('touchstart', unlock, { once: true, passive: true });
+  window.addEventListener('keydown', unlock, { once: true, passive: true });
+};
+
 // Request User Permission for Native System Notifications
 export const requestNotificationPermission = async (): Promise<boolean> => {
   if (!isNotificationSupported()) {
@@ -116,7 +162,7 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
     if (permission === 'granted') {
       console.log('🔔 Notifications permission granted by user.');
       setNotificationEnabledFlag(true);
-      // Play a quick pleasant test chime
+      // Play crisp high-volume test chime
       playNotificationChime('general');
       return true;
     }
@@ -127,90 +173,103 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   }
 };
 
-// Synthesize pleasant crystal-clear audio notifications using Web Audio API
-// Works guaranteed on all modern mobile and desktop browsers without loading external assets
+// Synthesize loud, ultra-crisp, Messenger / WhatsApp style audio notifications
+// Uses dual-harmonic synthesis, fast attack transients, and dynamic compression for maximum perceived loudness & clarity
 export const playNotificationChime = (type: NotificationSoundType = 'general') => {
   if (typeof window === 'undefined') return;
 
   try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
-    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const now = ctx.currentTime;
 
+    // 1. Dynamics Compressor / Limiter (maximizes volume & loudness punch without digital clipping)
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-12, now);
+    compressor.knee.setValueAtTime(12, now);
+    compressor.ratio.setValueAtTime(16, now);
+    compressor.attack.setValueAtTime(0.001, now);
+    compressor.release.setValueAtTime(0.12, now);
+    compressor.connect(ctx.destination);
+
+    // 2. Master Gain (High volume boost)
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(1.0, now);
+    masterGain.connect(compressor);
+
+    // Helper: Play a bright, punchy bell tone with fundamental + harmonic overtone
+    const playTone = (
+      freq: number, 
+      startTime: number, 
+      duration: number, 
+      peakGain = 0.95, 
+      hasOverTone = true
+    ) => {
+      // Primary Oscillator (Fundamental)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(freq, startTime);
+
+      gain1.gain.setValueAtTime(0.0001, startTime);
+      gain1.gain.linearRampToValueAtTime(peakGain, startTime + 0.004); // Snappy instant attack (4ms)
+      gain1.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      osc1.connect(gain1);
+      gain1.connect(masterGain);
+
+      osc1.start(startTime);
+      osc1.stop(startTime + duration + 0.05);
+
+      // Secondary Harmonic Oscillator (High-frequency sparkle & presence like Messenger)
+      if (hasOverTone) {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2, startTime); // Octave overtone
+
+        gain2.gain.setValueAtTime(0.0001, startTime);
+        gain2.gain.linearRampToValueAtTime(peakGain * 0.4, startTime + 0.003);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 0.65);
+
+        osc2.connect(gain2);
+        gain2.connect(masterGain);
+
+        osc2.start(startTime);
+        osc2.stop(startTime + duration + 0.05);
+      }
+    };
+
     if (type === 'new_offer') {
-      // Modern 3-tone incoming offer alert (C5 -> E5 -> G5)
-      const frequencies = [523.25, 659.25, 783.99];
-      frequencies.forEach((freq, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + index * 0.1);
-
-        gain.gain.setValueAtTime(0.001, now + index * 0.1);
-        gain.gain.exponentialRampToValueAtTime(0.3, now + index * 0.1 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.1 + 0.35);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + index * 0.1);
-        osc.stop(now + index * 0.1 + 0.4);
+      // 💬 Messenger-Style Iconic Crisp Tri-Tone Chime (F6 -> A6 -> C7 / 1396.9Hz -> 1760Hz -> 2093Hz)
+      const notes = [1396.91, 1760.00, 2093.00];
+      notes.forEach((freq, idx) => {
+        const noteStart = now + idx * 0.085;
+        playTone(freq, noteStart, 0.35, 0.95, true);
       });
     } else if (type === 'new_request') {
-      // Dynamic 2-tone broadcast driver alert (A5 -> D6)
-      const notes = [880.0, 1174.66];
-      notes.forEach((freq, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + index * 0.12);
-
-        gain.gain.setValueAtTime(0.001, now + index * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.35, now + index * 0.12 + 0.03);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.12 + 0.45);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + index * 0.12);
-        osc.stop(now + index * 0.12 + 0.5);
+      // 🚚 Driver High-Priority Attention Alert (A5 -> D6 -> A6 / 880Hz -> 1174.6Hz -> 1760Hz)
+      const driverNotes = [880.00, 1174.66, 1760.00];
+      driverNotes.forEach((freq, idx) => {
+        const noteStart = now + idx * 0.11;
+        playTone(freq, noteStart, 0.45, 1.0, true);
       });
     } else if (type === 'success') {
-      // High bright confirmation chime
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(659.25, now);
-      osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.2);
-
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.25, now + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.45);
+      // ✨ Crisp Double Bright Confirmation Ping (1318Hz -> 1975Hz)
+      playTone(1318.51, now, 0.25, 0.9, true);
+      playTone(1975.53, now + 0.09, 0.38, 0.95, true);
     } else {
-      // General gentle notification
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(783.99, now);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.35);
+      // 🔔 Classic Messenger Pop-Ding (Snappy 1396Hz -> 1760Hz)
+      playTone(1396.91, now, 0.18, 0.88, true);
+      playTone(1760.00, now + 0.07, 0.35, 0.98, true);
     }
   } catch (err) {
-    console.warn('Web Audio chime not permitted or failed:', err);
+    console.warn('Web Audio notification sound failed:', err);
   }
 };
 
