@@ -1102,6 +1102,10 @@ export function App() {
           existingCustomers={customers}
           onClose={() => setIsCustomerRegisterOpen(false)}
           onRegisterSuccess={handleCustomerRegisterSuccess}
+          onGoToLogin={() => {
+            setIsCustomerRegisterOpen(false);
+            setCurrentScreen('customer_login');
+          }}
         />
       )}
 
