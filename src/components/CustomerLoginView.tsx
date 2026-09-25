@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { CustomerProfile } from '../types';
-import { LogIn, ArrowRight, Mail, Lock, AlertCircle, UserPlus, Eye, EyeOff, Sparkles, User } from 'lucide-react';
+import { LogIn, ArrowRight, Mail, Lock, AlertCircle, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 interface CustomerLoginViewProps {
   customers: CustomerProfile[];
@@ -61,12 +61,6 @@ export const CustomerLoginView: React.FC<CustomerLoginViewProps> = ({
     }, 350);
   };
 
-  const handleQuickFill = (c: CustomerProfile) => {
-    setEmailOrPhone(c.email);
-    setPassword(c.password || '123456');
-    setErrorMessage(null);
-  };
-
   return (
     <div className="min-h-[75vh] flex flex-col justify-center py-4 sm:py-10 max-w-xl mx-auto w-full px-2 sm:px-4">
       
@@ -95,29 +89,6 @@ export const CustomerLoginView: React.FC<CustomerLoginViewProps> = ({
           <p className="text-zinc-400 text-xs">أدخل بريدك الإلكتروني أو رقم هاتفك وكلمة المرور للانتقال إلى لوحة طلباتك</p>
         </div>
 
-        {/* Demo Fast Accounts Selector */}
-        {customers.length > 0 && (
-          <div className="bg-black p-3.5 rounded-2xl border border-zinc-800 space-y-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
-              <span>حسابات تجريبية سريعة للتجربة:</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {customers.slice(0, 2).map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleQuickFill(c)}
-                  className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white px-2.5 py-1.5 rounded-xl border border-zinc-700 text-xs font-bold transition-all active:scale-95"
-                >
-                  <User className="w-3 h-3 text-white" />
-                  <span>{c.name} ({c.emirate})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Error Alert */}
         {errorMessage && (
           <div className="bg-zinc-900 border border-zinc-700 text-zinc-200 p-3 rounded-2xl text-xs flex items-center gap-2.5 animate-in fade-in">
@@ -138,7 +109,7 @@ export const CustomerLoginView: React.FC<CustomerLoginViewProps> = ({
               required
               value={emailOrPhone}
               onChange={(e) => setEmailOrPhone(e.target.value)}
-              placeholder="مثال: a.shamsi@gmail.com أو 0501122334"
+              placeholder="أدخل البريد الإلكتروني أو رقم الهاتف المسجل"
               className="w-full bg-black border border-zinc-700 focus:border-white rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none transition-colors dir-ltr text-right"
             />
           </div>

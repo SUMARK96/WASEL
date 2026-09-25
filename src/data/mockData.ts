@@ -10,26 +10,7 @@ export const UAE_EMIRATES: Emirate[] = [
   'الفجيرة'
 ];
 
-export const INITIAL_CUSTOMERS: CustomerProfile[] = [
-  {
-    id: 'cust-101',
-    name: 'عبدالله الشامسي',
-    emirate: 'أبوظبي',
-    phone: '0501122334',
-    email: 'a.shamsi@gmail.com',
-    password: '123456',
-    joinedDate: '2026-09-01'
-  },
-  {
-    id: 'cust-102',
-    name: 'مؤسسة النور للتجارة',
-    emirate: 'دبي',
-    phone: '0559988776',
-    email: 'alnoor@business.ae',
-    password: '123456',
-    joinedDate: '2026-09-10'
-  }
-];
+export const INITIAL_CUSTOMERS: CustomerProfile[] = [];
 
 export const PACKAGE_TYPES = [
   'طرد مستندات ووثائق هامة',
