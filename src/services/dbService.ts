@@ -21,6 +21,22 @@ try {
   console.warn('BroadcastChannel not supported:', e);
 }
 
+// Global Supabase Realtime WebSocket Broadcast Channel (Sub-50ms Cross-Device Sync)
+let globalRealtimeChannel: any = null;
+export const getGlobalRealtimeChannel = () => {
+  if (!globalRealtimeChannel && isSupabaseConfigured()) {
+    try {
+      globalRealtimeChannel = supabase.channel('wasel-live-sync-room', {
+        config: { broadcast: { self: false } }
+      });
+      globalRealtimeChannel.subscribe();
+    } catch (e) {
+      console.warn('Could not init global realtime room:', e);
+    }
+  }
+  return globalRealtimeChannel;
+};
+
 export interface WaselSyncEvent {
   type: 'NEW_REQUEST' | 'NEW_OFFER' | 'ACCEPT_OFFER' | 'RATE_DRIVER' | 'DRIVERS_UPDATED' | 'SYNC_ALL';
   payload?: any;
@@ -30,11 +46,24 @@ export interface WaselSyncEvent {
 export const broadcastSyncEvent = (type: WaselSyncEvent['type'], payload?: any) => {
   const event: WaselSyncEvent = { type, payload, timestamp: Date.now() };
   try {
+    // 1. Same-device cross-tab sync via BroadcastChannel
     if (syncBroadcastChannel) {
       syncBroadcastChannel.postMessage(event);
     }
+    // 2. Window CustomEvent
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('wasel_local_sync', { detail: event }));
+    }
+    // 3. Ultra-fast Cross-Device WebSocket Broadcast via Supabase Realtime (<50ms)
+    if (isSupabaseConfigured()) {
+      const ch = getGlobalRealtimeChannel();
+      if (ch) {
+        ch.send({
+          type: 'broadcast',
+          event: 'wasel_live_msg',
+          payload: event
+        }).catch?.(() => {});
+      }
     }
   } catch (e) {
     console.error('Error broadcasting sync event:', e);
@@ -67,6 +96,16 @@ export const onSyncEvent = (callback: (event: WaselSyncEvent) => void): (() => v
   if (typeof window !== 'undefined') {
     window.addEventListener('wasel_local_sync', handleCustomEvent);
     window.addEventListener('storage', handleStorageChange);
+  }
+
+  // Cross-device Supabase Realtime Broadcast Listener
+  const ch = getGlobalRealtimeChannel();
+  if (ch) {
+    ch.on('broadcast', { event: 'wasel_live_msg' }, (data: any) => {
+      if (data && data.payload && data.payload.type) {
+        callback(data.payload as WaselSyncEvent);
+      }
+    });
   }
 
   return () => {
@@ -644,7 +683,20 @@ export const dbService = {
       return req;
     });
     this.saveLocalRequests(updated);
-    broadcastSyncEvent('ACCEPT_OFFER', { requestId, offerId });
+    const targetReq = updated.find(r => r.id === requestId);
+    const acceptedOffer = targetReq?.offers?.find(o => o.id === offerId);
+
+    broadcastSyncEvent('ACCEPT_OFFER', { 
+      requestId, 
+      offerId,
+      driverId: acceptedOffer?.driverId,
+      customerName: targetReq?.customerName,
+      customerPhone: targetReq?.customerPhone,
+      requestTitle: targetReq?.title,
+      price: acceptedOffer?.price,
+      pickupEmirate: targetReq?.pickupEmirate,
+      deliveryEmirate: targetReq?.deliveryEmirate
+    });
 
     // 2. Update Supabase
     if (this.isConnected()) {
@@ -659,17 +711,16 @@ export const dbService = {
           .update({ status: 'accepted' })
           .eq('id', offerId);
 
-        // Add accepted offer notification for driver
-        const targetReq = updated.find(r => r.id === requestId);
-        const acceptedOffer = targetReq?.offers?.find(o => o.id === offerId);
-        await supabase.from('driver_notifications').insert({
-          id: `notif-${Date.now()}`,
+        // Add accepted offer notification for driver in Supabase
+        await supabase.from('driver_notifications').upsert({
+          id: `notif-accept-${offerId}`,
           request_id: requestId,
-          title: `🎉 مبروك! قبل العميل (${targetReq?.customerName || 'العميل'}) عرضك${acceptedOffer?.price ? ` بقيمة (${acceptedOffer.price} AED)` : ''} لتوصيل: ${targetReq?.title || 'طرد'}`,
+          title: `🎉 مبروك! قبل العميل (${targetReq?.customerName || 'العميل'}) عرضك${acceptedOffer?.price ? ` بقيمة (${acceptedOffer.price} AED)` : ''}`,
+          message: `وافق العميل (${targetReq?.customerName || 'العميل'}) على عرضك لنقل "${targetReq?.title || 'الطلب'}". يمكنك الآن التواصل المباشر معه عبر الواتساب (${targetReq?.customerPhone || ''}).`,
           pickup_emirate: targetReq?.pickupEmirate,
           delivery_emirate: targetReq?.deliveryEmirate,
           is_read: false
-        });
+        }, { onConflict: 'id' });
       } catch (err) {
         console.warn('Supabase acceptOffer failed:', err);
       }

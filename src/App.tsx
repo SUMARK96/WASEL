@@ -236,7 +236,7 @@ export function App() {
     };
     loadInitialData();
 
-    // 2. Instant Cross-Tab Sync via BroadcastChannel & Local Storage
+    // 2. Instant Cross-Tab & Cross-Device Sync via WebSocket Broadcast & Local Channel
     const unsubscribeLocalSync = onSyncEvent(async (event) => {
       if (event.type === 'NEW_REQUEST' && event.payload) {
         const newReq: DeliveryRequest = event.payload;
@@ -256,6 +256,13 @@ export function App() {
           },
           ...prev.filter(n => n.requestId !== newReq.id)
         ]);
+        sendDeviceNotification({
+          title: `🔔 طلب توصيل جديد: من ${newReq.pickupEmirate} إلى ${newReq.deliveryEmirate}`,
+          body: `${newReq.title} (${newReq.packageWeight || 'طرد'}) - اضغط لتقديم عرض سعرك فوراً!`,
+          tag: `new-req-${newReq.id}`,
+          soundType: 'new_request',
+          url: '/?action=driver_portal'
+        });
       } else if (event.type === 'NEW_OFFER' && event.payload) {
         const newOffer: DriverOffer = event.payload;
         setRequests(prev => prev.map(req => {
@@ -287,8 +294,15 @@ export function App() {
           },
           ...prev.filter(n => n.offerId !== newOffer.id)
         ]);
+        sendDeviceNotification({
+          title: `💬 عرض سعر جديد (${newOffer.price} AED) من الكابتن ${newOffer.driverName}`,
+          body: `قدم عرض توصيل لطلبك. اضغط للمعاينة والتواصل المباشر.`,
+          tag: `offer-${newOffer.id}`,
+          soundType: 'new_offer',
+          url: '/?action=customer'
+        });
       } else if (event.type === 'ACCEPT_OFFER' && event.payload) {
-        const { requestId, offerId } = event.payload;
+        const { requestId, offerId, customerPhone, customerName, requestTitle, price, pickupEmirate, deliveryEmirate } = event.payload;
         setRequests(prev => prev.map(req => {
           if (req.id === requestId) {
             return {
@@ -300,6 +314,32 @@ export function App() {
           }
           return req;
         }));
+
+        setNotifications(prev => [
+          {
+            id: `notif-accept-${offerId || Date.now()}`,
+            requestId,
+            title: `🎉 مبروك! تم قبول عرضك${price ? ` (${price} AED)` : ''}`,
+            message: `وافق العميل (${customerName || 'العميل'}) على عرضك لنقل "${requestTitle || 'الطلب'}". اضغط لبدء التواصل الفوري عبر الواتساب.`,
+            pickupEmirate: pickupEmirate || '',
+            deliveryEmirate: deliveryEmirate || '',
+            timestamp: 'الآن',
+            isRead: false,
+            type: 'offer_accepted',
+            customerPhone,
+            customerName,
+            price
+          },
+          ...prev.filter(n => n.id !== `notif-accept-${offerId}`)
+        ]);
+
+        sendDeviceNotification({
+          title: `🎉 تم قبول عرضك لتوصيل: ${requestTitle || 'طرد'}`,
+          body: `وافق العميل (${customerName || 'العميل'}) على عرضك بقيمة ${price || ''} AED. اضغط للتواصل عبر الواتساب.`,
+          tag: `accept-${offerId}`,
+          soundType: 'new_offer',
+          url: '/?action=driver_portal'
+        });
       } else if (event.type === 'DRIVERS_UPDATED') {
         const updatedDrivers = dbService.getLocalDrivers();
         if (updatedDrivers && updatedDrivers.length > 0) {
@@ -418,18 +458,31 @@ export function App() {
             (payload: any) => {
               if (payload.new) {
                 const notif = payload.new;
+                const isAcceptance = notif.title?.includes('مبروك') || notif.message?.includes('وافق');
                 setNotifications(prev => [
                   {
                     id: notif.id || `notif-${Date.now()}`,
                     requestId: notif.request_id,
                     title: notif.title,
+                    message: notif.message,
                     pickupEmirate: notif.pickup_emirate,
                     deliveryEmirate: notif.delivery_emirate,
                     timestamp: 'الآن',
-                    isRead: false
+                    isRead: false,
+                    type: isAcceptance ? 'offer_accepted' : undefined
                   },
                   ...prev.filter(n => n.id !== notif.id)
                 ]);
+
+                if (isAcceptance) {
+                  sendDeviceNotification({
+                    title: notif.title,
+                    body: notif.message || 'وافق العميل على عرضك! اضغط للتواصل المباشر عبر واتساب.',
+                    tag: `accept-${notif.request_id}`,
+                    soundType: 'new_offer',
+                    url: '/?action=driver_portal'
+                  });
+                }
               }
             }
           )
