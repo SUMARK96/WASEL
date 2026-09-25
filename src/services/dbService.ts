@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_DRIVERS, INITIAL_CUSTOMERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode } from '../types';
-import { sortRequestsNewestFirst, getRequestTimestamp } from '../utils/requestUtils';
+import { sortRequestsNewestFirst, getRequestTimestamp, sortOffersDeterministically } from '../utils/requestUtils';
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
@@ -443,10 +443,7 @@ export const dbService = {
           const allOffers = (!offRes.error && offRes.data) ? offRes.data : [];
 
           cloudRequests = reqRes.data.map((r: any) => {
-            const parsedTime = r.created_at ? new Date(r.created_at).getTime() : 0;
-            const numericIdTime = r.id ? parseInt(r.id.replace(/[^0-9]/g, ''), 10) : 0;
-            const finalTimestamp = parsedTime > 0 ? parsedTime : (numericIdTime > 1000000000 ? numericIdTime : getRequestTimestamp(r));
-
+            const finalTimestamp = getRequestTimestamp(r);
             const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id);
 
             return {
@@ -472,7 +469,7 @@ export const dbService = {
               isCustomerRated: Boolean(r.is_customer_rated),
               customerRating: r.customer_rating,
               customerReviewNote: r.customer_review_note,
-              offers: matchingOffers.map((o: any) => ({
+              offers: sortOffersDeterministically(matchingOffers.map((o: any) => ({
                 id: o.id,
                 requestId: o.request_id,
                 driverId: o.driver_id,
@@ -491,7 +488,7 @@ export const dbService = {
                 note: o.note || '',
                 createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
                 status: o.status || 'pending'
-              }))
+              })))
             };
           });
         }
@@ -523,8 +520,8 @@ export const dbService = {
           requestMap.set(localReq.id, {
             ...cloudReq,
             createdAt: localReq.createdAt === 'الآن' ? 'الآن' : (cloudReq.createdAt || localReq.createdAt),
-            createdAtTimestamp: cloudReq.createdAtTimestamp || localReq.createdAtTimestamp || getRequestTimestamp(localReq),
-            offers: Array.from(offerMap.values())
+            createdAtTimestamp: getRequestTimestamp(cloudReq) || getRequestTimestamp(localReq),
+            offers: sortOffersDeterministically(Array.from(offerMap.values()))
           });
         }
       });

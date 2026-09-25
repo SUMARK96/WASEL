@@ -104,7 +104,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
 
       {/* Logged-in Customer Status Bar */}
       {currentCustomer && (
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="w-11 h-11 rounded-2xl bg-white text-black font-black flex items-center justify-center text-lg shadow-md shrink-0">
               {currentCustomer.name.charAt(0)}
@@ -159,7 +159,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       {/* 1. SECTION: طلب جديد (NEW REQUEST) */}
       {/* ========================================================================= */}
       {selectedSection === 'new_request' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6">
           
           {/* Hero Request Creation Box */}
           <div className="bg-zinc-950 p-6 sm:p-10 rounded-3xl border-2 border-white shadow-2xl relative overflow-hidden text-center sm:text-right">
@@ -226,7 +226,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       {/* 2. SECTION: العروض الجديدة (NEW OFFERS) - VERTICAL STACK & COLLAPSIBLE */}
       {/* ========================================================================= */}
       {selectedSection === 'new_offers' && (
-        <div className="space-y-5 animate-in fade-in duration-200">
+        <div className="space-y-5">
           
           {/* Unread Notifications Strip */}
           {unreadNotifications.length > 0 && (
@@ -385,7 +385,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
 
                             {/* EXPANDED DETAILS (تظهر فقط عند الضغط على البطاقة) */}
                             {isExpanded && (
-                              <div className="p-4 pt-0 space-y-3.5 border-t border-zinc-800/80 mt-1 animate-in fade-in duration-200">
+                              <div className="p-4 pt-0 space-y-3.5 border-t border-zinc-800/80 mt-1">
                                 
                                 {/* Delivery Time & Driver Note */}
                                 <div className="text-xs text-zinc-300 bg-zinc-950 p-3 rounded-xl border border-zinc-800 space-y-1">
@@ -468,7 +468,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       {/* 3. SECTION: طلباتي (MY REQUESTS) */}
       {/* ========================================================================= */}
       {selectedSection === 'my_requests' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6">
           
           {customerRequests.length === 0 ? (
             <div className="bg-zinc-950 rounded-3xl p-8 sm:p-12 text-center border border-zinc-800 space-y-3">

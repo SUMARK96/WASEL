@@ -162,7 +162,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
       {/* 1. SECTION: الملف الشخصي (PROFILE) */}
       {/* ========================================================================= */}
       {selectedSection === 'profile' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6">
           
           {/* Main Driver Profile Card */}
           <div className="bg-zinc-950 border-2 border-white rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-6">
@@ -329,7 +329,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
       {/* 2. SECTION: الطلبات الجديدة (NEW REQUESTS) */}
       {/* ========================================================================= */}
       {selectedSection === 'new_requests' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6">
           
           {/* Status Alert if account is suspended due to exemption expiration */}
           {isSuspended ? (
@@ -655,7 +655,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
                       {/* Expanded Full Details Section */}
                       {isExpanded && (
-                        <div className="border-t border-zinc-800 p-4 sm:p-5 bg-black/60 space-y-4 animate-in slide-in-from-top-2 duration-150">
+                        <div className="border-t border-zinc-800 p-4 sm:p-5 bg-black/60 space-y-4">
                           {/* Full Location & Specs Grid */}
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 text-xs">
                             <div>
@@ -912,7 +912,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
       {/* 3. SECTION: الاشتراك (SUBSCRIPTION) */}
       {/* ========================================================================= */}
       {selectedSection === 'subscription' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6">
           
           {/* Subscription Status Card */}
           <div className="bg-zinc-950 border-2 border-white rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
