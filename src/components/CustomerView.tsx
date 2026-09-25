@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { DeliveryRequest, DriverOffer, DriverProfile, CustomerProfile, CustomerNotification } from '../types';
 import { sortRequestsNewestFirst } from '../utils/requestUtils';
 import { EmirateBadge } from './EmirateBadge';
@@ -63,32 +63,38 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     }));
   };
 
-  // Filter requests belonging specifically to the logged-in customer (sorted newest first)
-  const customerRequests = sortRequestsNewestFirst(
-    currentCustomer
-      ? requests.filter(r => {
-          // 1. Direct ID match
-          if (r.customerId && r.customerId === currentCustomer.id) return true;
+  // Filter requests belonging specifically to the logged-in customer (memoized, sorted newest first)
+  const customerRequests = useMemo(() => {
+    if (!currentCustomer) return [];
+    return sortRequestsNewestFirst(
+      requests.filter(r => {
+        // 1. Direct ID match
+        if (r.customerId && r.customerId === currentCustomer.id) return true;
 
-          // 2. Normalized phone number match (check last 7+ digits)
-          const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
-          const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-          if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
-            if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
-          }
+        // 2. Normalized phone number match (check last 7+ digits)
+        const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
+        const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
+        if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
+          if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
+        }
 
-          // 3. Exact customer name match (if not default/generic placeholder)
-          if (r.customerName && currentCustomer.name && r.customerName.trim() === currentCustomer.name.trim() && r.customerName !== 'عميل واصل') {
-            return true;
-          }
+        // 3. Exact customer name match (if not default/generic placeholder)
+        if (r.customerName && currentCustomer.name && r.customerName.trim() === currentCustomer.name.trim() && r.customerName !== 'عميل واصل') {
+          return true;
+        }
 
-          return false;
-        })
-      : []
-  );
+        return false;
+      })
+    );
+  }, [requests, currentCustomer]);
 
-  const unreadNotifications = customerNotifications.filter(n => !n.isRead);
-  const requestsWithOffers = customerRequests.filter(r => r.offers && r.offers.length > 0);
+  const unreadNotifications = useMemo(() => {
+    return customerNotifications.filter(n => !n.isRead);
+  }, [customerNotifications]);
+
+  const requestsWithOffers = useMemo(() => {
+    return customerRequests.filter(r => r.offers && r.offers.length > 0);
+  }, [customerRequests]);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -263,12 +269,19 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           ) : (
             <div className="space-y-6">
               {requestsWithOffers.map((req) => {
-                // Sort offers by rating (highest first)
+                // Sort offers deterministically (highest rating, highest completed, stable ID tie-breaker)
                 const sortedOffers = [...req.offers].sort((a, b) => {
-                  if (b.driverRating !== a.driverRating) {
-                    return b.driverRating - a.driverRating;
+                  const ratingA = a.driverRating || 0;
+                  const ratingB = b.driverRating || 0;
+                  if (ratingB !== ratingA) {
+                    return ratingB - ratingA;
                   }
-                  return b.driverCompletedCount - a.driverCompletedCount;
+                  const countA = a.driverCompletedCount || 0;
+                  const countB = b.driverCompletedCount || 0;
+                  if (countB !== countA) {
+                    return countB - countA;
+                  }
+                  return (b.id || '').localeCompare(a.id || '');
                 });
 
                 return (
@@ -305,7 +318,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         return (
                           <div
                             key={offer.id}
-                            className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                            className={`rounded-2xl border transition-colors duration-150 overflow-hidden ${
                               isAccepted 
                                 ? 'bg-zinc-900 border-white' 
                                 : isExpanded 
