@@ -2,10 +2,10 @@ import type { DeliveryRequest } from '../types';
 
 /**
  * Extracts a numeric timestamp (milliseconds) from a DeliveryRequest
- * to enable accurate descending chronological sorting (Newest to Oldest).
+ * in a 100% deterministic way to prevent list jumping/flickering during sorting.
  */
 export const getRequestTimestamp = (req: DeliveryRequest): number => {
-  if (req.createdAtTimestamp && !isNaN(req.createdAtTimestamp)) {
+  if (req.createdAtTimestamp && !isNaN(req.createdAtTimestamp) && req.createdAtTimestamp > 0) {
     return req.createdAtTimestamp;
   }
 
@@ -28,10 +28,10 @@ export const getRequestTimestamp = (req: DeliveryRequest): number => {
     }
   }
 
-  // Relative Arabic mock timestamps fallback
-  if (req.createdAt === 'الآن') return Date.now();
-  if (req.createdAt === 'منذ ساعتين') return Date.now() - 2 * 3600 * 1000;
-  if (req.createdAt === 'منذ 4 ساعات') return Date.now() - 4 * 3600 * 1000;
+  // Deterministic fallback for relative string labels (using fixed static timestamps to prevent jitter)
+  if (req.createdAt === 'الآن') return 1750000000000;
+  if (req.createdAt === 'منذ ساعتين') return 1740000000000;
+  if (req.createdAt === 'منذ 4 ساعات') return 1730000000000;
 
   // Short mock numeric ID fallback (e.g. req-202, req-201)
   if (req.id) {
@@ -43,8 +43,13 @@ export const getRequestTimestamp = (req: DeliveryRequest): number => {
 };
 
 /**
- * Sorts delivery requests so that newest requests appear first (الطلبات الجديدة أولاً ثم الأقدم).
+ * Sorts delivery requests so that newest requests appear first (الطلبات الجديدة أولاً ثم الأقدم)
+ * with a stable tie-breaker on req.id to ensure zero layout shift or flickering.
  */
 export const sortRequestsNewestFirst = (requests: DeliveryRequest[]): DeliveryRequest[] => {
-  return [...requests].sort((a, b) => getRequestTimestamp(b) - getRequestTimestamp(a));
+  return [...requests].sort((a, b) => {
+    const diff = getRequestTimestamp(b) - getRequestTimestamp(a);
+    if (diff !== 0) return diff;
+    return (b.id || '').localeCompare(a.id || '');
+  });
 };

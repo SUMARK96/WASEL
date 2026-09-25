@@ -143,8 +143,11 @@ export interface DriverNotification {
   deliveryEmirate?: Emirate;
   timestamp: string;
   isRead: boolean;
-  type?: 'request' | 'expiry_reminder' | 'exemption_reminder' | 'suspended_notice' | 'invoice';
+  type?: 'request' | 'expiry_reminder' | 'exemption_reminder' | 'suspended_notice' | 'invoice' | 'offer_accepted';
   message?: string;
+  customerPhone?: string;
+  customerName?: string;
+  price?: number;
 }
 
 export interface CustomerNotification {

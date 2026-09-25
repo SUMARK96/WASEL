@@ -373,7 +373,7 @@ export function App() {
       }
     }
 
-    // 4. Background Polling Fallback (Every 3.5 seconds) for seamless multi-device live sync
+    // 4. Background Polling Fallback (Every 5 seconds) for seamless multi-device live sync with change check
     const pollingInterval = setInterval(async () => {
       try {
         const [refreshedRequests, refreshedDrivers, refreshedCustomers] = await Promise.all([
@@ -382,18 +382,27 @@ export function App() {
           dbService.getCustomers()
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
-          setRequests(refreshedRequests);
+          setRequests(prev => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedRequests);
+            return isDifferent ? refreshedRequests : prev;
+          });
         }
         if (refreshedDrivers && refreshedDrivers.length > 0) {
-          setDrivers(refreshedDrivers);
+          setDrivers(prev => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedDrivers);
+            return isDifferent ? refreshedDrivers : prev;
+          });
         }
         if (refreshedCustomers && refreshedCustomers.length > 0) {
-          setCustomers(refreshedCustomers);
+          setCustomers(prev => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedCustomers);
+            return isDifferent ? refreshedCustomers : prev;
+          });
         }
       } catch (err) {
         // Silent background sync
       }
-    }, 3500);
+    }, 5000);
 
     return () => {
       unsubscribeLocalSync();
@@ -644,22 +653,61 @@ export function App() {
     showToast('👍 تم إرسال عرضك بنجاح! سينتقل العميل فوراً لمحادثة واتساب معك عند القبول.');
   };
 
-  // Customer accepts an offer
+  // Customer accepts an offer -> Instant Driver Notification & Sound & Direct Contact
   const handleAcceptOffer = async (requestId: string, offerId: string) => {
+    let acceptedOfferData: DriverOffer | undefined;
+    let targetReqData: DeliveryRequest | undefined;
+
     setRequests(prev => prev.map(req => {
       if (req.id === requestId) {
+        targetReqData = req;
+        const updatedOffers = req.offers.map(off => {
+          if (off.id === offerId) {
+            acceptedOfferData = off;
+            return { ...off, status: 'accepted' as const };
+          }
+          return off;
+        });
         return {
           ...req,
           selectedOfferId: offerId,
           status: 'assigned',
-          offers: req.offers.map(off => off.id === offerId ? { ...off, status: 'accepted' } : off)
+          offers: updatedOffers
         };
       }
       return req;
     }));
 
+    // 1. Dispatch high-priority driver notification for accepted offer
+    const newDriverNotif: DriverNotification = {
+      id: `notif-accept-${Date.now()}`,
+      requestId: requestId,
+      title: `🎉 مبروك! تم قبول عرضك (${acceptedOfferData?.price || ''} AED)`,
+      message: `وافق العميل (${targetReqData?.customerName || 'العميل'}) على عرضك لنقل "${targetReqData?.title}". يمكنك الآن التواصل المباشر معه عبر الواتساب والمكالمة.`,
+      pickupEmirate: targetReqData?.pickupEmirate,
+      deliveryEmirate: targetReqData?.deliveryEmirate,
+      timestamp: 'الآن',
+      isRead: false,
+      type: 'offer_accepted',
+      customerPhone: targetReqData?.customerPhone,
+      customerName: targetReqData?.customerName,
+      price: acceptedOfferData?.price
+    };
+
+    setNotifications(prev => [newDriverNotif, ...prev]);
+
+    // 2. Dispatch Native Device Push & Sound for Driver
+    await sendDeviceNotification({
+      title: `🎉 تم قبول عرضك لتوصيل: ${targetReqData?.title || 'طرد'}`,
+      body: `وافق العميل على عرضك بقيمة ${acceptedOfferData?.price} AED. اضغط لبدء التواصل الفوري مع العميل عبر الواتساب (${targetReqData?.customerPhone}).`,
+      tag: `accept-${offerId}`,
+      soundType: 'new_offer',
+      url: '/?action=driver_portal'
+    });
+
+    // 3. Persist to Supabase & broadcast
     await dbService.acceptOffer(requestId, offerId);
-    showToast('✅ تم قبول عرض السائق بنجاح! يمكنك الآن التواصل معه فوراً عبر زر الواتساب والمكالمة.');
+    showToast('✅ تم قبول عرض السائق بنجاح وإرسال إشعار فوري للسائق لبدء التواصل والتنفيذ!');
   };
 
   // Mark driver notification read

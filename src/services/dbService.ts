@@ -588,6 +588,18 @@ export const dbService = {
           .from('driver_offers')
           .update({ status: 'accepted' })
           .eq('id', offerId);
+
+        // Add accepted offer notification for driver
+        const targetReq = updated.find(r => r.id === requestId);
+        const acceptedOffer = targetReq?.offers?.find(o => o.id === offerId);
+        await supabase.from('driver_notifications').insert({
+          id: `notif-${Date.now()}`,
+          request_id: requestId,
+          title: `🎉 مبروك! قبل العميل (${targetReq?.customerName || 'العميل'}) عرضك${acceptedOffer?.price ? ` بقيمة (${acceptedOffer.price} AED)` : ''} لتوصيل: ${targetReq?.title || 'طرد'}`,
+          pickup_emirate: targetReq?.pickupEmirate,
+          delivery_emirate: targetReq?.deliveryEmirate,
+          is_read: false
+        });
       } catch (err) {
         console.warn('Supabase acceptOffer failed:', err);
       }

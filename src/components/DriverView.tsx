@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { DeliveryRequest, DriverProfile, DriverNotification } from '../types';
 import { UAE_EMIRATES } from '../data/mockData';
 import { sortRequestsNewestFirst } from '../utils/requestUtils';
@@ -22,7 +22,9 @@ import {
   FileText, 
   Share2, 
   Check, 
-  AlertTriangle 
+  AlertTriangle,
+  MessageCircle,
+  User
 } from 'lucide-react';
 
 export type DriverDashboardSection = 'profile' | 'new_requests' | 'subscription';
@@ -43,12 +45,12 @@ interface DriverViewProps {
 export const DriverView: React.FC<DriverViewProps> = ({
   driver,
   requests,
-  notifications: _notifications,
+  notifications = [],
   selectedSection: propSelectedSection,
   onSelectSection,
   onOpenSubscription,
   onOpenSubmitOffer,
-  onMarkNotificationRead: _onMarkNotificationRead,
+  onMarkNotificationRead,
   onLogout: _onLogout,
   subscriptionPrice = 199
 }) => {
@@ -86,19 +88,41 @@ export const DriverView: React.FC<DriverViewProps> = ({
     driver.isExemptionActive ? 0 : subscriptionPrice
   );
 
-  // Sort all requests newest first (الطلبات الأحدث تظهر أولاً دائماً)
-  const openRequests = sortRequestsNewestFirst(requests.filter(r => r.status === 'open'));
+  // Memoized rock-solid request sorting & filtering (الطلبات ثابتة تماماً بدون أي اهتزاز أو تحرك)
+  const openRequests = useMemo(() => {
+    return sortRequestsNewestFirst(requests.filter(r => r.status === 'open'));
+  }, [requests]);
 
-  const filteredRequests = sortRequestsNewestFirst(
-    openRequests.filter(r => {
+  const filteredRequests = useMemo(() => {
+    return openRequests.filter(r => {
       const matchPickup = filterPickup === 'all' || r.pickupEmirate === filterPickup;
       const matchDelivery = filterDelivery === 'all' || r.deliveryEmirate === filterDelivery;
       return matchPickup && matchDelivery;
-    })
-  );
+    });
+  }, [openRequests, filterPickup, filterDelivery]);
 
-  const myBids = sortRequestsNewestFirst(requests.filter(r => r.offers.some(o => o.driverId === driver.id)));
-  const activeJobs = sortRequestsNewestFirst(requests.filter(r => r.selectedOfferId && r.offers.some(o => o.id === r.selectedOfferId && o.driverId === driver.id)));
+  const myBids = useMemo(() => {
+    return sortRequestsNewestFirst(requests.filter(r => 
+      r.offers.some(o => 
+        o.driverId === driver.id || 
+        (o.driverPhone && driver.phone && o.driverPhone.replace(/[^0-9]/g, '') === driver.phone.replace(/[^0-9]/g, ''))
+      )
+    ));
+  }, [requests, driver.id, driver.phone]);
+
+  const activeJobs = useMemo(() => {
+    return sortRequestsNewestFirst(requests.filter(r => 
+      r.selectedOfferId && 
+      r.offers.some(o => 
+        o.id === r.selectedOfferId && 
+        (o.driverId === driver.id || (o.driverPhone && driver.phone && o.driverPhone.replace(/[^0-9]/g, '') === driver.phone.replace(/[^0-9]/g, '')))
+      )
+    ));
+  }, [requests, driver.id, driver.phone]);
+
+  const acceptedOfferNotifications = useMemo(() => {
+    return notifications.filter(n => n.type === 'offer_accepted' && !n.isRead);
+  }, [notifications]);
 
   const handleOfferClick = (req: DeliveryRequest) => {
     if (isSuspended) {
@@ -380,6 +404,93 @@ export const DriverView: React.FC<DriverViewProps> = ({
               </button>
             </div>
           ) : null}
+
+          {/* Instant Alert for Accepted Offers */}
+          {acceptedOfferNotifications.length > 0 && (
+            <div className="space-y-3">
+              {acceptedOfferNotifications.map(notif => {
+                const cleanPhone = notif.customerPhone ? notif.customerPhone.replace(/[^0-9]/g, '') : '';
+                const formattedWa = cleanPhone ? (cleanPhone.startsWith('971') ? cleanPhone : '971' + cleanPhone.replace(/^0+/, '')) : '';
+                const waUrl = formattedWa 
+                  ? `https://wa.me/${formattedWa}?text=${encodeURIComponent(`مرحباً ${notif.customerName || 'عزيزي العميل'}، أنا الكابتن ${driver.name} من تطبيق واصل بخصوص قبول طلبك "${notif.title || ''}". جاهز للتنفيذ فوراً.`)}`
+                  : '#';
+
+                return (
+                  <div 
+                    key={notif.id} 
+                    className="bg-gradient-to-r from-zinc-900 via-zinc-950 to-zinc-900 border-2 border-white p-5 rounded-3xl shadow-2xl space-y-3 animate-in zoom-in-95"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-black shrink-0 text-xl shadow-lg">
+                          🎉
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="bg-white text-black text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">
+                              إشعار فوري: تم قبول عرضك!
+                            </span>
+                            {notif.price && (
+                              <span className="bg-zinc-800 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border border-zinc-700">
+                                {notif.price} AED
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-black text-white text-base mt-1">{notif.title}</h4>
+                          <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
+                            {notif.message}
+                          </p>
+                        </div>
+                      </div>
+
+                      {onMarkNotificationRead && (
+                        <button
+                          type="button"
+                          onClick={() => onMarkNotificationRead(notif.id)}
+                          className="self-end sm:self-center text-xs text-zinc-400 hover:text-white underline cursor-pointer"
+                        >
+                          تحديد كمقروء ✓
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Quick Action Contact Buttons */}
+                    <div className="pt-2 border-t border-zinc-800 flex flex-wrap items-center gap-2">
+                      {cleanPhone ? (
+                        <>
+                          <a
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white hover:bg-zinc-200 text-black font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow active:scale-95 transition-all"
+                          >
+                            <MessageCircle className="w-4 h-4 text-black" />
+                            <span>مراسلة العميل واتساب فوراً ({cleanPhone})</span>
+                          </a>
+
+                          <a
+                            href={`tel:${cleanPhone}`}
+                            className="bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all"
+                          >
+                            <Phone className="w-4 h-4 text-white" />
+                            <span>اتصال هاتفي بالعميل</span>
+                          </a>
+                        </>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        onClick={() => setRequestTab('active_jobs')}
+                        className="text-xs text-zinc-300 hover:text-white px-3 py-2 rounded-xl bg-black border border-zinc-800 mr-auto"
+                      >
+                        عرض المهمة في "المهام المقبولة" ➔
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Subtabs for Requests: المتاحة / عروضي المقدمة / المهام النشطة */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
@@ -668,27 +779,120 @@ export const DriverView: React.FC<DriverViewProps> = ({
           {/* Active Jobs Tab */}
           {requestTab === 'active_jobs' && (
             activeJobs.length === 0 ? (
-              <div className="bg-zinc-950 rounded-3xl p-8 text-center border border-zinc-800 text-zinc-400 text-xs">
-                لا توجد مهام توصيل مقبولة حالياً. فور قبول العميل لعرضك ستظهر هنا مع بيانات العميل.
+              <div className="bg-zinc-950 rounded-3xl p-8 text-center border border-zinc-800 text-zinc-400 text-xs space-y-2">
+                <Truck className="w-10 h-10 text-zinc-600 mx-auto" />
+                <p>لا توجد مهام توصيل مقبولة حالياً. فور قبول العميل لعرضك ستظهر هنا مع بيانات العميل للتواصل الفوري.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {activeJobs.map((req) => (
-                  <div key={req.id} className="bg-zinc-950 border-2 border-white rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-black text-white text-base">{req.title}</h3>
-                      <span className="bg-white text-black font-extrabold px-3 py-1 rounded-full text-xs">
-                        مهمة قيد التنفيذ 🚚
-                      </span>
+              <div className="space-y-4">
+                {activeJobs.map((req) => {
+                  const acceptedOffer = req.offers.find(o => o.id === req.selectedOfferId || o.status === 'accepted');
+                  const cleanPhone = req.customerPhone ? req.customerPhone.replace(/[^0-9]/g, '') : '';
+                  const formattedWa = cleanPhone ? (cleanPhone.startsWith('971') ? cleanPhone : '971' + cleanPhone.replace(/^0+/, '')) : '';
+                  const waUrl = formattedWa
+                    ? `https://wa.me/${formattedWa}?text=${encodeURIComponent(`مرحباً ${req.customerName || 'عزيزي العميل'}، أنا الكابتن ${driver.name} من منصة واصل بخصوص طلب التوصيل "${req.title}". جاهز للتنفيذ فوراً.`)}`
+                    : '#';
+
+                  return (
+                    <div key={req.id} className="bg-zinc-950 border-2 border-white rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl">
+                      {/* Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className="bg-white text-black font-black px-3 py-1 rounded-full text-xs shadow">
+                              مهمة توصيل مقبولة وجارية 🚚
+                            </span>
+                            <span className="bg-zinc-900 text-zinc-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-zinc-700">
+                              {req.packageType}
+                            </span>
+                            {acceptedOffer && (
+                              <span className="bg-zinc-900 text-white font-mono text-xs font-black px-2.5 py-0.5 rounded border border-white/40">
+                                السعر المتفق عليه: {acceptedOffer.price} AED
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-black text-white text-lg">{req.title}</h3>
+                        </div>
+
+                        <div className="text-left sm:text-right shrink-0">
+                          <div className="text-xs text-zinc-400">تاريخ الطلب: {req.createdAt}</div>
+                          <div className="text-xs font-bold text-white mt-0.5">📅 موعد التسليم: {req.deliveryDate}</div>
+                        </div>
+                      </div>
+
+                      {/* Locations and Package details */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-900/80 p-4 rounded-2xl border border-zinc-800 text-xs">
+                        <div className="space-y-1">
+                          <div className="text-zinc-400 font-bold flex items-center gap-1.5">
+                            <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                            <span>نقطة الاستلام:</span>
+                          </div>
+                          <p className="text-white font-medium pr-2">{req.pickupArea}</p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="text-zinc-400 font-bold flex items-center gap-1.5">
+                            <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                            <span>نقطة التسليم:</span>
+                          </div>
+                          <p className="text-white font-medium pr-2">{req.deliveryArea}</p>
+                        </div>
+
+                        {req.notes && (
+                          <div className="sm:col-span-2 pt-2 border-t border-zinc-800">
+                            <span className="text-zinc-400 font-bold">ملاحظات العميل: </span>
+                            <span className="text-zinc-200">{req.notes}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Customer Contact Card */}
+                      <div className="bg-black border border-zinc-700 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-white shrink-0">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="text-xs text-zinc-400 font-medium">بيانات العميل للتواصل المباشر:</div>
+                            <div className="font-black text-white text-base">{req.customerName || 'عميل واصل'}</div>
+                            {req.customerPhone && (
+                              <div className="text-xs text-zinc-300 font-mono mt-0.5">
+                                📞 {req.customerPhone}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        {cleanPhone ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-white hover:bg-zinc-200 text-black font-black px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow active:scale-95 transition-all"
+                            >
+                              <MessageCircle className="w-4 h-4 text-black" />
+                              <span>مراسلة عبر واتساب</span>
+                            </a>
+
+                            <a
+                              href={`tel:${cleanPhone}`}
+                              className="bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 active:scale-95 transition-all"
+                            >
+                              <Phone className="w-4 h-4 text-white" />
+                              <span>اتصال هاتفي</span>
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-zinc-400 italic">
+                            لا يتوفر رقم هاتف مسجل للعميل في هذا الطلب
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
-                      <span>➔</span>
-                      <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
-                      <span className="text-zinc-400">• {req.deliveryDate}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )
           )}
