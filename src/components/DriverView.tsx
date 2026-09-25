@@ -457,14 +457,23 @@ export const DriverView: React.FC<DriverViewProps> = ({
             ) : (
               <div className="space-y-3">
                 {filteredRequests.map((req) => {
-                  const alreadySubmitted = req.offers.some(o => o.driverId === driver.id);
+                  const myOffer = req.offers?.find(o => 
+                    o.driverId === driver.id || 
+                    (o.driverPhone && driver.phone && o.driverPhone.replace(/[^0-9]/g, '') === driver.phone.replace(/[^0-9]/g, '')) ||
+                    (o.driverName && driver.name && o.driverName.trim() === driver.name.trim())
+                  );
+                  const alreadySubmitted = Boolean(myOffer);
                   const isExpanded = expandedRequestId === req.id;
 
                   return (
                     <div
                       key={req.id}
                       className={`bg-zinc-950 border transition-all duration-200 rounded-2xl overflow-hidden shadow-lg ${
-                        isExpanded ? 'border-white ring-1 ring-white/20' : 'border-zinc-800 hover:border-zinc-600'
+                        alreadySubmitted
+                          ? 'border-zinc-700 bg-zinc-950/90'
+                          : isExpanded 
+                          ? 'border-white ring-1 ring-white/20' 
+                          : 'border-zinc-800 hover:border-zinc-600'
                       }`}
                     >
                       {/* Compact Collapsed Row (Always visible & clickable to expand/collapse) */}
@@ -490,6 +499,12 @@ export const DriverView: React.FC<DriverViewProps> = ({
                               <span className="bg-zinc-900 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">
                                 {req.packageType}
                               </span>
+                              {alreadySubmitted && (
+                                <span className="bg-white text-black text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow shrink-0">
+                                  <Check className="w-3.5 h-3.5 stroke-[3] text-black" />
+                                  <span>تم تقديم عرضك ({myOffer?.price} AED)</span>
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5 flex-wrap">
                               <span>📅 {req.deliveryDate}</span>
@@ -504,9 +519,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
                         {/* Expand / Status Indicator */}
                         <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                           {alreadySubmitted ? (
-                            <span className="bg-zinc-900 text-white border border-zinc-700 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5 text-white" />
-                              <span>تم تقديم عرضك</span>
+                            <span className="bg-zinc-900 text-white border-2 border-white font-black px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md">
+                              <Check className="w-4 h-4 text-white stroke-[2.5]" />
+                              <span>تم تقديم عرضك ({myOffer?.price} AED)</span>
                             </span>
                           ) : (
                             <span className="bg-white text-black font-black px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow">
@@ -553,35 +568,46 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
                           {/* Action Button: Submit Price Offer */}
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                            <div className="text-xs text-zinc-400">
-                              {alreadySubmitted 
-                                ? '✅ لقد قمت بتقديم عرضك لهذا الطلب. يمكنك متابعة قبوله عبر قسم "عروضي المقدمة".'
-                                : 'اضغط على الزر لتحديد سعرك وموعد استلامك وإرسال العرض للعميل مباشرة.'}
-                            </div>
-
-                            <div className="w-full sm:w-auto flex items-center gap-2">
-                              {alreadySubmitted ? (
+                            {alreadySubmitted ? (
+                              <div className="bg-zinc-900 border-2 border-white p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 w-full animate-in fade-in">
+                                <div className="flex items-center gap-2.5 text-white text-xs sm:text-sm font-bold">
+                                  <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
+                                  <div>
+                                    <span className="block font-black">✅ لقد قمت بتقديم عرضك لهذا الطلب</span>
+                                    <span className="text-zinc-300 text-[11px] font-normal">
+                                      السعر المقترح: <strong className="text-white font-mono bg-black px-2 py-0.5 rounded border border-zinc-700">{myOffer?.price} AED</strong> • موعد التوصيل: <strong className="text-white">{myOffer?.estimatedDeliveryTime}</strong>
+                                    </span>
+                                  </div>
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => setRequestTab('my_bids')}
-                                  className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs border border-zinc-700 text-center"
+                                  className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-4 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow"
                                 >
-                                  معاينة عرضك في عروضي المقدمة
+                                  معاينة في "عروضي المقدمة" ➔
                                 </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOfferClick(req);
-                                  }}
-                                  className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-6 py-3 rounded-xl text-xs sm:text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
-                                >
-                                  <Send className="w-4 h-4" />
-                                  <span>تقديم عرض سعر للعميل الآن</span>
-                                </button>
-                              )}
-                            </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="text-xs text-zinc-400">
+                                  اضغط على الزر لتحديد سعرك وموعد استلامك وإرسال العرض للعميل مباشرة.
+                                </div>
+
+                                <div className="w-full sm:w-auto flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOfferClick(req);
+                                    }}
+                                    className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-6 py-3 rounded-xl text-xs sm:text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+                                  >
+                                    <Send className="w-4 h-4" />
+                                    <span>تقديم عرض سعر للعميل الآن</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       )}

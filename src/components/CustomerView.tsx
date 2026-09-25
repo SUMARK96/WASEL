@@ -67,14 +67,24 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   const customerRequests = sortRequestsNewestFirst(
     currentCustomer
       ? requests.filter(r => {
+          // 1. Direct ID match
           if (r.customerId && r.customerId === currentCustomer.id) return true;
+
+          // 2. Normalized phone number match (check last 7+ digits)
           const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
           const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-          if (normPhone1 && normPhone2 && normPhone1 === normPhone2) return true;
-          if (r.customerName && currentCustomer.name && r.customerName === currentCustomer.name) return true;
+          if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
+            if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
+          }
+
+          // 3. Exact customer name match (if not default/generic placeholder)
+          if (r.customerName && currentCustomer.name && r.customerName.trim() === currentCustomer.name.trim() && r.customerName !== 'عميل واصل') {
+            return true;
+          }
+
           return false;
         })
-      : requests
+      : []
   );
 
   const unreadNotifications = customerNotifications.filter(n => !n.isRead);

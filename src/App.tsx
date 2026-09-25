@@ -586,6 +586,7 @@ export function App() {
       driverRating: currentDriver.rating,
       driverVehicle: `${currentDriver.vehicleModel} (${currentDriver.vehiclePlate})`,
       driverVehicleType: currentDriver.vehicleType,
+      driverVehiclePhotos: currentDriver.vehiclePhotos || (currentDriver.vehiclePhoto ? [currentDriver.vehiclePhoto] : []),
       driverPhone: currentDriver.phone,
       driverWhatsappPhone: whatsappPhone.replace(/[^0-9]/g, ''),
       driverCallPhone: callPhone,
@@ -1118,6 +1119,7 @@ export function App() {
       {selectedDriverForProfile && (
         <DriverProfileModal
           driver={selectedDriverForProfile}
+          drivers={drivers}
           onClose={() => setSelectedDriverForProfile(null)}
         />
       )}

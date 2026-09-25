@@ -87,6 +87,11 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'pickup',
     vehicleModel: 'تويوتا هيلوكس 2023',
     vehiclePlate: 'دبي X 84920',
+    vehiclePhoto: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800',
+    vehiclePhotos: [
+      'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&q=80&w=800'
+    ],
     rating: 4.95,
     reviewsCount: 84,
     completedDeliveries: 128,
@@ -111,6 +116,11 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'suv',
     vehicleModel: 'نيسان باترول 2022',
     vehiclePlate: 'أبوظبي 12-4910',
+    vehiclePhoto: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800',
+    vehiclePhotos: [
+      'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=800'
+    ],
     rating: 4.88,
     reviewsCount: 62,
     completedDeliveries: 95,
@@ -137,6 +147,11 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'van',
     vehicleModel: 'تويوتا هايس مغلقة 2024',
     vehiclePlate: 'الشارقة 5 77123',
+    vehiclePhoto: 'https://images.unsplash.com/photo-1562911791-c7a97b729ec5?auto=format&fit=crop&q=80&w=800',
+    vehiclePhotos: [
+      'https://images.unsplash.com/photo-1562911791-c7a97b729ec5?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=800'
+    ],
     rating: 4.98,
     reviewsCount: 110,
     completedDeliveries: 210,
@@ -163,6 +178,11 @@ export const INITIAL_DRIVERS: DriverProfile[] = [
     vehicleType: 'sedan',
     vehicleModel: 'كامري 2023',
     vehiclePlate: 'عجمان B 3910',
+    vehiclePhoto: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800',
+    vehiclePhotos: [
+      'https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800'
+    ],
     rating: 4.75,
     reviewsCount: 38,
     completedDeliveries: 45,
