@@ -463,10 +463,32 @@ export const dbService = {
     const localRequests = this.getLocalRequests();
 
     if (cloudRequests.length > 0) {
-      // Merge strategy: map by id to combine any local pending requests
+      // Merge strategy: map by id and merge offers so newly submitted driver offers are never wiped out
       const requestMap = new Map<string, DeliveryRequest>();
-      localRequests.forEach(r => requestMap.set(r.id, r));
+      
+      // 1. Load cloud requests first
       cloudRequests.forEach(r => requestMap.set(r.id, r));
+
+      // 2. Merge with local requests to preserve any pending local offers
+      localRequests.forEach(localReq => {
+        const cloudReq = requestMap.get(localReq.id);
+        if (!cloudReq) {
+          requestMap.set(localReq.id, localReq);
+        } else {
+          // Merge offers by offer ID
+          const offerMap = new Map<string, DriverOffer>();
+          (cloudReq.offers || []).forEach(o => offerMap.set(o.id, o));
+          (localReq.offers || []).forEach(o => offerMap.set(o.id, o));
+
+          requestMap.set(localReq.id, {
+            ...cloudReq,
+            createdAt: localReq.createdAt === 'الآن' ? 'الآن' : (cloudReq.createdAt || localReq.createdAt),
+            createdAtTimestamp: cloudReq.createdAtTimestamp || localReq.createdAtTimestamp || getRequestTimestamp(localReq),
+            offers: Array.from(offerMap.values())
+          });
+        }
+      });
+
       const merged = sortRequestsNewestFirst(Array.from(requestMap.values()));
       this.saveLocalRequests(merged);
       return merged;

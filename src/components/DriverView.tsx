@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { DeliveryRequest, DriverProfile, DriverNotification } from '../types';
+import type { DeliveryRequest, DriverProfile, DriverNotification, DriverOffer } from '../types';
 import { UAE_EMIRATES } from '../data/mockData';
 import { sortRequestsNewestFirst } from '../utils/requestUtils';
 import { 
@@ -88,6 +88,24 @@ export const DriverView: React.FC<DriverViewProps> = ({
     driver.isExemptionActive ? 0 : subscriptionPrice
   );
 
+  // Robust helper to check if an offer belongs to the current driver (by id, phone variations, or name)
+  const isOfferByCurrentDriver = (offer: DriverOffer, d: DriverProfile): boolean => {
+    if (!offer || !d) return false;
+    if (offer.driverId === d.id) return true;
+    
+    const phoneA = (offer.driverPhone || offer.driverWhatsappPhone || offer.driverCallPhone || '').replace(/[^0-9]/g, '');
+    const phoneB = (d.phone || d.whatsappPhone || d.callPhone || '').replace(/[^0-9]/g, '');
+    if (phoneA && phoneB) {
+      if (phoneA === phoneB) return true;
+      if (phoneA.length >= 7 && phoneB.length >= 7 && phoneA.slice(-7) === phoneB.slice(-7)) return true;
+    }
+    
+    if (offer.driverName && d.name && offer.driverName.trim().toLowerCase() === d.name.trim().toLowerCase()) {
+      return true;
+    }
+    return false;
+  };
+
   // Memoized rock-solid request sorting & filtering (الطلبات ثابتة تماماً بدون أي اهتزاز أو تحرك)
   const openRequests = useMemo(() => {
     return sortRequestsNewestFirst(requests.filter(r => r.status === 'open'));
@@ -103,22 +121,16 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
   const myBids = useMemo(() => {
     return sortRequestsNewestFirst(requests.filter(r => 
-      r.offers.some(o => 
-        o.driverId === driver.id || 
-        (o.driverPhone && driver.phone && o.driverPhone.replace(/[^0-9]/g, '') === driver.phone.replace(/[^0-9]/g, ''))
-      )
+      r.offers.some(o => isOfferByCurrentDriver(o, driver))
     ));
-  }, [requests, driver.id, driver.phone]);
+  }, [requests, driver]);
 
   const activeJobs = useMemo(() => {
     return sortRequestsNewestFirst(requests.filter(r => 
       r.selectedOfferId && 
-      r.offers.some(o => 
-        o.id === r.selectedOfferId && 
-        (o.driverId === driver.id || (o.driverPhone && driver.phone && o.driverPhone.replace(/[^0-9]/g, '') === driver.phone.replace(/[^0-9]/g, '')))
-      )
+      r.offers.some(o => o.id === r.selectedOfferId && isOfferByCurrentDriver(o, driver))
     ));
-  }, [requests, driver.id, driver.phone]);
+  }, [requests, driver]);
 
   const acceptedOfferNotifications = useMemo(() => {
     return notifications.filter(n => n.type === 'offer_accepted' && !n.isRead);
@@ -568,18 +580,14 @@ export const DriverView: React.FC<DriverViewProps> = ({
             ) : (
               <div className="space-y-3">
                 {filteredRequests.map((req) => {
-                  const myOffer = req.offers?.find(o => 
-                    o.driverId === driver.id || 
-                    (o.driverPhone && driver.phone && o.driverPhone.replace(/[^0-9]/g, '') === driver.phone.replace(/[^0-9]/g, '')) ||
-                    (o.driverName && driver.name && o.driverName.trim() === driver.name.trim())
-                  );
+                  const myOffer = req.offers?.find(o => isOfferByCurrentDriver(o, driver));
                   const alreadySubmitted = Boolean(myOffer);
                   const isExpanded = expandedRequestId === req.id;
 
                   return (
                     <div
                       key={req.id}
-                      className={`bg-zinc-950 border transition-all duration-200 rounded-2xl overflow-hidden shadow-lg ${
+                      className={`bg-zinc-950 border transition-colors duration-150 rounded-2xl overflow-hidden shadow-lg ${
                         alreadySubmitted
                           ? 'border-zinc-700 bg-zinc-950/90'
                           : isExpanded 
@@ -738,7 +746,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
             ) : (
               <div className="space-y-3">
                 {myBids.map((req) => {
-                  const myOffer = req.offers.find(o => o.driverId === driver.id);
+                  const myOffer = req.offers.find(o => isOfferByCurrentDriver(o, driver));
                   const isExpanded = expandedRequestId === req.id;
                   return (
                     <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3">
