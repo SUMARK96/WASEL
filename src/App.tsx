@@ -337,6 +337,23 @@ export function App() {
           soundType: 'new_offer',
           url: '/?action=driver_portal'
         });
+      } else if (event.type === 'DELETE_REQUEST' && event.payload) {
+        const { requestId } = event.payload;
+        setRequests(prev => prev.filter(r => r.id !== requestId));
+        setNotifications(prev => prev.filter(n => n.requestId !== requestId));
+        setCustomerNotifications(prev => prev.filter(n => n.requestId !== requestId));
+      } else if (event.type === 'DELETE_OFFER' && event.payload) {
+        const { requestId, offerId } = event.payload;
+        setRequests(prev => prev.map(req => {
+          if (req.id === requestId) {
+            return {
+              ...req,
+              offers: (req.offers || []).filter(o => o.id !== offerId)
+            };
+          }
+          return req;
+        }));
+        setCustomerNotifications(prev => prev.filter(n => n.offerId !== offerId));
       } else if (event.type === 'DRIVERS_UPDATED') {
         const updatedDrivers = dbService.getLocalDrivers();
         if (updatedDrivers && updatedDrivers.length > 0) {
@@ -363,6 +380,13 @@ export function App() {
             'postgres_changes',
             { event: '*', schema: 'public', table: 'delivery_requests' },
             async (payload: any) => {
+              if (payload && payload.eventType === 'DELETE' && payload.old) {
+                const deletedId = payload.old.id;
+                setRequests(prev => prev.filter(r => r.id !== deletedId));
+                setNotifications(prev => prev.filter(n => n.requestId !== deletedId));
+                setCustomerNotifications(prev => prev.filter(n => n.requestId !== deletedId));
+                return;
+              }
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
                 setRequests(prev => mergeRequestLists(prev, latestReqs));
@@ -385,6 +409,15 @@ export function App() {
             'postgres_changes',
             { event: '*', schema: 'public', table: 'driver_offers' },
             async (payload: any) => {
+              if (payload && payload.eventType === 'DELETE' && payload.old) {
+                const deletedOfferId = payload.old.id;
+                setRequests(prev => prev.map(r => ({
+                  ...r,
+                  offers: (r.offers || []).filter(o => o.id !== deletedOfferId)
+                })));
+                setCustomerNotifications(prev => prev.filter(n => n.offerId !== deletedOfferId));
+                return;
+              }
               const latestReqs = await dbService.getRequests();
               if (latestReqs && latestReqs.length > 0) {
                 setRequests(prev => mergeRequestLists(prev, latestReqs));
@@ -788,6 +821,31 @@ export function App() {
     showToast('👍 تم إرسال عرضك بنجاح! سينتقل العميل فوراً لمحادثة واتساب معك عند القبول.');
   };
 
+  // Customer deletes a delivery request -> AUTOMATIC REAL-TIME DISAPPEARANCE FROM DRIVER PANEL
+  const handleDeleteRequest = async (requestId: string) => {
+    setRequests(prev => prev.filter(r => r.id !== requestId));
+    setNotifications(prev => prev.filter(n => n.requestId !== requestId));
+    setCustomerNotifications(prev => prev.filter(n => n.requestId !== requestId));
+    await dbService.deleteRequest(requestId);
+    showToast('🗑️ تم حذف طلب التوصيل بنجاح');
+  };
+
+  // Driver deletes a submitted offer -> AUTOMATIC REAL-TIME DISAPPEARANCE FROM CUSTOMER PANEL
+  const handleDeleteOffer = async (requestId: string, offerId: string) => {
+    setRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          offers: (req.offers || []).filter(o => o.id !== offerId)
+        };
+      }
+      return req;
+    }));
+    setCustomerNotifications(prev => prev.filter(n => n.offerId !== offerId));
+    await dbService.deleteOffer(requestId, offerId);
+    showToast('🗑️ تم سحب / حذف عرض السعر بنجاح');
+  };
+
   // Customer accepts an offer -> Instant Driver Notification & Sound & Direct Contact
   const handleAcceptOffer = async (requestId: string, offerId: string) => {
     let acceptedOfferData: DriverOffer | undefined;
@@ -1154,6 +1212,7 @@ export function App() {
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
             onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
+            onDeleteRequest={handleDeleteRequest}
             selectedSection={customerSection}
             onSelectSection={setCustomerSection}
             onLogout={handleCustomerLogout}
@@ -1170,6 +1229,7 @@ export function App() {
             onSelectSection={setDriverSection}
             onOpenSubscription={() => setIsSubscriptionOpen(true)}
             onOpenSubmitOffer={(req) => setSelectedRequestForOffer(req)}
+            onDeleteOffer={handleDeleteOffer}
             onMarkNotificationRead={handleMarkNotificationRead}
             onLogout={handleDriverLogout}
             subscriptionPrice={subscriptionPrice}

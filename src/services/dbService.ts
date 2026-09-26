@@ -8,6 +8,8 @@ const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
 const STORAGE_KEY_DRIVERS = 'wasel_drivers_v2';
 const STORAGE_KEY_CUSTOMERS = 'wasel_customers_v1';
 const STORAGE_KEY_DELETED_DRIVERS = 'wasel_deleted_drivers_v2';
+const STORAGE_KEY_DELETED_REQUESTS = 'wasel_deleted_requests_v1';
+const STORAGE_KEY_DELETED_OFFERS = 'wasel_deleted_offers_v1';
 const STORAGE_KEY_SUBSCRIPTION_PRICE = 'wasel_subscription_price';
 const STORAGE_KEY_EXEMPTION_CODES = 'wasel_exemption_codes';
 
@@ -43,7 +45,7 @@ export const getGlobalRealtimeChannel = () => {
 };
 
 export interface WaselSyncEvent {
-  type: 'NEW_REQUEST' | 'NEW_OFFER' | 'ACCEPT_OFFER' | 'RATE_DRIVER' | 'DRIVERS_UPDATED' | 'SYNC_ALL';
+  type: 'NEW_REQUEST' | 'NEW_OFFER' | 'DELETE_REQUEST' | 'DELETE_OFFER' | 'ACCEPT_OFFER' | 'RATE_DRIVER' | 'DRIVERS_UPDATED' | 'SYNC_ALL';
   payload?: any;
   timestamp: number;
 }
@@ -146,6 +148,52 @@ export const dbService = {
       const deletedSet = this.getDeletedDriverIds();
       deletedSet.add(id);
       localStorage.setItem(STORAGE_KEY_DELETED_DRIVERS, JSON.stringify(Array.from(deletedSet)));
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  getDeletedRequestIds(): Set<string> {
+    try {
+      const deleted = localStorage.getItem(STORAGE_KEY_DELETED_REQUESTS);
+      if (deleted) {
+        const parsed = JSON.parse(deleted);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return new Set();
+  },
+
+  addDeletedRequestId(id: string): void {
+    try {
+      const deletedSet = this.getDeletedRequestIds();
+      deletedSet.add(id);
+      localStorage.setItem(STORAGE_KEY_DELETED_REQUESTS, JSON.stringify(Array.from(deletedSet)));
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  getDeletedOfferIds(): Set<string> {
+    try {
+      const deleted = localStorage.getItem(STORAGE_KEY_DELETED_OFFERS);
+      if (deleted) {
+        const parsed = JSON.parse(deleted);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return new Set();
+  },
+
+  addDeletedOfferId(id: string): void {
+    try {
+      const deletedSet = this.getDeletedOfferIds();
+      deletedSet.add(id);
+      localStorage.setItem(STORAGE_KEY_DELETED_OFFERS, JSON.stringify(Array.from(deletedSet)));
     } catch (e) {
       console.error(e);
     }
@@ -418,25 +466,45 @@ export const dbService = {
 
   // ==================== DELIVERY REQUESTS ====================
   getLocalRequests(): DeliveryRequest[] {
+    const deletedReqIds = this.getDeletedRequestIds();
+    const deletedOffIds = this.getDeletedOfferIds();
     try {
       const local = localStorage.getItem(STORAGE_KEY_REQUESTS);
       if (local) {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed
+            .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id))
+            .map((r: DeliveryRequest) => ({
+              ...r,
+              offers: (r.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id))
+            }));
         }
       }
     } catch (e) {
       console.error('Error reading local requests:', e);
     }
-    return INITIAL_REQUESTS;
+    return INITIAL_REQUESTS
+      .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id))
+      .map((r: DeliveryRequest) => ({
+        ...r,
+        offers: (r.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id))
+      }));
   },
 
   saveLocalRequests(requests: DeliveryRequest[]): void {
+    const deletedReqIds = this.getDeletedRequestIds();
+    const deletedOffIds = this.getDeletedOfferIds();
     try {
       if (Array.isArray(requests)) {
+        const filtered = requests
+          .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id))
+          .map((r: DeliveryRequest) => ({
+            ...r,
+            offers: (r.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id))
+          }));
         const current = localStorage.getItem(STORAGE_KEY_REQUESTS);
-        const nextJson = JSON.stringify(requests);
+        const nextJson = JSON.stringify(filtered);
         if (current !== nextJson) {
           localStorage.setItem(STORAGE_KEY_REQUESTS, nextJson);
         }
@@ -446,12 +514,68 @@ export const dbService = {
     }
   },
 
+  async deleteRequest(requestId: string): Promise<boolean> {
+    // 1. Record in deleted set so it never re-seeds from mock data
+    this.addDeletedRequestId(requestId);
+
+    // 2. Remove from local storage
+    const current = this.getLocalRequests();
+    const updated = current.filter(r => r.id !== requestId);
+    this.saveLocalRequests(updated);
+    broadcastSyncEvent('DELETE_REQUEST', { requestId });
+
+    // 3. Remove from Supabase
+    if (this.isConnected()) {
+      try {
+        await supabase.from('driver_offers').delete().eq('request_id', requestId);
+        await supabase.from('driver_notifications').delete().eq('request_id', requestId);
+        const { error } = await supabase.from('delivery_requests').delete().eq('id', requestId);
+        if (error) console.error('Supabase deleteRequest error:', error);
+      } catch (err) {
+        console.warn('Supabase deleteRequest failed:', err);
+      }
+    }
+    return true;
+  },
+
+  async deleteOffer(requestId: string, offerId: string): Promise<boolean> {
+    // 1. Record offer in deleted set so it never re-seeds
+    this.addDeletedOfferId(offerId);
+
+    // 2. Remove from local storage
+    const current = this.getLocalRequests();
+    const updated = current.map(req => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          offers: (req.offers || []).filter(o => o.id !== offerId)
+        };
+      }
+      return req;
+    });
+    this.saveLocalRequests(updated);
+    broadcastSyncEvent('DELETE_OFFER', { requestId, offerId });
+
+    // 3. Remove from Supabase
+    if (this.isConnected()) {
+      try {
+        const { error } = await supabase.from('driver_offers').delete().eq('id', offerId);
+        if (error) console.error('Supabase deleteOffer error:', error);
+      } catch (err) {
+        console.warn('Supabase deleteOffer failed:', err);
+      }
+    }
+    return true;
+  },
+
   async getRequests(): Promise<DeliveryRequest[]> {
     if (pendingRequestsPromise) {
       return pendingRequestsPromise;
     }
 
     pendingRequestsPromise = (async () => {
+      const deletedReqIds = this.getDeletedRequestIds();
+      const deletedOffIds = this.getDeletedOfferIds();
       let cloudRequests: DeliveryRequest[] = [];
       if (this.isConnected()) {
         try {
@@ -463,55 +587,57 @@ export const dbService = {
           if (!reqRes.error && reqRes.data) {
             const allOffers = (!offRes.error && offRes.data) ? offRes.data : [];
 
-            cloudRequests = reqRes.data.map((r: any) => {
-              const finalTimestamp = getRequestTimestamp(r);
-              const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id);
+            cloudRequests = reqRes.data
+              .filter((r: any) => !deletedReqIds.has(r.id))
+              .map((r: any) => {
+                const finalTimestamp = getRequestTimestamp(r);
+                const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id && !deletedOffIds.has(o.id));
 
-              return {
-                id: r.id,
-                title: r.title,
-                customerId: r.customer_id,
-                customerName: r.customer_name,
-                customerPhone: r.customer_phone,
-                pickupEmirate: r.pickup_emirate,
-                pickupArea: r.pickup_area,
-                deliveryEmirate: r.delivery_emirate,
-                deliveryArea: r.delivery_area,
-                packageType: r.package_type,
-                packageSize: r.package_size,
-                packageWeight: r.package_weight,
-                deliveryDate: r.delivery_date,
-                urgency: r.urgency,
-                notes: r.notes || '',
-                status: r.status || 'open',
-                createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
-                createdAtTimestamp: finalTimestamp,
-                selectedOfferId: r.selected_offer_id,
-                isCustomerRated: Boolean(r.is_customer_rated),
-                customerRating: r.customer_rating,
-                customerReviewNote: r.customer_review_note,
-                offers: sortOffersDeterministically(matchingOffers.map((o: any) => ({
-                  id: o.id,
-                  requestId: o.request_id,
-                  driverId: o.driver_id,
-                  driverName: o.driver_name,
-                  driverAvatar: o.driver_avatar,
-                  driverRating: Number(o.driver_rating) || 5.0,
-                  driverVehicle: o.driver_vehicle,
-                  driverVehicleType: o.driver_vehicle_type,
-                  driverPhone: o.driver_phone,
-                  driverWhatsappPhone: o.driver_whatsapp_phone,
-                  driverCallPhone: o.driver_call_phone,
-                  driverCompletedCount: o.driver_completed_count || 0,
-                  driverVerified: Boolean(o.driver_verified),
-                  price: Number(o.price),
-                  estimatedDeliveryTime: o.estimated_delivery_time,
-                  note: o.note || '',
-                  createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
-                  status: o.status || 'pending'
-                })))
-              };
-            });
+                return {
+                  id: r.id,
+                  title: r.title,
+                  customerId: r.customer_id,
+                  customerName: r.customer_name,
+                  customerPhone: r.customer_phone,
+                  pickupEmirate: r.pickup_emirate,
+                  pickupArea: r.pickup_area,
+                  deliveryEmirate: r.delivery_emirate,
+                  deliveryArea: r.delivery_area,
+                  packageType: r.package_type,
+                  packageSize: r.package_size,
+                  packageWeight: r.package_weight,
+                  deliveryDate: r.delivery_date,
+                  urgency: r.urgency,
+                  notes: r.notes || '',
+                  status: r.status || 'open',
+                  createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
+                  createdAtTimestamp: finalTimestamp,
+                  selectedOfferId: r.selected_offer_id,
+                  isCustomerRated: Boolean(r.is_customer_rated),
+                  customerRating: r.customer_rating,
+                  customerReviewNote: r.customer_review_note,
+                  offers: sortOffersDeterministically(matchingOffers.map((o: any) => ({
+                    id: o.id,
+                    requestId: o.request_id,
+                    driverId: o.driver_id,
+                    driverName: o.driver_name,
+                    driverAvatar: o.driver_avatar,
+                    driverRating: Number(o.driver_rating) || 5.0,
+                    driverVehicle: o.driver_vehicle,
+                    driverVehicleType: o.driver_vehicle_type,
+                    driverPhone: o.driver_phone,
+                    driverWhatsappPhone: o.driver_whatsapp_phone,
+                    driverCallPhone: o.driver_call_phone,
+                    driverCompletedCount: o.driver_completed_count || 0,
+                    driverVerified: Boolean(o.driver_verified),
+                    price: Number(o.price),
+                    estimatedDeliveryTime: o.estimated_delivery_time,
+                    note: o.note || '',
+                    createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
+                    status: o.status || 'pending'
+                  })))
+                };
+              });
           }
         } catch (err) {
           console.warn('Supabase getRequests error, using local fallback:', err);
@@ -525,18 +651,18 @@ export const dbService = {
         const requestMap = new Map<string, DeliveryRequest>();
         
         // 1. Load cloud requests first
-        cloudRequests.forEach(r => requestMap.set(r.id, r));
+        cloudRequests.filter(r => !deletedReqIds.has(r.id)).forEach(r => requestMap.set(r.id, r));
 
         // 2. Merge with local requests to preserve any pending local offers
-        localRequests.forEach(localReq => {
+        localRequests.filter(r => !deletedReqIds.has(r.id)).forEach(localReq => {
           const cloudReq = requestMap.get(localReq.id);
           if (!cloudReq) {
             requestMap.set(localReq.id, localReq);
           } else {
             // Merge offers by offer ID
             const offerMap = new Map<string, DriverOffer>();
-            (cloudReq.offers || []).forEach(o => offerMap.set(o.id, o));
-            (localReq.offers || []).forEach(o => offerMap.set(o.id, o));
+            (cloudReq.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id)).forEach((o: DriverOffer) => offerMap.set(o.id, o));
+            (localReq.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id)).forEach((o: DriverOffer) => offerMap.set(o.id, o));
 
             requestMap.set(localReq.id, {
               ...cloudReq,

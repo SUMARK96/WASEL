@@ -17,7 +17,8 @@ import {
   ChevronDown, 
   ChevronUp,
   User,
-  LogOut
+  LogOut,
+  Trash2
 } from 'lucide-react';
 
 export type CustomerDashboardSection = 'profile' | 'new_request' | 'new_offers' | 'my_requests';
@@ -33,6 +34,7 @@ interface CustomerViewProps {
   onAcceptOffer: (requestId: string, offerId: string) => void;
   onViewDriverProfile: (driver: DriverOffer) => void;
   onOpenRateDriver?: (request: DeliveryRequest, offer: DriverOffer) => void;
+  onDeleteRequest?: (requestId: string) => void;
   selectedSection?: CustomerDashboardSection;
   onSelectSection?: (section: CustomerDashboardSection) => void;
   onLogout?: () => void;
@@ -49,6 +51,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   onAcceptOffer,
   onViewDriverProfile,
   onOpenRateDriver,
+  onDeleteRequest,
   selectedSection = 'my_requests',
   onSelectSection,
   onLogout
@@ -289,10 +292,27 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         </div>
                         <h3 className="text-base sm:text-lg font-black text-white">{req.title}</h3>
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
-                        <span className="text-zinc-500">⬅️</span>
-                        <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                          <span className="text-zinc-500">⬅️</span>
+                          <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                        </div>
+                        {onDeleteRequest && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب؟ سيتم إلغاؤه واختفاؤه من لوحة السائقين فوراً.')) {
+                                onDeleteRequest(req.id);
+                              }
+                            }}
+                            className="p-1.5 sm:p-2 rounded-xl bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all flex items-center gap-1 text-xs active:scale-95 cursor-pointer shrink-0"
+                            title="حذف هذا الطلب"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">حذف الطلب</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -505,6 +525,22 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         </div>
                         <h3 className="text-base sm:text-lg font-black text-white">{req.title}</h3>
                       </div>
+
+                      {onDeleteRequest && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟ سيتم إلغاء الطلب وحذفه من لوحة السائقين فوراً.')) {
+                              onDeleteRequest(req.id);
+                            }
+                          }}
+                          className="self-end sm:self-center p-2 rounded-xl bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all flex items-center gap-1.5 text-xs active:scale-95 cursor-pointer shrink-0"
+                          title="حذف هذا الطلب"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>حذف الطلب</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Route Info */}

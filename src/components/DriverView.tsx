@@ -10,21 +10,22 @@ import {
 import { InvoiceModal } from './InvoiceModal';
 import { EmirateBadge } from './EmirateBadge';
 import { NotificationBanner } from './NotificationBanner';
+import { DriverRequestModal } from './DriverRequestModal';
 import { 
   Truck, 
   ShieldCheck, 
   CheckCircle2, 
-  Send, 
   Phone, 
   Bell, 
   Star, 
-  ChevronDown, 
   FileText, 
   Share2, 
   Check, 
   AlertTriangle,
   MessageCircle,
-  User
+  User,
+  Eye,
+  Trash2
 } from 'lucide-react';
 
 export type DriverDashboardSection = 'profile' | 'new_requests' | 'subscription';
@@ -37,6 +38,7 @@ interface DriverViewProps {
   onSelectSection?: (section: DriverDashboardSection) => void;
   onOpenSubscription?: () => void;
   onOpenSubmitOffer: (request: DeliveryRequest) => void;
+  onDeleteOffer?: (requestId: string, offerId: string) => void;
   onMarkNotificationRead?: (id: string) => void;
   onLogout?: () => void;
   subscriptionPrice?: number;
@@ -50,6 +52,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
   onSelectSection,
   onOpenSubscription,
   onOpenSubmitOffer,
+  onDeleteOffer,
   onMarkNotificationRead,
   onLogout: _onLogout,
   subscriptionPrice = 199
@@ -59,12 +62,8 @@ export const DriverView: React.FC<DriverViewProps> = ({
   const selectedSection = propSelectedSection || internalSection;
   const setSelectedSection = onSelectSection || setInternalSection;
 
-  // Accordion state for collapsible requests
-  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
-
-  const toggleExpandRequest = (id: string) => {
-    setExpandedRequestId(prev => prev === id ? null : id);
-  };
+  // State for request details modal popup
+  const [selectedRequestForDetails, setSelectedRequestForDetails] = useState<DeliveryRequest | null>(null);
 
   // Filters for new delivery requests
   const [filterPickup, setFilterPickup] = useState<string>('all');
@@ -582,26 +581,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 {filteredRequests.map((req) => {
                   const myOffer = req.offers?.find(o => isOfferByCurrentDriver(o, driver));
                   const alreadySubmitted = Boolean(myOffer);
-                  const isExpanded = expandedRequestId === req.id;
 
                   return (
                     <div
                       key={req.id}
-                      className={`bg-zinc-950 border transition-colors duration-150 rounded-2xl overflow-hidden shadow-lg ${
+                      onClick={() => setSelectedRequestForDetails(req)}
+                      className={`bg-zinc-950 border transition-all duration-150 rounded-2xl p-4 sm:p-5 cursor-pointer shadow-lg hover:border-white hover:bg-zinc-900/40 group ${
                         alreadySubmitted
                           ? 'border-zinc-700 bg-zinc-950/90'
-                          : isExpanded 
-                          ? 'border-white ring-1 ring-white/20' 
-                          : 'border-zinc-800 hover:border-zinc-600'
+                          : 'border-zinc-800'
                       }`}
                     >
-                      {/* Compact Collapsed Row (Always visible & clickable to expand/collapse) */}
-                      <button
-                        type="button"
-                        onClick={() => toggleExpandRequest(req.id)}
-                        className="w-full text-right p-3.5 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-zinc-900/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                        <div className="flex items-center gap-3.5 flex-1 min-w-0">
                           {/* Route Emirate Badges */}
                           <div className="flex items-center gap-1.5 shrink-0">
                             <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
@@ -612,10 +604,10 @@ export const DriverView: React.FC<DriverViewProps> = ({
                           {/* Request Title & Meta */}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-black text-white text-sm sm:text-base truncate">
+                              <h4 className="font-black text-white text-sm sm:text-base group-hover:text-zinc-100 transition-colors truncate">
                                 {req.title}
                               </h4>
-                              <span className="bg-zinc-900 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">
+                              <span className="bg-zinc-900 text-zinc-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-zinc-700 shrink-0">
                                 {req.packageType}
                               </span>
                               {alreadySubmitted && (
@@ -625,111 +617,48 @@ export const DriverView: React.FC<DriverViewProps> = ({
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5 flex-wrap">
+                            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-1 flex-wrap">
                               <span>📅 {req.deliveryDate}</span>
                               <span>•</span>
                               <span>{req.createdAt}</span>
                               <span>•</span>
-                              <span className="text-white font-bold">{req.offers.length} عروض</span>
+                              <span className="text-white font-bold">{req.offers?.length || 0} عروض</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Expand / Status Indicator */}
-                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        {/* Action CTA Button */}
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/80 w-full sm:w-auto justify-between sm:justify-start">
+                          <div className="text-[11px] text-zinc-400 sm:hidden">
+                            {alreadySubmitted ? 'اضغط للمعاينة والتعديل' : 'اضغط للمعاينة والتقديم'}
+                          </div>
                           {alreadySubmitted ? (
-                            <span className="bg-zinc-900 text-white border-2 border-white font-black px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRequestForDetails(req);
+                              }}
+                              className="bg-zinc-900 hover:bg-zinc-800 text-white border-2 border-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                            >
                               <Check className="w-4 h-4 text-white stroke-[2.5]" />
-                              <span>تم تقديم عرضك ({myOffer?.price} AED)</span>
-                            </span>
+                              <span>معاينة وتعديل العرض ({myOffer?.price} AED)</span>
+                            </button>
                           ) : (
-                            <span className="bg-white text-black font-black px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow">
-                              <span>{isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل وتقديم العرض'}</span>
-                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRequestForDetails(req);
+                              }}
+                              className="bg-white hover:bg-zinc-200 text-black font-black px-4.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-black" />
+                              <span>معاينة الطلب والتفاصيل</span>
+                            </button>
                           )}
-                          <div className={`w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-white text-black' : 'text-zinc-400'}`}>
-                            <ChevronDown className="w-4 h-4" />
-                          </div>
                         </div>
-                      </button>
-
-                      {/* Expanded Full Details Section */}
-                      {isExpanded && (
-                        <div className="border-t border-zinc-800 p-4 sm:p-5 bg-black/60 space-y-4">
-                          {/* Full Location & Specs Grid */}
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 text-xs">
-                            <div>
-                              <div className="text-zinc-400 mb-1">منطقة الاستلام بالتفصيل:</div>
-                              <div className="font-bold text-white mb-0.5">{req.pickupEmirate}</div>
-                              <div className="text-zinc-300 font-medium">{req.pickupArea}</div>
-                            </div>
-
-                            <div>
-                              <div className="text-zinc-400 mb-1">منطقة التسليم بالتفصيل:</div>
-                              <div className="font-bold text-white mb-0.5">{req.deliveryEmirate}</div>
-                              <div className="text-zinc-300 font-medium">{req.deliveryArea}</div>
-                            </div>
-
-                            <div>
-                              <div className="text-zinc-400 mb-1">المواصفات وموعد التوصيل:</div>
-                              <div className="text-white font-bold mb-0.5">📅 موعد التسليم: {req.deliveryDate}</div>
-                              <div className="text-zinc-300">الوزن / الحجم: {req.packageWeight}</div>
-                            </div>
-                          </div>
-
-                          {/* Notes if present */}
-                          {req.notes && (
-                            <div className="bg-zinc-900/90 p-3.5 rounded-2xl border border-zinc-800 text-xs space-y-1">
-                              <span className="text-zinc-400 font-bold block">💡 ملاحظات وتعليمات العميل:</span>
-                              <p className="text-white leading-relaxed">{req.notes}</p>
-                            </div>
-                          )}
-
-                          {/* Action Button: Submit Price Offer */}
-                          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                            {alreadySubmitted ? (
-                              <div className="bg-zinc-900 border-2 border-white p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 w-full animate-in fade-in">
-                                <div className="flex items-center gap-2.5 text-white text-xs sm:text-sm font-bold">
-                                  <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
-                                  <div>
-                                    <span className="block font-black">✅ لقد قمت بتقديم عرضك لهذا الطلب</span>
-                                    <span className="text-zinc-300 text-[11px] font-normal">
-                                      السعر المقترح: <strong className="text-white font-mono bg-black px-2 py-0.5 rounded border border-zinc-700">{myOffer?.price} AED</strong> • موعد التوصيل: <strong className="text-white">{myOffer?.estimatedDeliveryTime}</strong>
-                                    </span>
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setRequestTab('my_bids')}
-                                  className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-4 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow"
-                                >
-                                  معاينة في "عروضي المقدمة" ➔
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="text-xs text-zinc-400">
-                                  اضغط على الزر لتحديد سعرك وموعد استلامك وإرسال العرض للعميل مباشرة.
-                                </div>
-
-                                <div className="w-full sm:w-auto flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOfferClick(req);
-                                    }}
-                                    className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-6 py-3 rounded-xl text-xs sm:text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
-                                  >
-                                    <Send className="w-4 h-4" />
-                                    <span>تقديم عرض سعر للعميل الآن</span>
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -747,15 +676,15 @@ export const DriverView: React.FC<DriverViewProps> = ({
               <div className="space-y-3">
                 {myBids.map((req) => {
                   const myOffer = req.offers.find(o => isOfferByCurrentDriver(o, driver));
-                  const isExpanded = expandedRequestId === req.id;
                   return (
-                    <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3">
-                      <div 
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleExpandRequest(req.id)}
-                      >
+                    <div 
+                      key={req.id} 
+                      onClick={() => setSelectedRequestForDetails(req)}
+                      className="bg-zinc-950 border border-zinc-800 hover:border-white rounded-2xl p-4 sm:p-5 space-y-3 cursor-pointer transition-all shadow-md group"
+                    >
+                      <div className="flex items-center justify-between gap-3">
                         <div>
-                          <h3 className="font-bold text-white text-base">{req.title}</h3>
+                          <h3 className="font-bold text-white text-base group-hover:text-zinc-100 transition-colors">{req.title}</h3>
                           <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
                             <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
                             <span>➔</span>
@@ -764,19 +693,33 @@ export const DriverView: React.FC<DriverViewProps> = ({
                             <span>{req.deliveryDate}</span>
                           </div>
                         </div>
-                        {myOffer && (
-                          <span className="bg-white text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow">
-                            عرضك: {myOffer.price} AED
+                        <div className="flex items-center gap-2">
+                          {myOffer && (
+                            <span className="bg-white text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow">
+                              عرضك: {myOffer.price} AED
+                            </span>
+                          )}
+                          {onDeleteOffer && myOffer && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('هل أنت متأكد من رغبتك في حذف وسحب عرض السعر المقدم؟ سيختفي العرض مباشرة من لوحة العميل.')) {
+                                  onDeleteOffer(req.id, myOffer.id);
+                                }
+                              }}
+                              className="p-1.5 sm:p-2 rounded-xl bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all flex items-center gap-1 text-xs active:scale-95 cursor-pointer shrink-0"
+                              title="سحب / حذف العرض"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">سحب العرض</span>
+                            </button>
+                          )}
+                          <span className="bg-zinc-900 text-zinc-300 text-xs px-3 py-1.5 rounded-xl border border-zinc-700 hidden sm:inline-block">
+                            معاينة 👁️
                           </span>
-                        )}
-                      </div>
-                      {isExpanded && (
-                        <div className="border-t border-zinc-800 pt-3 text-xs text-zinc-300 space-y-2">
-                          <div>من: {req.pickupEmirate} ({req.pickupArea}) ➔ إلى: {req.deliveryEmirate} ({req.deliveryArea})</div>
-                          <div>الوزن: {req.packageWeight} | نوع الشحنة: {req.packageType}</div>
-                          {req.notes && <div>ملاحظات العميل: {req.notes}</div>}
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -1051,6 +994,24 @@ export const DriverView: React.FC<DriverViewProps> = ({
         <InvoiceModal
           invoice={currentInvoice}
           onClose={() => setShowInvoiceModal(false)}
+        />
+      )}
+
+      {/* Driver Request Details Popup Modal */}
+      {selectedRequestForDetails && (
+        <DriverRequestModal
+          request={selectedRequestForDetails}
+          driver={driver}
+          onClose={() => setSelectedRequestForDetails(null)}
+          onOpenSubmitOffer={(req) => {
+            setSelectedRequestForDetails(null);
+            handleOfferClick(req);
+          }}
+          onDeleteOffer={onDeleteOffer}
+          onViewMyBids={() => {
+            setSelectedRequestForDetails(null);
+            setRequestTab('my_bids');
+          }}
         />
       )}
 

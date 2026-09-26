@@ -156,14 +156,22 @@ export const SubmitOfferModal: React.FC<SubmitOfferModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-black p-4 sm:px-6 border-t border-zinc-800 shrink-0">
+        <div className="bg-black p-4 sm:px-6 border-t border-zinc-800 shrink-0 flex flex-col sm:flex-row items-center gap-3">
           <button
             type="submit"
             form="submit-offer-form"
-            className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3 sm:py-3.5 rounded-xl shadow-lg transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+            className="w-full sm:flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 sm:py-3.5 rounded-xl shadow-lg transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
           >
             <Send className="w-4 h-4" />
-            إرسال العرض للعميل
+            <span>إرسال العرض للعميل</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold py-3 sm:py-3.5 px-6 rounded-xl border border-zinc-700 transition-all text-xs sm:text-sm active:scale-95 cursor-pointer"
+          >
+            إلغاء
           </button>
         </div>
 
