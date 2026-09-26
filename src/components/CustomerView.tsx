@@ -14,8 +14,6 @@ import {
   ShieldCheck, 
   Award, 
   CheckCircle2, 
-  BellRing, 
-  Check, 
   Eye,
   User,
   LogOut,
@@ -45,8 +43,8 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   currentCustomer,
   requests,
   drivers: _drivers,
-  customerNotifications = [],
-  onMarkCustomerNotificationRead,
+  customerNotifications: _customerNotifications = [],
+  onMarkCustomerNotificationRead: _onMarkCustomerNotificationRead,
   onOpenNewRequest,
   onOpenProfile,
   onAcceptOffer,
@@ -72,32 +70,35 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
 
   // Filter requests belonging specifically to the logged-in customer (memoized, sorted newest first)
   const customerRequests = useMemo(() => {
-    if (!currentCustomer) return [];
-    return sortRequestsNewestFirst(
-      requests.filter(r => {
-        // 1. Direct ID match
-        if (r.customerId && r.customerId === currentCustomer.id) return true;
+    if (!currentCustomer) {
+      return sortRequestsNewestFirst(requests);
+    }
+    const filtered = requests.filter(r => {
+      // 1. Direct ID match
+      if (r.customerId && r.customerId === currentCustomer.id) return true;
 
-        // 2. Normalized phone number match (check last 7+ digits)
-        const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
-        const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-        if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
-          if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
-        }
+      // 2. Normalized phone number match (check last 7+ digits)
+      const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
+      const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
+      if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
+        if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
+      }
 
-        // 3. Exact customer name match (if not default/generic placeholder)
-        if (r.customerName && currentCustomer.name && r.customerName.trim() === currentCustomer.name.trim() && r.customerName !== 'عميل واصل') {
-          return true;
-        }
+      // 3. Exact customer name match (if not default/generic placeholder)
+      if (r.customerName && currentCustomer.name && r.customerName.trim().toLowerCase() === currentCustomer.name.trim().toLowerCase()) {
+        return true;
+      }
 
-        return false;
-      })
-    );
+      // 4. Default / Fallback matching for requests created in this session
+      if (!r.customerId || r.customerId === 'cust-current' || r.customerId === 'customer' || r.customerName === 'عميل واصل') {
+        return true;
+      }
+
+      return false;
+    });
+
+    return sortRequestsNewestFirst(filtered.length > 0 ? filtered : requests);
   }, [requests, currentCustomer]);
-
-  const unreadNotifications = useMemo(() => {
-    return customerNotifications.filter(n => !n.isRead);
-  }, [customerNotifications]);
 
   const requestsWithOffers = useMemo(() => {
     return customerRequests.filter(r => r.offers && r.offers.length > 0);
@@ -230,47 +231,17 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 2. SECTION: العروض الجديدة (NEW OFFERS) - VERTICAL STACK & COLLAPSIBLE */}
+      {/* 2. SECTION: العروض الجديدة (NEW OFFERS) - MODAL TRIGGER LIST */}
       {/* ========================================================================= */}
       {selectedSection === 'new_offers' && (
         <div className="space-y-5">
           
-          {/* Unread Notifications Strip */}
-          {unreadNotifications.length > 0 && (
-            <div className="bg-zinc-950 border border-zinc-700 rounded-2xl p-4 space-y-2 shadow-lg">
-              <div className="flex items-center gap-2 font-bold text-xs text-white">
-                <BellRing className="w-4 h-4 text-white" />
-                <span>إشعارات العروض الواردة حديثاً ({unreadNotifications.length}):</span>
-              </div>
-              <div className="space-y-1.5">
-                {unreadNotifications.map((notif) => (
-                  <div key={notif.id} className="bg-black border border-zinc-800 p-2.5 rounded-xl flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white">الكابتن {notif.driverName}</span>
-                      <span className="bg-white text-black px-2 py-0.5 rounded-full font-bold">{notif.price} AED</span>
-                      <span className="text-zinc-400 text-[11px] truncate max-w-xs">{notif.requestTitle}</span>
-                    </div>
-                    {onMarkCustomerNotificationRead && (
-                      <button
-                        onClick={() => onMarkCustomerNotificationRead(notif.id)}
-                        className="text-zinc-400 hover:text-white p-1"
-                        title="تحديد كمقروء"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {requestsWithOffers.length === 0 ? (
             <div className="bg-zinc-950 rounded-3xl p-8 sm:p-12 text-center border border-zinc-800 space-y-3">
               <Clock className="w-12 h-12 text-zinc-600 mx-auto stroke-[1.5] animate-pulse" />
               <h3 className="text-base sm:text-lg font-bold text-white">لا توجد عروض أسعار جديدة حالياً</h3>
               <p className="text-zinc-400 text-xs max-w-md mx-auto">
-                عند قيام السائقين بتقديم عروض أسعار على طلباتك ستظهر هنا فوراً قائمة بالعروض تحت بعضها البعض مع تفاصيل السائق.
+                عند قيام السائقين بتقديم عروض أسعار على طلباتك ستظهر هنا فوراً قائمة بالعروض. اضغط على أي عرض لمعاينته في نافذة منبثقة وقبوله والتواصل مع السائق.
               </p>
             </div>
           ) : (
@@ -283,38 +254,40 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   <div key={req.id} className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 space-y-4 shadow-xl">
                     
                     {/* Request Summary Title */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3.5">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="text-xs text-white font-extrabold bg-zinc-900 px-2.5 py-0.5 rounded-full border border-zinc-700">
                             {req.packageType}
                           </span>
                           <span className="text-xs text-zinc-400">{req.createdAt}</span>
-                          <span className="bg-white text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          <span className="bg-white text-black text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">
                             {sortedOffers.length} عروض متوفرة
                           </span>
                         </div>
                         <h3 className="text-base sm:text-lg font-black text-white">{req.title}</h3>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 text-xs">
+                      
+                      <div className="flex items-center gap-2.5 flex-wrap justify-between sm:justify-end">
+                        <div className="flex items-center gap-1.5 text-xs bg-black px-3 py-1.5 rounded-xl border border-zinc-800">
                           <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
                           <span className="text-zinc-500">⬅️</span>
                           <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
                         </div>
+                        
                         {onDeleteRequest && (
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب؟ سيتم إلغاؤه واختفاؤه من لوحة السائقين فوراً.')) {
+                              if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟ سيتم إلغاؤه واختفاؤه من لوحة السائقين فوراً.')) {
                                 onDeleteRequest(req.id);
                               }
                             }}
-                            className="p-1.5 sm:p-2 rounded-xl bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all flex items-center gap-1 text-xs active:scale-95 cursor-pointer shrink-0"
+                            className="px-3.5 py-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-200 hover:text-white border border-red-700/80 transition-all flex items-center gap-1.5 text-xs font-bold active:scale-95 cursor-pointer shrink-0 shadow-md"
                             title="حذف هذا الطلب"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">حذف الطلب</span>
+                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            <span>حذف الطلب</span>
                           </button>
                         )}
                       </div>
@@ -332,8 +305,8 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                             onClick={() => setSelectedOfferForModal({ request: req, offer })}
                             className={`w-full p-3.5 sm:p-4 rounded-2xl border transition-all duration-150 flex items-center justify-between gap-3 text-right cursor-pointer group ${
                               isAccepted 
-                                ? 'bg-zinc-900 border-white hover:bg-zinc-800/80 shadow-lg' 
-                                : 'bg-black border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900/60 shadow-md active:scale-[0.99]'
+                                ? 'bg-zinc-900 border-white hover:bg-zinc-800/80 shadow-lg ring-1 ring-white' 
+                                : 'bg-black border-zinc-800 hover:border-white hover:bg-zinc-900/90 shadow-md active:scale-[0.99]'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -384,10 +357,14 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                                 <span className="text-base sm:text-xl font-black text-white font-mono">{offer.price}</span>
                                 <span className="text-[10px] text-zinc-400 font-bold block">AED</span>
                               </div>
-                              <div className="px-3 py-2 rounded-xl bg-white group-hover:bg-zinc-200 text-black text-xs font-black flex items-center gap-1.5 shadow transition-all shrink-0">
-                                <Eye className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">معاينة العرض</span>
-                              </div>
+                              <button
+                                type="button"
+                                className="px-3.5 py-2.5 rounded-xl bg-white group-hover:bg-zinc-200 text-black text-xs font-black flex items-center gap-1.5 shadow-lg transition-all shrink-0 cursor-pointer"
+                              >
+                                <Eye className="w-4 h-4 text-black" />
+                                <span className="hidden sm:inline">معاينة العرض (نافذة)</span>
+                                <span className="sm:hidden">معاينة</span>
+                              </button>
                             </div>
                           </div>
                         );
@@ -461,14 +438,14 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟ سيتم إلغاء الطلب وحذفه من لوحة السائقين فوراً.')) {
+                            if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً؟ سيتم إلغاؤه واختفاؤه من لوحة السائقين فوراً.')) {
                               onDeleteRequest(req.id);
                             }
                           }}
-                          className="self-end sm:self-center p-2 rounded-xl bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all flex items-center gap-1.5 text-xs active:scale-95 cursor-pointer shrink-0"
+                          className="px-3.5 py-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-200 hover:text-white border border-red-700/80 transition-all flex items-center gap-1.5 text-xs font-bold active:scale-95 cursor-pointer shrink-0 shadow-md"
                           title="حذف هذا الطلب"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
                           <span>حذف الطلب</span>
                         </button>
                       )}
@@ -568,17 +545,25 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between text-xs text-zinc-400 bg-black p-3 rounded-xl border border-zinc-800">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-white" />
-                          <span>العروض المقدمة: <strong className="text-white">{req.offers.length} عروض</strong></span>
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs bg-black p-3.5 rounded-2xl border border-zinc-800">
+                        <div className="flex items-center gap-2 text-zinc-300">
+                          <Clock className="w-4 h-4 text-white shrink-0" />
+                          <span>العروض المقدمة: <strong className="text-white font-bold">{req.offers.length} عروض متوفرة</strong></span>
                         </div>
-                        {req.offers.length > 0 && onSelectSection && (
+                        {req.offers.length > 0 && (
                           <button
-                            onClick={() => onSelectSection('new_offers')}
-                            className="text-white font-bold underline hover:text-zinc-300"
+                            type="button"
+                            onClick={() => {
+                              if (req.offers.length === 1) {
+                                setSelectedOfferForModal({ request: req, offer: req.offers[0] });
+                              } else if (onSelectSection) {
+                                onSelectSection('new_offers');
+                              }
+                            }}
+                            className="bg-white hover:bg-zinc-200 text-black font-black px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
                           >
-                            عرض وقبول العروض ⬅️
+                            <Eye className="w-4 h-4 text-black" />
+                            <span>استعراض وقبول العروض (نافذة منبثقة) ⬅️</span>
                           </button>
                         )}
                       </div>

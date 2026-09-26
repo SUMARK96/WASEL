@@ -852,21 +852,21 @@ export function App() {
       status: 'pending'
     };
 
-    setRequests(prev => {
-      const updated = prev.map(req => {
-        if (req.id === selectedRequestForOffer.id) {
-          const existing = req.offers || [];
-          return {
-            ...req,
-            offers: sortOffersDeterministically([newOffer, ...existing.filter(o => o.id !== newOffer.id)])
-          };
-        }
-        return req;
-      });
-      return mergeRequestLists(prev, updated);
-    });
+    // 1. Immediately persist locally & broadcast to all tabs/devices in 0ms
+    dbService.submitOffer(newOffer);
 
-    // 1. Add Customer Notification
+    setRequests(prev => prev.map(req => {
+      if (req.id === selectedRequestForOffer.id) {
+        const existing = (req.offers || []).filter(o => o.id !== newOffer.id);
+        return {
+          ...req,
+          offers: sortOffersDeterministically([newOffer, ...existing])
+        };
+      }
+      return req;
+    }));
+
+    // 2. Add Customer Notification
     const newCustomerNotif: CustomerNotification = {
       id: `cust-notif-${Date.now()}`,
       requestId: selectedRequestForOffer.id,
@@ -884,7 +884,7 @@ export function App() {
     };
     setCustomerNotifications(prev => [newCustomerNotif, ...prev]);
 
-    // 2. Dispatch Native System Web Notification & Audio Alert for Customer
+    // 3. Dispatch Native System Web Notification & Audio Alert for Customer
     await sendDeviceNotification({
       title: `💬 عرض سعر جديد (${price} AED) من الكابتن ${currentDriver.name}`,
       body: `قدم عرض توصيل لطلبك: "${selectedRequestForOffer.title}". اضغط للمعاينة والتواصل المباشر عبر واتساب.`,
@@ -894,9 +894,6 @@ export function App() {
     });
 
     setSelectedRequestForOffer(null);
-
-    // 3. Persist offer to Supabase
-    await dbService.submitOffer(newOffer);
 
     showToast('👍 تم إرسال عرضك بنجاح! سينتقل العميل فوراً لمحادثة واتساب معك عند القبول.');
   };

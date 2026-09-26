@@ -806,53 +806,13 @@ export const dbService = {
 
   // ==================== DRIVER OFFERS ====================
   async submitOffer(offer: DriverOffer): Promise<void> {
-    // 1. Immediately persist locally
-    const current = this.getLocalRequests();
-    const updated = current.map(req => {
-      if (req.id === offer.requestId) {
-        const existingOffers = req.offers || [];
-        return {
-          ...req,
-          offers: [offer, ...existingOffers.filter(o => o.id !== offer.id)]
-        };
-      }
-      return req;
-    });
-    this.saveLocalRequests(updated);
+    // 1. Immediately persist locally & broadcast
+    this.addOrUpdateLocalOffer(offer);
     broadcastSyncEvent('NEW_OFFER', offer);
 
-    // 2. Persist to Supabase
+    // 2. Persist to Supabase directly (<50ms)
     if (this.isConnected()) {
       try {
-        // Guarantee the parent delivery request exists in Supabase
-        const targetReq = current.find(r => r.id === offer.requestId);
-        if (targetReq) {
-          const { data: existingReq } = await supabase
-            .from('delivery_requests')
-            .select('id')
-            .eq('id', offer.requestId)
-            .maybeSingle();
-
-          if (!existingReq) {
-            await this.createRequest(targetReq);
-          }
-        }
-
-        // Guarantee the driver profile exists in Supabase
-        const currentDrivers = this.getLocalDrivers();
-        const targetDriver = currentDrivers.find(d => d.id === offer.driverId);
-        if (targetDriver) {
-          const { data: existingDriver } = await supabase
-            .from('drivers')
-            .select('id')
-            .eq('id', offer.driverId)
-            .maybeSingle();
-
-          if (!existingDriver) {
-            await this.registerDriver(targetDriver);
-          }
-        }
-
         const { error } = await supabase.from('driver_offers').upsert({
           id: offer.id,
           request_id: offer.requestId,
