@@ -66,7 +66,6 @@ export const DriverView: React.FC<DriverViewProps> = ({
   const [selectedRequestForDetails, setSelectedRequestForDetails] = useState<DeliveryRequest | null>(null);
 
   // Filters for new delivery requests
-  const [filterPickup, setFilterPickup] = useState<string>('all');
   const [filterDelivery, setFilterDelivery] = useState<string>('all');
   const [requestTab, setRequestTab] = useState<'available' | 'my_bids' | 'active_jobs'>('available');
   
@@ -105,18 +104,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
     return false;
   };
 
-  // Memoized rock-solid request sorting & filtering
+  // Memoized rock-solid request sorting & filtering strictly scoped to driver's registered emirate
   const openRequests = useMemo(() => {
-    return sortRequestsNewestFirst(requests.filter(r => r.status === 'open'));
-  }, [requests]);
+    return sortRequestsNewestFirst(
+      requests.filter(r => r.status === 'open' && (!driver.emirate || r.pickupEmirate === driver.emirate))
+    );
+  }, [requests, driver.emirate]);
 
   const filteredRequests = useMemo(() => {
     return openRequests.filter(r => {
-      const matchPickup = filterPickup === 'all' || r.pickupEmirate === filterPickup;
       const matchDelivery = filterDelivery === 'all' || r.deliveryEmirate === filterDelivery;
-      return matchPickup && matchDelivery;
+      return matchDelivery;
     });
-  }, [openRequests, filterPickup, filterDelivery]);
+  }, [openRequests, filterDelivery]);
 
   const myBids = useMemo(() => {
     return sortRequestsNewestFirst(requests.filter(r => 
@@ -542,24 +542,21 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
             {/* Emirate Route Filters */}
             {requestTab === 'available' && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={filterPickup}
-                  onChange={(e) => setFilterPickup(e.target.value)}
-                  className="bg-white border border-[#E5EDF3] rounded-xl px-3 py-1.5 text-xs text-[#142F52] focus:outline-none"
+              <div className="flex items-center gap-2 flex-wrap">
+                <div 
+                  className="bg-[#EEF4FA] border border-[#E5EDF3] rounded-xl px-3 py-1.5 text-xs text-[#142F52] font-bold flex items-center gap-1.5 shadow-2xs"
+                  title="الطلبات المتاحة مخصصة لإمارتك المسجلة فقط"
                 >
-                  <option value="all">من: جميع الإمارات</option>
-                  {UAE_EMIRATES.map(em => (
-                    <option key={em} value={em}>{em}</option>
-                  ))}
-                </select>
+                  <span className="text-[#159B7A]">📍 الاستلام:</span>
+                  <span>{driver.emirate || 'جميع الإمارات'}</span>
+                </div>
 
                 <select
                   value={filterDelivery}
                   onChange={(e) => setFilterDelivery(e.target.value)}
                   className="bg-white border border-[#E5EDF3] rounded-xl px-3 py-1.5 text-xs text-[#142F52] focus:outline-none"
                 >
-                  <option value="all">إلى: جميع الإمارات</option>
+                  <option value="all">التسليم: جميع الإمارات</option>
                   {UAE_EMIRATES.map(em => (
                     <option key={em} value={em}>{em}</option>
                   ))}
@@ -567,6 +564,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
               </div>
             )}
           </div>
+
+          {/* Scoped Emirate Banner */}
+          {requestTab === 'available' && driver.emirate && (
+            <div className="bg-[#EAF6F1] border border-[#159B7A]/20 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-2 text-xs text-[#142F52]">
+              <div className="flex items-center gap-2 font-medium">
+                <span className="text-[#159B7A] font-bold">📍 نطاق عملك:</span>
+                <span>يتم عرض طلبات التوصيل الصادرة من إمارتك المسجلة (<strong>{driver.emirate}</strong>) فقط.</span>
+              </div>
+              <span className="text-[#159B7A] font-bold text-[11px] bg-white px-2 py-0.5 rounded-full border border-[#159B7A]/20 shrink-0">
+                {openRequests.length} طلب متاح
+              </span>
+            </div>
+          )}
 
           {/* List of Requests */}
           {requestTab === 'available' && (

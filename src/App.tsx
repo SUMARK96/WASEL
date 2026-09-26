@@ -1127,6 +1127,39 @@ export function App() {
     showToast(`⭐ شكراً لك! تم تسجيل تقييمك (${ratingValue} نجوم) وتحديث ترتيب السائق.`);
   };
 
+  // Customer marks request as delivered successfully and triggers rating
+  const handleMarkDelivered = async (request: DeliveryRequest, offer: DriverOffer) => {
+    // 1. Optimistic state update
+    setRequests(prev => prev.map(r => {
+      if (r.id === request.id) {
+        return {
+          ...r,
+          status: 'delivered' as const
+        };
+      }
+      return r;
+    }));
+
+    // 2. Increment driver's completed deliveries
+    setDrivers(prev => prev.map(d => {
+      if (d.id === offer.driverId) {
+        return {
+          ...d,
+          completedDeliveries: (d.completedDeliveries || 0) + 1
+        };
+      }
+      return d;
+    }));
+
+    // 3. Persist
+    await dbService.markRequestDelivered(request.id, offer.driverId);
+
+    // 4. Open Rating Modal directly
+    setSelectedRequestForRating({ request: { ...request, status: 'delivered' }, offer });
+
+    showToast('✅ تم تأكيد التوصيل بنجاح! نرجو تقييم تجربة التوصيل مع السائق.');
+  };
+
   // Admin toggles verification
   const handleToggleVerifyDriver = async (driverId: string) => {
     const target = drivers.find(d => d.id === driverId);
@@ -1289,6 +1322,7 @@ export function App() {
             onAcceptOffer={handleAcceptOffer}
             onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
             onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
+            onMarkDelivered={handleMarkDelivered}
             onDeleteRequest={handleDeleteRequest}
             selectedSection={customerSection}
             onSelectSection={setCustomerSection}

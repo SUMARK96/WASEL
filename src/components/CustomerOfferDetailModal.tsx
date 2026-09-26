@@ -116,6 +116,26 @@ export const CustomerOfferDetailModal: React.FC<CustomerOfferDetailModalProps> =
             )}
           </div>
 
+          {/* Wasel Platform Recommendation & High Reliability Badge */}
+          {offer.driverRating >= 4.8 && (
+            <div className="bg-[#EAF6F1] border border-[#159B7A]/30 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 shadow-xs">
+              <div className="w-10 h-10 rounded-2xl bg-[#159B7A] text-white flex items-center justify-center font-black text-lg shrink-0 shadow-xs">
+                ⭐
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-[#159B7A]">موصى به من منصة واصل (أعلى موثوقية)</span>
+                  <span className="bg-white text-[#142F52] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#E5EDF3]">
+                    {offer.driverRating} ⭐ • {(offer.driverRating * 20).toFixed(0)}% موثوقية
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#64748B] leading-relaxed">
+                  يحظى هذا السائق بسجل تقييمات متميز والتزام عالٍ بمواعيد التوصيل وسلامة الطرود.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Delivery Schedule & Estimate */}
           <div className="bg-[#F5F9FC] border border-[#E5EDF3] rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-[#64748B] border-b border-[#E5EDF3] pb-2">

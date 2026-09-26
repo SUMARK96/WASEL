@@ -902,6 +902,68 @@ export const dbService = {
     }
   },
 
+  async markRequestDelivered(requestId: string, driverId?: string): Promise<void> {
+    // 1. Update request status to 'delivered' in local storage
+    const currentReqs = this.getLocalRequests();
+    const updatedReqs = currentReqs.map(r => {
+      if (r.id === requestId) {
+        return {
+          ...r,
+          status: 'delivered' as const
+        };
+      }
+      return r;
+    });
+    this.saveLocalRequests(updatedReqs);
+
+    // 2. Increment driver's completed deliveries in local storage
+    if (driverId) {
+      const currentDrivers = this.getLocalDrivers();
+      const updatedDrivers = currentDrivers.map(d => {
+        if (d.id === driverId) {
+          return {
+            ...d,
+            completedDeliveries: (d.completedDeliveries || 0) + 1
+          };
+        }
+        return d;
+      });
+      this.saveLocalDrivers(updatedDrivers);
+    }
+
+    broadcastSyncEvent('SYNC_ALL');
+
+    // 3. Update in Supabase
+    if (this.isConnected()) {
+      try {
+        await supabase
+          .from('delivery_requests')
+          .update({ status: 'delivered', updated_at: new Date().toISOString() })
+          .eq('id', requestId);
+
+        if (driverId) {
+          const { data: driver } = await supabase
+            .from('drivers')
+            .select('completed_deliveries')
+            .eq('id', driverId)
+            .single();
+
+          if (driver) {
+            await supabase
+              .from('drivers')
+              .update({
+                completed_deliveries: (driver.completed_deliveries || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', driverId);
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase markRequestDelivered failed:', err);
+      }
+    }
+  },
+
   async rateDriver(requestId: string, driverId: string, rating: number, note: string): Promise<void> {
     // 1. Update local storage
     const currentDrivers = this.getLocalDrivers();
