@@ -1,7 +1,8 @@
 // Service Worker for WASEL Platform (واصل)
-// Handles PWA caching and mobile web push notifications
+// Dynamic versioning ensures instant cache invalidation on every production release
 
-const CACHE_NAME = 'wasel-cache-v1';
+const SW_VERSION = 'wasel-sw-v2.1';
+const CACHE_NAME = `wasel-cache-${SW_VERSION}`;
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -9,7 +10,7 @@ const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
 
-// Install Event - cache essential shell assets
+// Install Event - cache essential shell assets and skip waiting immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -21,37 +22,79 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event - clear old caches
+// Activate Event - clear all outdated caches and claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log('🧹 Purging outdated SW cache:', name);
+            return caches.delete(name);
+          })
       );
     }).then(() => self.clients.claim())
   );
 });
 
-// Fetch Event - network-first with cache fallback
+// Listen for direct SKIP_WAITING or CHECK_VERSION commands from the main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch Event - strict Network-First for HTML/navigation with offline cache fallback
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
+
+  const url = new URL(event.request.url);
+
+  // For HTML documents & navigations: Always fetch from network to guarantee latest code
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
-          if (event.request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/index.html');
+          return response;
+        })
+        .catch(() => {
+          return caches.match('/index.html') || caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // For static hashed assets (/assets/.*): Cache-first is safe because Vite hashes file names
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
+          return networkResponse;
         });
       })
+    );
+    return;
+  }
+
+  // Default: Network with fallback to cache
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => response)
+      .catch(() => caches.match(event.request))
   );
 });
 
@@ -110,7 +153,6 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If a window is already open, focus it and navigate
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.postMessage({
@@ -120,7 +162,6 @@ self.addEventListener('notificationclick', (event) => {
           return client.focus();
         }
       }
-      // Otherwise open a new window
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }

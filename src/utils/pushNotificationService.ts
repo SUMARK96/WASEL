@@ -85,7 +85,7 @@ export const getNotificationPermissionState = (): NotificationPermission => {
   return Notification.permission;
 };
 
-// Initialize Service Worker
+// Initialize Service Worker with auto-update checks
 let swRegistration: ServiceWorkerRegistration | null = null;
 
 export const initNotificationService = async (): Promise<ServiceWorkerRegistration | null> => {
@@ -103,7 +103,33 @@ export const initNotificationService = async (): Promise<ServiceWorkerRegistrati
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     swRegistration = registration;
-    console.log('✅ Service Worker registered successfully for WASEL push notifications.');
+
+    // Immediately trigger an update check on startup
+    registration.update().catch(() => {});
+
+    // Listen for new worker versions installing in the background
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      if (newWorker) {
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔄 New version of WASEL available. Activating...');
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      }
+    });
+
+    // Check for updates whenever user returns to the app / refocuses window
+    const checkUpdates = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        registration.update().catch(() => {});
+      }
+    };
+    window.addEventListener('focus', checkUpdates);
+    document.addEventListener('visibilitychange', checkUpdates);
+
+    console.log('✅ Service Worker registered with auto-update lifecycle.');
     return registration;
   } catch (error) {
     console.warn('⚠️ Service Worker registration failed:', error);

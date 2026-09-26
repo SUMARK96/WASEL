@@ -84,16 +84,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
           </div>
 
           <div className="pt-6 relative z-10">
-            <button
+            <a
+              href="/?portal=customer"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onSelectCustomer();
               }}
-              className="w-full bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3.5 sm:py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              className="w-full bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3.5 sm:py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2 active:scale-95 cursor-pointer no-underline text-center"
             >
               <span>دخول - عميل</span>
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" />
-            </button>
+            </a>
           </div>
         </div>
 
@@ -138,16 +140,18 @@ export const LandingView: React.FC<LandingViewProps> = ({
           </div>
 
           <div className="pt-6 relative z-10">
-            <button
+            <a
+              href="/?portal=driver"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onSelectDriver();
               }}
-              className="w-full bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3.5 sm:py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              className="w-full bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3.5 sm:py-4 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2 active:scale-95 cursor-pointer no-underline text-center"
             >
               <span>دخول - سائق</span>
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1.5 transition-transform" />
-            </button>
+            </a>
           </div>
         </div>
 

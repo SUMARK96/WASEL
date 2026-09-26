@@ -29,10 +29,18 @@ import { RateDriverModal } from './components/RateDriverModal';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 import { TermsModal } from './components/TermsModal';
 import { Logo } from './components/Logo';
+import { SplashScreen } from './components/SplashScreen';
 
 import { Lock, LogOut, Bell } from 'lucide-react';
 
 export function App() {
+  // Splash Screen State (Runs on every app launch and home screen opening)
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
   // Primary Screen State (Default is Landing with 2 options: Customer or Driver)
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing');
   
@@ -209,6 +217,95 @@ export function App() {
       message: `تم تطبيق كود الإعفاء (${found.months} شهر مجاناً) بنجاح`
     };
   };
+
+  // SEO & Deep Linking: URL search parameter parser and popstate listener
+  useEffect(() => {
+    const handleUrlSync = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const portalParam = params.get('portal');
+        const modalParam = params.get('modal');
+        const actionParam = params.get('action');
+
+        if (modalParam === 'privacy') {
+          setIsPrivacyModalOpen(true);
+        } else if (modalParam === 'terms') {
+          setIsTermsModalOpen(true);
+        }
+
+        if (actionParam === 'new_request') {
+          setIsNewRequestOpen(true);
+        }
+
+        if (portalParam === 'customer') {
+          setCurrentScreen(prev => {
+            if (prev === 'customer' || prev === 'customer_login' || prev === 'customer_register') return prev;
+            return 'customer_portal';
+          });
+        } else if (portalParam === 'driver') {
+          setCurrentScreen(prev => {
+            if (prev === 'driver' || prev === 'driver_login' || prev === 'driver_register') return prev;
+            return 'driver_portal';
+          });
+        }
+      } catch (err) {
+        console.warn('URL sync error:', err);
+      }
+    };
+
+    handleUrlSync();
+    window.addEventListener('popstate', handleUrlSync);
+    return () => window.removeEventListener('popstate', handleUrlSync);
+  }, []);
+
+  // SEO: Dynamic Document Title & URL synchronization
+  useEffect(() => {
+    let pageTitle = 'واصل (WASEL) | منصة التوصيل المباشر بين إمارات الدولة';
+    let targetQuery = '';
+
+    switch (currentScreen) {
+      case 'landing':
+        pageTitle = 'واصل (WASEL) | منصة التوصيل المباشر بين إمارات الدولة';
+        targetQuery = '';
+        break;
+      case 'customer_portal':
+        pageTitle = 'بوابة العملاء - طلب توصيل فوري | واصل (WASEL)';
+        targetQuery = '?portal=customer';
+        break;
+      case 'customer_login':
+        pageTitle = 'تسجيل دخول العملاء | واصل (WASEL)';
+        targetQuery = '?portal=customer';
+        break;
+      case 'customer':
+        pageTitle = 'لوحة تحكم العميل | واصل (WASEL)';
+        break;
+      case 'driver_portal':
+        pageTitle = 'بوابة السائقين المستقلين - انضم للشبكة | واصل (WASEL)';
+        targetQuery = '?portal=driver';
+        break;
+      case 'driver_login':
+        pageTitle = 'تسجيل دخول السائقين | واصل (WASEL)';
+        targetQuery = '?portal=driver';
+        break;
+      case 'driver':
+        pageTitle = 'لوحة السائق المستقل | واصل (WASEL)';
+        break;
+      case 'admin':
+        pageTitle = 'لوحة الإدارة المعتمدة | واصل (WASEL)';
+        break;
+    }
+
+    document.title = pageTitle;
+
+    // Synchronize browser URL bar without triggering a full page reload for public screens
+    if (typeof window !== 'undefined' && window.history) {
+      const currentUrl = window.location.pathname + (targetQuery ? targetQuery : '');
+      const fullCurrent = window.location.pathname + window.location.search;
+      if (currentUrl !== fullCurrent && (currentScreen === 'landing' || currentScreen === 'customer_portal' || currentScreen === 'driver_portal')) {
+        window.history.replaceState({ screen: currentScreen }, pageTitle, currentUrl);
+      }
+    }
+  }, [currentScreen]);
 
   // 1. Initial load & Real-Time Live Sync Engine (BroadcastChannel + Supabase Realtime + Periodic Polling)
   useEffect(() => {
@@ -1220,6 +1317,9 @@ export function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F9FC] text-[#142F52] font-sans selection:bg-[#159B7A] selection:text-white">
       
+      {/* Premium Animated Splash Screen with Interactive 3D Logo */}
+      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+
       {/* Toast Notification Alert - Modern Soft Green & Navy */}
       {toastMessage && (
         <div className="fixed bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-auto z-50 bg-[#142F52] border border-[#159B7A]/40 text-white px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-bottom duration-300">
