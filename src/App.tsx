@@ -26,6 +26,8 @@ import { CustomerProfileModal } from './components/CustomerProfileModal';
 import { AdminPasswordModal } from './components/AdminPasswordModal';
 import { DriverRegistrationModal } from './components/DriverRegistrationModal';
 import { RateDriverModal } from './components/RateDriverModal';
+import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
+import { TermsModal } from './components/TermsModal';
 import { Logo } from './components/Logo';
 
 import { Lock, LogOut, Bell } from 'lucide-react';
@@ -106,6 +108,8 @@ export function App() {
   const [isCustomerProfileOpen, setIsCustomerProfileOpen] = useState(false);
   const [isAdminPasswordOpen, setIsAdminPasswordOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   
   // Customer Active Section State
   const [customerSection, setCustomerSection] = useState<CustomerHeaderSection>('my_requests');
@@ -1389,32 +1393,49 @@ export function App() {
               <Logo size="sm" />
             </div>
 
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 font-semibold text-[#64748B] text-[11px] sm:text-xs">
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">أبوظبي</span>
+            {/* Privacy Policy & Terms of Service Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 font-bold text-[#142F52] text-xs sm:text-sm">
+              <button
+                type="button"
+                onClick={() => setIsPrivacyModalOpen(true)}
+                className="hover:text-[#159B7A] transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-[#F5F9FC]"
+              >
+                <span>سياسة الخصوصية وسرية البيانات</span>
+              </button>
               <span className="text-[#CBD5E1]">•</span>
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">دبي</span>
-              <span className="text-[#CBD5E1]">•</span>
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">الشارقة</span>
-              <span className="text-[#CBD5E1]">•</span>
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">عجمان</span>
-              <span className="text-[#CBD5E1]">•</span>
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">أم القيوين</span>
-              <span className="text-[#CBD5E1]">•</span>
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">رأس الخيمة</span>
-              <span className="text-[#CBD5E1]">•</span>
-              <span className="hover:text-[#159B7A] transition-colors cursor-pointer">الفجيرة</span>
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(true)}
+                className="hover:text-[#159B7A] transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-[#F5F9FC]"
+              >
+                <span>الشروط والأحكام وإخلاء المسؤولية</span>
+              </button>
             </div>
           </div>
 
-          {/* Admin Dashboard Entrance at bottom of footer */}
+          {/* Developer Credit & Copyright & Admin Entrance */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-            <p className="text-[#64748B] text-center sm:text-right text-[11px] sm:text-xs">
-              جميع الحقوق محفوظة لمنصة واصل (WASEL) © 2026 • خدمة توصيل الطرود بين إمارات الدولة
-            </p>
+            <div className="text-center sm:text-right space-y-1.5">
+              <p className="text-[#64748B] text-[11px] sm:text-xs">
+                جميع الحقوق محفوظة لمنصة واصل (WASEL) © 2026 • خدمة توصيل الطرود المباشرة بين كافة الإمارات
+              </p>
+              <p className="text-[#64748B] text-[11px] sm:text-xs">
+                تم تطوير المنصة بواسطة شركة{' '}
+                <a 
+                  href="https://sumark-tech.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-[#159B7A] hover:text-[#108466] font-black underline underline-offset-2 transition-colors inline-flex items-center gap-0.5"
+                >
+                  SUMARK
+                </a>
+                {' '}للحلول التقنية وتطوير الأعمال
+              </p>
+            </div>
             
             <button
               onClick={handleOpenAdmin}
-              className="flex items-center gap-2 bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] hover:text-[#159B7A] px-3.5 py-2 rounded-xl border border-[#E5EDF3] hover:border-[#CBD5E1] transition-all font-bold shadow-xs active:scale-95 text-xs"
+              className="flex items-center gap-2 bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] hover:text-[#159B7A] px-3.5 py-2 rounded-xl border border-[#E5EDF3] hover:border-[#CBD5E1] transition-all font-bold shadow-xs active:scale-95 text-xs shrink-0 cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5 text-[#159B7A]" />
               <span>لوحة تحكم الإدارة (محمية)</span>
@@ -1506,6 +1527,18 @@ export function App() {
           driverOffer={selectedRequestForRating.offer}
           onClose={() => setSelectedRequestForRating(null)}
           onSubmitRating={handleSubmitRating}
+        />
+      )}
+
+      {isPrivacyModalOpen && (
+        <PrivacyPolicyModal
+          onClose={() => setIsPrivacyModalOpen(false)}
+        />
+      )}
+
+      {isTermsModalOpen && (
+        <TermsModal
+          onClose={() => setIsTermsModalOpen(false)}
         />
       )}
 
