@@ -142,13 +142,13 @@ export function App() {
     }, 4500);
   };
 
-  const handleUpdateSubscriptionPrice = (newPrice: number) => {
+  const handleUpdateSubscriptionPrice = async (newPrice: number) => {
     setSubscriptionPrice(newPrice);
-    dbService.setSubscriptionPrice(newPrice);
-    showToast(`✨ تم تحديث سعر الباقة الموحدة إلى ${newPrice} درهم بنجاح`);
+    await dbService.setSubscriptionPrice(newPrice);
+    showToast(`✨ تم تحديث سعر الباقة الموحدة إلى ${newPrice} درهم ومزامنته فوراً`);
   };
 
-  const handleCreateExemptionCode = (codeData: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => {
+  const handleCreateExemptionCode = async (codeData: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => {
     const newCode: ExemptionCode = {
       id: `code-${Date.now()}`,
       code: codeData.code.toUpperCase(),
@@ -162,21 +162,21 @@ export function App() {
     };
     const updated = [newCode, ...exemptionCodes];
     setExemptionCodes(updated);
-    dbService.saveExemptionCodes(updated);
-    showToast(`🎫 تم إنشاء كود الإعفاء "${newCode.code}" (${newCode.months} شهر مجاناً) بنجاح`);
+    await dbService.saveExemptionCodes(updated);
+    showToast(`🎫 تم إنشاء كود الإعفاء "${newCode.code}" (${newCode.months} شهر مجاناً) ومزامنته`);
   };
 
-  const handleDeleteExemptionCode = (codeId: string) => {
+  const handleDeleteExemptionCode = async (codeId: string) => {
     const updated = exemptionCodes.filter(c => c.id !== codeId);
     setExemptionCodes(updated);
-    dbService.saveExemptionCodes(updated);
-    showToast('🗑️ تم حذف كود الإعفاء بنجاح');
+    await dbService.saveExemptionCodes(updated);
+    showToast('🗑️ تم حذف كود الإعفاء ومزامنته بنجاح');
   };
 
-  const handleToggleExemptionCode = (codeId: string) => {
+  const handleToggleExemptionCode = async (codeId: string) => {
     const updated = exemptionCodes.map(c => c.id === codeId ? { ...c, isActive: !c.isActive } : c);
     setExemptionCodes(updated);
-    dbService.saveExemptionCodes(updated);
+    await dbService.saveExemptionCodes(updated);
     const target = updated.find(c => c.id === codeId);
     showToast(target?.isActive ? `🟢 تم تفعيل كود الإعفاء "${target.code}"` : `⚪ تم تعطيل كود الإعفاء "${target?.code}"`);
   };
@@ -311,13 +311,15 @@ export function App() {
   useEffect(() => {
     initNotificationService();
     
-    // Initial fetch from DB Service
+    // Initial fetch from DB Service (Central Supabase + Local Fallback)
     const loadInitialData = async () => {
       try {
-        const [loadedDrivers, loadedCustomers, loadedRequests] = await Promise.all([
+        const [loadedDrivers, loadedCustomers, loadedRequests, loadedPrice, loadedCodes] = await Promise.all([
           dbService.getDrivers(),
           dbService.getCustomers(),
-          dbService.getRequests()
+          dbService.getRequests(),
+          dbService.fetchSubscriptionPrice(),
+          dbService.fetchExemptionCodes()
         ]);
         if (loadedDrivers && loadedDrivers.length > 0) {
           setDrivers(loadedDrivers);
@@ -327,6 +329,12 @@ export function App() {
         }
         if (loadedRequests && loadedRequests.length > 0) {
           setRequests(prev => mergeRequestLists(prev, loadedRequests));
+        }
+        if (loadedPrice !== undefined && loadedPrice !== null) {
+          setSubscriptionPrice(loadedPrice);
+        }
+        if (loadedCodes && loadedCodes.length > 0) {
+          setExemptionCodes(loadedCodes);
         }
       } catch (err) {
         console.warn('Could not load from DB service:', err);
@@ -462,10 +470,24 @@ export function App() {
           return req;
         }));
         setCustomerNotifications(prev => prev.filter(n => n.offerId !== offerId));
+      } else if (event.type === 'SETTINGS_UPDATED' && event.payload) {
+        if (event.payload.subscriptionPrice !== undefined) {
+          setSubscriptionPrice(event.payload.subscriptionPrice);
+          dbService.setSubscriptionPriceLocal(event.payload.subscriptionPrice);
+        }
+      } else if (event.type === 'EXEMPTION_CODES_UPDATED' && event.payload) {
+        if (Array.isArray(event.payload.exemptionCodes)) {
+          setExemptionCodes(event.payload.exemptionCodes);
+          dbService.saveExemptionCodesLocal(event.payload.exemptionCodes);
+        }
       } else if (event.type === 'DRIVERS_UPDATED') {
-        const updatedDrivers = dbService.getLocalDrivers();
-        if (updatedDrivers && updatedDrivers.length > 0) {
-          setDrivers(updatedDrivers);
+        if (event.payload && Array.isArray(event.payload.drivers)) {
+          setDrivers(event.payload.drivers);
+        } else {
+          const updatedDrivers = dbService.getLocalDrivers();
+          if (updatedDrivers && updatedDrivers.length > 0) {
+            setDrivers(updatedDrivers);
+          }
         }
       } else if (event.type === 'SYNC_ALL') {
         const localReqs = dbService.getLocalRequests();
@@ -475,6 +497,12 @@ export function App() {
           const isDiff = JSON.stringify(prev) !== JSON.stringify(localDrvs);
           return isDiff ? localDrvs : prev;
         });
+        dbService.fetchSubscriptionPrice().then(p => {
+          if (p !== undefined) setSubscriptionPrice(p);
+        }).catch(() => {});
+        dbService.fetchExemptionCodes().then(c => {
+          if (c && c.length > 0) setExemptionCodes(c);
+        }).catch(() => {});
       }
     });
 
@@ -702,10 +730,12 @@ export function App() {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
       try {
-        const [refreshedRequests, refreshedDrivers, refreshedCustomers] = await Promise.all([
+        const [refreshedRequests, refreshedDrivers, refreshedCustomers, refreshedPrice, refreshedCodes] = await Promise.all([
           dbService.getRequests(),
           dbService.getDrivers(),
-          dbService.getCustomers()
+          dbService.getCustomers(),
+          dbService.fetchSubscriptionPrice(),
+          dbService.fetchExemptionCodes()
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
           setRequests(prev => mergeRequestLists(prev, refreshedRequests));
@@ -721,6 +751,12 @@ export function App() {
             const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedCustomers);
             return isDifferent ? refreshedCustomers : prev;
           });
+        }
+        if (refreshedPrice !== undefined && refreshedPrice !== null) {
+          setSubscriptionPrice(refreshedPrice);
+        }
+        if (refreshedCodes && refreshedCodes.length > 0) {
+          setExemptionCodes(refreshedCodes);
         }
       } catch (err) {
         // Silent background sync

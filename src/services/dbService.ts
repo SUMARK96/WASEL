@@ -45,7 +45,17 @@ export const getGlobalRealtimeChannel = () => {
 };
 
 export interface WaselSyncEvent {
-  type: 'NEW_REQUEST' | 'NEW_OFFER' | 'DELETE_REQUEST' | 'DELETE_OFFER' | 'ACCEPT_OFFER' | 'RATE_DRIVER' | 'DRIVERS_UPDATED' | 'SYNC_ALL';
+  type: 
+    | 'NEW_REQUEST' 
+    | 'NEW_OFFER' 
+    | 'DELETE_REQUEST' 
+    | 'DELETE_OFFER' 
+    | 'ACCEPT_OFFER' 
+    | 'RATE_DRIVER' 
+    | 'DRIVERS_UPDATED' 
+    | 'SYNC_ALL' 
+    | 'SETTINGS_UPDATED' 
+    | 'EXEMPTION_CODES_UPDATED';
   payload?: any;
   timestamp: number;
 }
@@ -1205,6 +1215,7 @@ export const dbService = {
   },
 
   // ==================== SUBSCRIPTION PRICE & EXEMPTION CODES ====================
+  // Instant synchronous local read for initial render
   getSubscriptionPrice(): number {
     const local = localStorage.getItem(STORAGE_KEY_SUBSCRIPTION_PRICE);
     if (local) {
@@ -1216,16 +1227,65 @@ export const dbService = {
     return UNIFIED_SUBSCRIPTION_PLAN.price;
   },
 
-  setSubscriptionPrice(price: number): void {
+  setSubscriptionPriceLocal(price: number): void {
     localStorage.setItem(STORAGE_KEY_SUBSCRIPTION_PRICE, price.toString());
   },
 
+  // Centralized cloud-persisted update that broadcasts to all devices in real-time
+  async setSubscriptionPrice(price: number): Promise<void> {
+    // 1. Immediately persist locally
+    this.setSubscriptionPriceLocal(price);
+
+    // 2. Broadcast to all connected tabs and cross-device clients (<50ms)
+    broadcastSyncEvent('SETTINGS_UPDATED', { subscriptionPrice: price });
+
+    // 3. Persist to Supabase centralized storage
+    if (this.isConnected()) {
+      try {
+        await supabase
+          .from('platform_settings')
+          .upsert({
+            id: 'subscription_price',
+            value: price,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Supabase setSubscriptionPrice error:', err);
+      }
+    }
+  },
+
+  // Asynchronous cloud fetch from Supabase
+  async fetchSubscriptionPrice(): Promise<number> {
+    if (this.isConnected()) {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('id', 'subscription_price')
+          .single();
+
+        if (!error && data && data.value !== undefined && data.value !== null) {
+          const parsed = typeof data.value === 'number' ? data.value : parseInt(data.value, 10);
+          if (!isNaN(parsed) && parsed >= 0) {
+            this.setSubscriptionPriceLocal(parsed);
+            return parsed;
+          }
+        }
+      } catch (err) {
+        // Fall back gracefully to local storage
+      }
+    }
+    return this.getSubscriptionPrice();
+  },
+
+  // Synchronous local read for exemption codes
   getExemptionCodes(): ExemptionCode[] {
     const local = localStorage.getItem(STORAGE_KEY_EXEMPTION_CODES);
     if (local) {
       try {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {
         console.error('Failed to parse exemption codes:', e);
       }
@@ -1233,7 +1293,55 @@ export const dbService = {
     return INITIAL_EXEMPTION_CODES;
   },
 
-  saveExemptionCodes(codes: ExemptionCode[]): void {
+  saveExemptionCodesLocal(codes: ExemptionCode[]): void {
     localStorage.setItem(STORAGE_KEY_EXEMPTION_CODES, JSON.stringify(codes));
+  },
+
+  // Centralized cloud-persisted save that broadcasts to all devices in real-time
+  async saveExemptionCodes(codes: ExemptionCode[]): Promise<void> {
+    // 1. Save locally
+    this.saveExemptionCodesLocal(codes);
+
+    // 2. Broadcast to all connected tabs and cross-device clients
+    broadcastSyncEvent('EXEMPTION_CODES_UPDATED', { exemptionCodes: codes });
+
+    // 3. Persist to Supabase centralized storage
+    if (this.isConnected()) {
+      try {
+        await supabase
+          .from('platform_settings')
+          .upsert({
+            id: 'exemption_codes',
+            value: codes,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Supabase saveExemptionCodes error:', err);
+      }
+    }
+  },
+
+  // Asynchronous cloud fetch for exemption codes
+  async fetchExemptionCodes(): Promise<ExemptionCode[]> {
+    if (this.isConnected()) {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('id', 'exemption_codes')
+          .single();
+
+        if (!error && data && data.value) {
+          const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.saveExemptionCodesLocal(parsed);
+            return parsed;
+          }
+        }
+      } catch (err) {
+        // Fall back gracefully to local storage
+      }
+    }
+    return this.getExemptionCodes();
   }
 };
