@@ -73,7 +73,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   // Filter requests belonging specifically to the logged-in customer (memoized, sorted newest first)
   const customerRequests = useMemo(() => {
     if (!currentCustomer) {
-      return sortRequestsNewestFirst(requests);
+      return [];
     }
     const filtered = requests.filter(r => {
       // 1. Direct ID match
@@ -87,19 +87,20 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       }
 
       // 3. Exact customer name match (if not default/generic placeholder)
-      if (r.customerName && currentCustomer.name && r.customerName.trim().toLowerCase() === currentCustomer.name.trim().toLowerCase()) {
-        return true;
-      }
-
-      // 4. Default / Fallback matching for requests created in this session
-      if (!r.customerId || r.customerId === 'cust-current' || r.customerId === 'customer' || r.customerName === 'عميل واصل') {
+      if (
+        r.customerName &&
+        currentCustomer.name &&
+        r.customerName.trim().toLowerCase() === currentCustomer.name.trim().toLowerCase() &&
+        r.customerName.trim() !== 'عميل واصل' &&
+        r.customerName.trim() !== 'عميل'
+      ) {
         return true;
       }
 
       return false;
     });
 
-    return sortRequestsNewestFirst(filtered.length > 0 ? filtered : requests);
+    return sortRequestsNewestFirst(filtered);
   }, [requests, currentCustomer]);
 
   const requestsWithOffers = useMemo(() => {

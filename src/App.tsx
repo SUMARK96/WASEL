@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { AppScreen, DriverProfile, CustomerProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
 import { INITIAL_DRIVERS } from './data/mockData';
 import { dbService, onSyncEvent } from './services/dbService';
@@ -78,22 +78,7 @@ export function App() {
   ]);
 
   // Real-time Customer Notifications Store (When drivers submit offers)
-  const [customerNotifications, setCustomerNotifications] = useState<CustomerNotification[]>([
-    {
-      id: 'cust-notif-1',
-      requestId: 'req-201',
-      requestTitle: 'توصيل طرد قطع غيار سيارات من أبوظبي إلى الشارقة',
-      driverName: 'خالد المنصوري',
-      driverAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-      driverRating: 4.9,
-      driverPhone: '0501234567',
-      driverWhatsappPhone: '971501234567',
-      price: 180,
-      timestamp: 'منذ 30 دقيقة',
-      isRead: false,
-      type: 'new_offer'
-    }
-  ]);
+  const [customerNotifications, setCustomerNotifications] = useState<CustomerNotification[]>([]);
 
   const [customers, setCustomers] = useState<CustomerProfile[]>(() => dbService.getLocalCustomers());
   const [activeCustomerId, setActiveCustomerId] = useState<string | null>(() => {
@@ -1336,19 +1321,42 @@ export function App() {
     }
   };
 
-  // Filter requests specifically belonging to the logged-in customer for header counts
-  const customerFilteredRequests = currentCustomer
-    ? requests.filter(r => {
-        if (r.customerId && r.customerId === currentCustomer.id) return true;
-        const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
-        const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-        if (normPhone1 && normPhone2 && normPhone1 === normPhone2) return true;
-        if (r.customerName && currentCustomer.name && r.customerName === currentCustomer.name) return true;
-        return false;
-      })
-    : requests;
+  // Filter requests specifically belonging to the logged-in customer for header counts and view
+  const customerFilteredRequests = useMemo(() => {
+    if (!currentCustomer) return [];
+    return requests.filter((r: DeliveryRequest) => {
+      // 1. Direct customer ID match
+      if (r.customerId && r.customerId === currentCustomer.id) return true;
 
-  const customerTotalOffersCount = customerFilteredRequests.reduce((acc, r) => acc + (r.offers ? r.offers.length : 0), 0);
+      // 2. Normalized phone match (last 7+ digits)
+      const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
+      const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
+      if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
+        if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
+      }
+
+      // 3. Exact customer name match (if not generic/default placeholder)
+      if (
+        r.customerName &&
+        currentCustomer.name &&
+        r.customerName.trim().toLowerCase() === currentCustomer.name.trim().toLowerCase() &&
+        r.customerName.trim() !== 'عميل واصل' &&
+        r.customerName.trim() !== 'عميل'
+      ) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [requests, currentCustomer]);
+
+  const customerFilteredNotifications = useMemo(() => {
+    if (!currentCustomer) return [];
+    const customerReqIds = new Set(customerFilteredRequests.map((r: DeliveryRequest) => r.id));
+    return customerNotifications.filter((n: CustomerNotification) => !n.requestId || customerReqIds.has(n.requestId));
+  }, [currentCustomer, customerFilteredRequests, customerNotifications]);
+
+  const customerTotalOffersCount = customerFilteredRequests.reduce((acc: number, r: DeliveryRequest) => acc + (r.offers ? r.offers.length : 0), 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F9FC] text-[#142F52] font-sans selection:bg-[#159B7A] selection:text-white">
@@ -1387,7 +1395,7 @@ export function App() {
         onSelectDriverSection={(sec) => {
           setDriverSection(sec);
         }}
-        unreadNotificationsCount={customerNotifications.filter(n => !n.isRead).length}
+        unreadNotificationsCount={customerFilteredNotifications.filter((n: CustomerNotification) => !n.isRead).length}
         unreadDriverNotificationsCount={notifications.filter(n => !n.isRead).length}
         totalOffersCount={customerTotalOffersCount}
         openRequestsCount={requests.filter(r => r.status === 'open').length}
@@ -1455,7 +1463,7 @@ export function App() {
             currentCustomer={currentCustomer}
             requests={requests}
             drivers={drivers}
-            customerNotifications={customerNotifications}
+            customerNotifications={customerFilteredNotifications}
             onMarkCustomerNotificationRead={handleMarkCustomerNotificationRead}
             onOpenNewRequest={() => setIsNewRequestOpen(true)}
             onOpenProfile={() => setIsCustomerProfileOpen(true)}
