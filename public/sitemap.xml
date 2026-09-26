@@ -3,26 +3,26 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://wasel-uae.vercel.app/</loc>
+    <loc>https://wasel-del.vercel.app/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://wasel-uae.vercel.app/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://wasel-uae.vercel.app/" />
+    <xhtml:link rel="alternate" hreflang="ar" href="https://wasel-del.vercel.app/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://wasel-del.vercel.app/" />
     <image:image>
-      <image:loc>https://wasel-uae.vercel.app/wasel-logo.jpg</image:loc>
+      <image:loc>https://wasel-del.vercel.app/wasel-logo.jpg</image:loc>
       <image:title>منصة واصل للتوصيل المباشر بين إمارات الدولة</image:title>
       <image:caption>شعار منصة واصل (WASEL) - ربط العملاء بالسائقين المستقلين في دولة الإمارات</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://wasel-uae.vercel.app/?portal=customer</loc>
+    <loc>https://wasel-del.vercel.app/?portal=customer</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://wasel-uae.vercel.app/?portal=driver</loc>
+    <loc>https://wasel-del.vercel.app/?portal=driver</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

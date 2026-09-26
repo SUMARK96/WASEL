@@ -1,8 +1,8 @@
-# robots.txt for WASEL Platform (https://wasel-uae.vercel.app)
+# robots.txt for WASEL Platform (https://wasel-del.vercel.app)
 User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api/
 
 # Sitemaps
-Sitemap: https://wasel-uae.vercel.app/sitemap.xml
+Sitemap: https://wasel-del.vercel.app/sitemap.xml
