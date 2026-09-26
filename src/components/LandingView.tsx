@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Truck, ArrowLeft, ShieldCheck, Sparkles, PhoneCall, Clock, CheckCircle2 } from 'lucide-react';
+import { Package, Truck, ArrowLeft, ShieldCheck, PhoneCall, Clock, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
 import { NotificationBanner } from './NotificationBanner';
 
@@ -26,11 +26,6 @@ export const LandingView: React.FC<LandingViewProps> = ({
         {/* Centered Brand Showcase */}
         <div className="flex justify-center mb-3">
           <Logo size="lg" />
-        </div>
-
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EAF6F1] border border-[#159B7A]/20 text-[#159B7A] text-xs sm:text-sm font-bold shadow-xs">
-          <Sparkles className="w-4 h-4 text-[#159B7A]" />
-          <span>المنصة المباشرة الأولى لربط العملاء بسائقي التوصيل في الإمارات</span>
         </div>
 
         <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-[#142F52] tracking-tight leading-snug">

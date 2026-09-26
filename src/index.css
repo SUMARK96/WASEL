@@ -21,6 +21,24 @@
   html {
     height: -webkit-fill-available;
   }
+
+  /* High-Contrast Elegant Text Selection */
+  ::selection {
+    background-color: #159B7A !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  ::-moz-selection {
+    background-color: #159B7A !important;
+    color: #ffffff !important;
+  }
+
+  input::selection, textarea::selection {
+    background-color: #159B7A !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
 }
 
 /* Custom modern soft scrollbar */
