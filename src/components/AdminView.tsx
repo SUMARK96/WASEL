@@ -8,11 +8,11 @@ import {
   checkDriverSubscriptionStatus
 } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
+import { EmirateBadge } from './EmirateBadge';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
 import { 
   Package, 
   DollarSign, 
-  Sparkles, 
   Truck,
   FileText,
   Bell,
@@ -80,9 +80,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // Drivers Registry Filter State
   const [selectedEmirateFilter, setSelectedEmirateFilter] = useState<string>('all');
 
+  // Real-time KPI Stats Calculations
   const activeDriversCount = drivers.filter(d => d.subscriptionStatus === 'active').length;
+  const verifiedDriversCount = drivers.filter(d => d.isVerified).length;
+  const suspendedDriversCount = drivers.filter(d => d.subscriptionStatus === 'suspended' || d.subscriptionStatus === 'expired').length;
   const totalRevenue = activeDriversCount * subscriptionPrice;
-  const totalOffersCount = requests.reduce((acc, r) => acc + r.offers.length, 0);
+
+  const openRequestsCount = requests.filter(r => r.status === 'open').length;
+  const assignedRequestsCount = requests.filter(r => r.status === 'assigned').length;
+  const deliveredRequestsCount = requests.filter(r => r.status === 'delivered').length;
+
+  // Requests Details Modal State
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [requestsFilterStatus, setRequestsFilterStatus] = useState<'all' | 'open' | 'assigned' | 'delivered'>('all');
+
+  const filteredModalRequests = requestsFilterStatus === 'all'
+    ? requests
+    : requests.filter(r => r.status === requestsFilterStatus);
 
   // Calculate drivers count per emirate
   const emirateCounts = UAE_EMIRATES.reduce((acc, emirate) => {
@@ -156,72 +170,134 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      
-      {/* Hero Header */}
-      <div className="bg-white border border-[#E5EDF3] rounded-3xl p-5 sm:p-8 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <span className="text-xs font-bold text-[#159B7A] bg-[#EAF6F1] px-3 py-1 rounded-full border border-[#159B7A]/20 mb-2 inline-block">
-              لوحة تحكم منصة واصل (WASEL Admin)
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-[#142F52]">إحصائيات المنصة واشتراكات السائقين المستقلين</h1>
-            <p className="text-xs text-[#64748B] mt-1">
-              نموذج الإيرادات: اشتراك شهري موحد ({subscriptionPrice} AED) للسائقين للتوصيل بين إمارات الدولة
-            </p>
-          </div>
 
-          <div className="text-left bg-[#F5F9FC] px-5 py-3 rounded-2xl border border-[#E5EDF3]">
-            <span className="text-xs text-[#64748B] font-semibold block">إجمالي الدخل الشهري المتوقع</span>
-            <span className="text-xl sm:text-2xl font-black text-[#159B7A]">{totalRevenue.toLocaleString()} AED</span>
-          </div>
-        </div>
-      </div>
-
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* 3 Interactive KPI Cards (Dynamic, Auto-Updating & Deeply Linked to Live Data) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+        {/* CARD 1: REVENUE */}
+        <div 
+          onClick={() => {
+            const el = document.getElementById('subscription-plan-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="bg-white p-5 rounded-3xl border border-[#E5EDF3] hover:border-[#159B7A] transition-all duration-200 space-y-3 shadow-xs hover:shadow-md cursor-pointer group active:scale-[0.99]"
+          title="اضغط للانتقال إلى إدارة الباقة الموحدة وتعديل السعر"
+        >
           <div className="flex items-center justify-between text-[#64748B]">
-            <span className="text-xs font-bold text-[#142F52]">إجمالي إيراد الاشتراكات</span>
-            <div className="p-2 rounded-xl bg-[#EAF6F1] text-[#159B7A]">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-[#142F52]">إجمالي إيراد الاشتراكات الشهرية</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="متصل ومحدث ذاتياً" />
+            </div>
+            <div className="p-2.5 rounded-2xl bg-[#EAF6F1] text-[#159B7A] group-hover:scale-110 transition-transform">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{totalRevenue.toLocaleString()} AED</div>
-          <span className="text-[10px] text-[#159B7A] font-bold block">↑ اشتراكات شهرية نشطة ({subscriptionPrice} AED/سائق)</span>
+          
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-[#159B7A] font-mono tracking-tight">
+              {totalRevenue.toLocaleString()} <span className="text-xs font-bold text-[#142F52]">AED</span>
+            </div>
+            <p className="text-[11px] text-[#64748B] font-medium">
+              محسوبة على أساس {activeDriversCount} كباتن نشطين × {subscriptionPrice} درهم
+            </p>
+          </div>
+
+          <div className="pt-2 border-t border-[#E5EDF3] flex items-center justify-between text-[10px]">
+            <span className="text-[#159B7A] font-bold bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
+              ⚡ باقة {subscriptionPrice} AED/سائق
+            </span>
+            <span className="text-[#64748B] group-hover:text-[#159B7A] font-semibold transition-colors flex items-center gap-0.5">
+              <span>تعديل السعر</span>
+              <span>➔</span>
+            </span>
+          </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+        {/* CARD 2: DRIVERS */}
+        <div 
+          onClick={() => {
+            const el = document.getElementById('drivers-registry-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="bg-white p-5 rounded-3xl border border-[#E5EDF3] hover:border-[#159B7A] transition-all duration-200 space-y-3 shadow-xs hover:shadow-md cursor-pointer group active:scale-[0.99]"
+          title="اضغط للانتقال إلى جدول وسجل السائقين"
+        >
           <div className="flex items-center justify-between text-[#64748B]">
-            <span className="text-xs font-bold text-[#142F52]">السائقين المشتركين والنشطين</span>
-            <div className="p-2 rounded-xl bg-[#EEF4FA] text-[#142F52]">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-[#142F52]">السائقين المسجلين والنشطين</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="متصل ومحدث ذاتياً" />
+            </div>
+            <div className="p-2.5 rounded-2xl bg-[#EEF4FA] text-[#142F52] group-hover:scale-110 transition-transform">
               <Truck className="w-5 h-5 text-[#159B7A]" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{activeDriversCount} سائقين</div>
-          <span className="text-[10px] text-[#64748B] font-bold block">100% تم التوثيق برخصة الإمارات</span>
+
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-[#142F52] font-mono tracking-tight">
+              {activeDriversCount} <span className="text-xs text-[#64748B] font-normal">نشط من إجمالي</span> {drivers.length}
+            </div>
+            <p className="text-[11px] text-[#64748B] font-medium">
+              نسبة السائقين النشطين: {drivers.length > 0 ? Math.round((activeDriversCount / drivers.length) * 100) : 0}%
+            </p>
+          </div>
+
+          <div className="pt-2 border-t border-[#E5EDF3] flex items-center justify-between text-[10px]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[#159B7A] font-bold bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
+                🛡️ {verifiedDriversCount} موثق
+              </span>
+              {suspendedDriversCount > 0 && (
+                <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  ⛔ {suspendedDriversCount} معلق
+                </span>
+              )}
+            </div>
+            <span className="text-[#64748B] group-hover:text-[#159B7A] font-semibold transition-colors flex items-center gap-0.5">
+              <span>عرض السجل</span>
+              <span>➔</span>
+            </span>
+          </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+        {/* CARD 3: DELIVERY REQUESTS */}
+        <div 
+          onClick={() => setShowRequestsModal(true)}
+          className="bg-white p-5 rounded-3xl border border-[#E5EDF3] hover:border-[#159B7A] transition-all duration-200 space-y-3 shadow-xs hover:shadow-md cursor-pointer group active:scale-[0.99]"
+          title="اضغط لفتح نافذة تفاصيل وحالات كافة الطلبات بالمنصة"
+        >
           <div className="flex items-center justify-between text-[#64748B]">
-            <span className="text-xs font-bold text-[#142F52]">طلبات التوصيل المنشورة</span>
-            <div className="p-2 rounded-xl bg-[#EAF6F1] text-[#159B7A]">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-[#142F52]">طلبات التوصيل بالمنصة</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="متصل ومحدث ذاتياً" />
+            </div>
+            <div className="p-2.5 rounded-2xl bg-[#EAF6F1] text-[#159B7A] group-hover:scale-110 transition-transform">
               <Package className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{requests.length} طلبات</div>
-          <span className="text-[10px] text-[#64748B] font-bold block">بين كافة إمارات الدولة</span>
-        </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
-          <div className="flex items-center justify-between text-[#64748B]">
-            <span className="text-xs font-bold text-[#142F52]">عروض الأسعار المقدمة</span>
-            <div className="p-2 rounded-xl bg-[#EEF4FA] text-[#142F52]">
-              <Sparkles className="w-5 h-5 text-[#159B7A]" />
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-[#142F52] font-mono tracking-tight">
+              {requests.length} <span className="text-xs font-bold text-[#64748B]">طلب منشور</span>
             </div>
+            <p className="text-[11px] text-[#64748B] font-medium">
+              تغطي كافة الإمارات السبعة مع عروض أسعار مباشرة
+            </p>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{totalOffersCount} عروض</div>
-          <span className="text-[10px] text-[#64748B] font-bold block">متوسط العروض المتوفرة</span>
+
+          <div className="pt-2 border-t border-[#E5EDF3] flex items-center justify-between text-[10px]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[#142F52] font-bold bg-[#EEF4FA] px-2 py-0.5 rounded-full border border-[#E5EDF3]">
+                ⏳ {openRequestsCount} مفتوحة
+              </span>
+              <span className="text-[#159B7A] font-bold bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
+                ✅ {deliveredRequestsCount} مكتملة
+              </span>
+            </div>
+            <span className="text-[#64748B] group-hover:text-[#159B7A] font-semibold transition-colors flex items-center gap-0.5">
+              <span>معاينة (نافذة)</span>
+              <span>➔</span>
+            </span>
+          </div>
         </div>
 
       </div>
@@ -229,7 +305,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================================= */}
       {/* 1. EDITABLE UNIFIED SUBSCRIPTION PLAN SECTION */}
       {/* ========================================================================= */}
-      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-[#E5EDF3] space-y-4 shadow-sm">
+      <div id="subscription-plan-section" className="bg-white p-5 sm:p-6 rounded-3xl border border-[#E5EDF3] space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-black text-[#142F52] text-base sm:text-lg flex items-center gap-2">
@@ -476,7 +552,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================================= */}
       {/* 3. DRIVERS REGISTRY TABLE WITH EMIRATE FILTER */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-[#E5EDF3] rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
+      <div id="drivers-registry-section" className="bg-white border border-[#E5EDF3] rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
         
         {/* Header & Filter Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5EDF3] pb-4">
@@ -1012,6 +1088,151 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Requests Details & Status Modal */}
+      {showRequestsModal && (
+        <div className="fixed inset-0 z-50 bg-[#142F52]/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+          <div className="bg-white border-t sm:border border-[#E5EDF3] rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+            
+            {/* Header */}
+            <div className="bg-[#F5F9FC] px-4 sm:px-6 py-4 border-b border-[#E5EDF3] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#EAF6F1] text-[#159B7A] flex items-center justify-center font-black shadow-xs shrink-0">
+                  <Package className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#142F52]">سجل طلبات التوصيل بالمنصة (مباشر)</h3>
+                  <p className="text-[11px] sm:text-xs text-[#64748B]">إجمالي {requests.length} طلب منشور يتحدث تلقائياً مع تفاعل العملاء والسائقين</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowRequestsModal(false)}
+                className="p-2 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3] transition-colors active:scale-95 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter Subtabs */}
+            <div className="bg-white px-4 sm:px-6 py-2.5 border-b border-[#E5EDF3] flex items-center gap-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setRequestsFilterStatus('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  requestsFilterStatus === 'all'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'bg-[#F5F9FC] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3]'
+                }`}
+              >
+                الكل ({requests.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequestsFilterStatus('open')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  requestsFilterStatus === 'open'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'bg-[#F5F9FC] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3]'
+                }`}
+              >
+                بانتظار العروض ({openRequestsCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequestsFilterStatus('assigned')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  requestsFilterStatus === 'assigned'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'bg-[#F5F9FC] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3]'
+                }`}
+              >
+                قيد التوصيل ({assignedRequestsCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequestsFilterStatus('delivered')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  requestsFilterStatus === 'delivered'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'bg-[#F5F9FC] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3]'
+                }`}
+              >
+                مكتملة ومسلمة ({deliveredRequestsCount})
+              </button>
+            </div>
+
+            {/* Scrollable Requests List */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 text-right">
+              {filteredModalRequests.length === 0 ? (
+                <div className="bg-[#F5F9FC] rounded-2xl p-8 text-center border border-[#E5EDF3] space-y-2">
+                  <Package className="w-10 h-10 text-[#94A3B8] mx-auto" />
+                  <p className="text-xs text-[#64748B] font-bold">لا توجد طلبات مطابقة لهذا الفلتر حالياً.</p>
+                </div>
+              ) : (
+                filteredModalRequests.map((req) => (
+                  <div key={req.id} className="bg-[#F5F9FC] border border-[#E5EDF3] rounded-2xl p-4 space-y-3 shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5EDF3] pb-2.5">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-xs text-[#142F52] font-extrabold bg-white px-2.5 py-0.5 rounded-full border border-[#E5EDF3]">
+                            {req.packageType}
+                          </span>
+                          <span className="text-[11px] text-[#64748B]">{req.createdAt}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            req.status === 'delivered'
+                              ? 'bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20'
+                              : req.status === 'assigned'
+                              ? 'bg-[#159B7A] text-white'
+                              : 'bg-white text-[#64748B] border border-[#E5EDF3]'
+                          }`}>
+                            {req.status === 'delivered' ? 'مكتمل ومسلم ✓' : req.status === 'assigned' ? 'قيد التوصيل 🚚' : 'بانتظار العروض ⏳'}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-[#142F52] text-sm">{req.title}</h4>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
+                        <span className="text-[#94A3B8] text-xs">➔</span>
+                        <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] bg-white p-2.5 rounded-xl border border-[#E5EDF3]">
+                      <div>
+                        <span className="text-[#64748B] block">العميل:</span>
+                        <span className="font-bold text-[#142F52]">{req.customerName || 'عميل واصل'} ({req.customerPhone || 'بدون هاتف'})</span>
+                      </div>
+                      <div>
+                        <span className="text-[#64748B] block">العروض المقدمة:</span>
+                        <span className="font-bold text-[#159B7A]">{req.offers?.length || 0} عروض مقدمة</span>
+                      </div>
+                      <div>
+                        <span className="text-[#64748B] block">موعد التوصيل:</span>
+                        <span className="font-bold text-[#142F52]">{req.deliveryDate}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-[#F5F9FC] p-4 sm:px-6 border-t border-[#E5EDF3] shrink-0 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRequestsModal(false)}
+                className="w-full sm:w-auto bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-2.5 px-6 rounded-xl border border-[#E5EDF3] transition-all text-xs active:scale-95 cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
+
           </div>
         </div>
       )}
