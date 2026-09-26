@@ -16,11 +16,11 @@ export const EmirateBadge: React.FC<EmirateBadgeProps> = ({
   const getColors = () => {
     switch (type) {
       case 'pickup':
-        return 'bg-zinc-900 text-zinc-200 border-zinc-700 hover:bg-zinc-800';
+        return 'bg-[#EEF4FA] text-[#142F52] border-[#E5EDF3] hover:bg-[#E2EDF7] font-semibold';
       case 'delivery':
-        return 'bg-white text-black border-white hover:bg-zinc-200 font-bold';
+        return 'bg-[#EAF6F1] text-[#159B7A] border-[#159B7A]/30 hover:bg-[#DEF0E8] font-bold';
       default:
-        return 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800';
+        return 'bg-[#F5F9FC] text-[#64748B] border-[#E5EDF3] hover:bg-[#EEF4FA]';
     }
   };
 
@@ -37,7 +37,7 @@ export const EmirateBadge: React.FC<EmirateBadgeProps> = ({
 
   return (
     <span className={`inline-flex items-center rounded-lg border transition-colors ${getColors()} ${getSizeClasses()}`}>
-      <MapPin className={size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-4 h-4' : 'w-3.5 h-3.5'} />
+      <MapPin className={size === 'sm' ? 'w-3 h-3 text-[#159B7A]' : size === 'lg' ? 'w-4 h-4 text-[#159B7A]' : 'w-3.5 h-3.5 text-[#159B7A]'} />
       {emirate}
     </span>
   );

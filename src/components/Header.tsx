@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-lg border-b border-zinc-800 shadow-lg shadow-black/40">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-[#E5EDF3] shadow-xs">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
@@ -121,34 +121,34 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Current Mode Badge / Breadcrumb for driver/customer/admin on desktop */}
           {currentScreen !== 'landing' && (
-            <div className="hidden md:flex items-center gap-2 bg-zinc-950 px-3.5 py-1.5 rounded-xl border border-zinc-800 text-xs font-bold">
+            <div className="hidden md:flex items-center gap-2 bg-[#EEF4FA] px-3.5 py-1.5 rounded-xl border border-[#E5EDF3] text-xs font-bold text-[#142F52]">
               {currentScreen === 'customer' && currentCustomer && (
-                <span className="text-white flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-white" />
+                <span className="flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-[#159B7A]" />
                   <span>حساب العميل: {currentCustomer.name} ({currentCustomer.emirate})</span>
                 </span>
               )}
               {(currentScreen === 'customer_portal' || currentScreen === 'customer_login') && (
-                <span className="text-zinc-300 flex items-center gap-1.5">
-                  <Package className="w-4 h-4 text-zinc-300" />
+                <span className="flex items-center gap-1.5 text-[#64748B]">
+                  <Package className="w-4 h-4 text-[#159B7A]" />
                   <span>بوابة العملاء وطالبي التوصيل</span>
                 </span>
               )}
               {currentScreen === 'driver' && currentDriver && (
-                <span className="text-white flex items-center gap-1.5">
-                  <Truck className="w-4 h-4 text-white" />
+                <span className="flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-[#159B7A]" />
                   <span>حساب السائق: {currentDriver.name}</span>
                 </span>
               )}
               {(currentScreen === 'driver_portal' || currentScreen === 'driver_login') && (
-                <span className="text-zinc-300 flex items-center gap-1.5">
-                  <Truck className="w-4 h-4 text-zinc-300" />
+                <span className="flex items-center gap-1.5 text-[#64748B]">
+                  <Truck className="w-4 h-4 text-[#159B7A]" />
                   <span>بوابة السائقين المستقلين</span>
                 </span>
               )}
               {currentScreen === 'admin' && (
-                <span className="text-white flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-white" />
+                <span className="flex items-center gap-1.5 text-[#159B7A]">
+                  <ShieldCheck className="w-4 h-4 text-[#159B7A]" />
                   <span>لوحة الإدارة المعتمدة</span>
                 </span>
               )}
@@ -167,11 +167,11 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-                    className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 hover:border-zinc-500 font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                    className="flex items-center gap-2 bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] border border-[#E5EDF3] hover:border-[#CBD5E1] font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95"
                   >
-                    <UserCheck className="w-4 h-4 text-white shrink-0" />
+                    <UserCheck className="w-4 h-4 text-[#159B7A] shrink-0" />
                     <span>{getCustomerSectionLabel(customerSection)}</span>
-                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {/* Dropdown Popup Menu */}
@@ -181,20 +181,20 @@ export const Header: React.FC<HeaderProps> = ({
                         className="fixed inset-0 z-30" 
                         onClick={() => setIsCustomerDropdownOpen(false)} 
                       />
-                      <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-zinc-950 border-2 border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-zinc-800 text-right">
+                      <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-white border border-[#E5EDF3] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-[#E5EDF3] text-right">
                         
                         {/* Option 1: الملف الشخصي */}
                         <button
                           type="button"
                           onClick={() => handleCustomerSelect('profile')}
-                          className="w-full p-3 flex items-center justify-between text-xs text-white hover:bg-zinc-900 font-bold transition-colors"
+                          className="w-full p-3 flex items-center justify-between text-xs text-[#142F52] hover:bg-[#F5F9FC] font-bold transition-colors"
                         >
                           <div className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
+                            <User className="w-4 h-4 text-[#64748B]" />
                             <span>الملف الشخصي</span>
                           </div>
                           {currentCustomer && (
-                            <span className="text-[10px] text-zinc-400 font-normal truncate max-w-[80px]">
+                            <span className="text-[10px] text-[#64748B] font-normal truncate max-w-[80px]">
                               {currentCustomer.name}
                             </span>
                           )}
@@ -205,7 +205,7 @@ export const Header: React.FC<HeaderProps> = ({
                           type="button"
                           onClick={() => handleCustomerSelect('new_request')}
                           className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
-                            customerSection === 'new_request' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                            customerSection === 'new_request' ? 'bg-[#159B7A] text-white font-black' : 'text-[#142F52] hover:bg-[#F5F9FC] font-bold'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
                           type="button"
                           onClick={() => handleCustomerSelect('new_offers')}
                           className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
-                            customerSection === 'new_offers' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                            customerSection === 'new_offers' ? 'bg-[#159B7A] text-white font-black' : 'text-[#142F52] hover:bg-[#F5F9FC] font-bold'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </div>
                           {totalOffersCount > 0 && (
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                              customerSection === 'new_offers' ? 'bg-black text-white' : 'bg-white text-black'
+                              customerSection === 'new_offers' ? 'bg-white text-[#159B7A]' : 'bg-[#EAF6F1] text-[#159B7A]'
                             }`}>
                               {totalOffersCount}
                             </span>
@@ -241,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
                           type="button"
                           onClick={() => handleCustomerSelect('my_requests')}
                           className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
-                            customerSection === 'my_requests' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                            customerSection === 'my_requests' ? 'bg-[#159B7A] text-white font-black' : 'text-[#142F52] hover:bg-[#F5F9FC] font-bold'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -255,7 +255,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                           type="button"
                           onClick={() => handleCustomerSelect('logout')}
-                          className="w-full p-3 flex items-center justify-between text-xs text-white hover:bg-zinc-900 font-bold transition-colors"
+                          className="w-full p-3 flex items-center justify-between text-xs text-red-600 hover:bg-red-50 font-bold transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <LogOut className="w-4 h-4" />
@@ -276,14 +276,14 @@ export const Header: React.FC<HeaderProps> = ({
                       onSelectCustomerSection('new_offers');
                     }
                   }}
-                  className="relative p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 transition-all active:scale-95"
+                  className="relative p-2 sm:p-2.5 rounded-xl bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] border border-[#E5EDF3] transition-all active:scale-95"
                   title="الإشعارات والعروض الجديدة"
                 >
-                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[#142F52]" />
                   
                   {/* Notification Counter Badge */}
                   {(unreadNotificationsCount > 0 || totalOffersCount > 0) && (
-                    <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                    <span className="absolute -top-1 -right-1 bg-[#159B7A] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-pulse">
                       {unreadNotificationsCount > 0 ? unreadNotificationsCount : totalOffersCount}
                     </span>
                   )}
@@ -301,11 +301,11 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsDriverDropdownOpen(!isDriverDropdownOpen)}
-                    className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 hover:border-zinc-500 font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                    className="flex items-center gap-2 bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] border border-[#E5EDF3] hover:border-[#CBD5E1] font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-xs transition-all active:scale-95"
                   >
-                    <Truck className="w-4 h-4 text-white shrink-0" />
+                    <Truck className="w-4 h-4 text-[#159B7A] shrink-0" />
                     <span>{getDriverSectionLabel(driverSection)}</span>
-                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isDriverDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${isDriverDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {/* Dropdown Popup Menu */}
@@ -315,14 +315,14 @@ export const Header: React.FC<HeaderProps> = ({
                         className="fixed inset-0 z-30" 
                         onClick={() => setIsDriverDropdownOpen(false)} 
                       />
-                      <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-zinc-950 border-2 border-zinc-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-zinc-800 text-right">
+                      <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-40 w-56 bg-white border border-[#E5EDF3] rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 divide-y divide-[#E5EDF3] text-right">
                         
                         {/* Option 1: الملف الشخصي */}
                         <button
                           type="button"
                           onClick={() => handleDriverSelect('profile')}
                           className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
-                            driverSection === 'profile' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                            driverSection === 'profile' ? 'bg-[#159B7A] text-white font-black' : 'text-[#142F52] hover:bg-[#F5F9FC] font-bold'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -337,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({
                           type="button"
                           onClick={() => handleDriverSelect('new_requests')}
                           className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
-                            driverSection === 'new_requests' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                            driverSection === 'new_requests' ? 'bg-[#159B7A] text-white font-black' : 'text-[#142F52] hover:bg-[#F5F9FC] font-bold'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </div>
                           {openRequestsCount > 0 && (
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                              driverSection === 'new_requests' ? 'bg-black text-white' : 'bg-white text-black'
+                              driverSection === 'new_requests' ? 'bg-white text-[#159B7A]' : 'bg-[#EAF6F1] text-[#159B7A]'
                             }`}>
                               {openRequestsCount}
                             </span>
@@ -358,7 +358,7 @@ export const Header: React.FC<HeaderProps> = ({
                           type="button"
                           onClick={() => handleDriverSelect('subscription')}
                           className={`w-full p-3 flex items-center justify-between text-xs transition-colors ${
-                            driverSection === 'subscription' ? 'bg-white text-black font-black' : 'text-white hover:bg-zinc-900 font-bold'
+                            driverSection === 'subscription' ? 'bg-[#159B7A] text-white font-black' : 'text-[#142F52] hover:bg-[#F5F9FC] font-bold'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDriverSelect('logout')}
-                          className="w-full p-3 flex items-center justify-between text-xs text-white hover:bg-zinc-900 font-bold transition-colors"
+                          className="w-full p-3 flex items-center justify-between text-xs text-red-600 hover:bg-red-50 font-bold transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <LogOut className="w-4 h-4" />
@@ -393,14 +393,14 @@ export const Header: React.FC<HeaderProps> = ({
                       onSelectDriverSection('new_requests');
                     }
                   }}
-                  className="relative p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 transition-all active:scale-95"
+                  className="relative p-2 sm:p-2.5 rounded-xl bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] border border-[#E5EDF3] transition-all active:scale-95"
                   title="الطلبات والإشعارات الجديدة"
                 >
-                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[#142F52]" />
                   
                   {/* Notification Counter Badge */}
                   {(unreadDriverNotificationsCount > 0 || openRequestsCount > 0) && (
-                    <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                    <span className="absolute -top-1 -right-1 bg-[#159B7A] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-pulse">
                       {unreadDriverNotificationsCount > 0 ? unreadDriverNotificationsCount : openRequestsCount}
                     </span>
                   )}

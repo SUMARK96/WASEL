@@ -105,7 +105,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
     return false;
   };
 
-  // Memoized rock-solid request sorting & filtering (الطلبات ثابتة تماماً بدون أي اهتزاز أو تحرك)
+  // Memoized rock-solid request sorting & filtering
   const openRequests = useMemo(() => {
     return sortRequestsNewestFirst(requests.filter(r => r.status === 'open'));
   }, [requests]);
@@ -164,31 +164,31 @@ export const DriverView: React.FC<DriverViewProps> = ({
         <div className="space-y-6">
           
           {/* Main Driver Profile Card */}
-          <div className="bg-zinc-950 border-2 border-white rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 border-b border-zinc-800 pb-6">
+          <div className="bg-white border border-[#E5EDF3] rounded-3xl p-6 sm:p-8 shadow-sm relative space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 border-b border-[#E5EDF3] pb-6">
               <div className="flex items-center gap-4">
                 <img
                   src={driver.avatar}
                   alt={driver.name}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border-2 border-white shadow-xl"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border-2 border-[#159B7A] shadow-xs"
                 />
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-xl sm:text-2xl font-black text-white">{driver.name}</h2>
+                    <h2 className="text-xl sm:text-2xl font-black text-[#142F52]">{driver.name}</h2>
                     {driver.isVerified && (
-                      <span className="bg-white text-black text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow">
-                        <ShieldCheck className="w-3.5 h-3.5 text-black" />
+                      <span className="bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#159B7A]" />
                         <span>سائق معتمد وموثق</span>
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-zinc-400 mt-1.5 flex-wrap">
-                    <span className="flex items-center gap-1 text-white font-bold bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-700">
-                      <Star className="w-3.5 h-3.5 fill-white text-white" />
+                  <div className="flex items-center gap-3 text-xs text-[#64748B] mt-1.5 flex-wrap">
+                    <span className="flex items-center gap-1 text-[#142F52] font-bold bg-[#EEF4FA] px-2 py-0.5 rounded-lg border border-[#E5EDF3]">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       {driver.rating} ({driver.reviewsCount} تقييم)
                     </span>
-                    <span>• الإمارة: <strong className="text-white">{driver.emirate}</strong></span>
-                    <span>• انضم في: <strong className="text-white">{driver.joinedDate}</strong></span>
+                    <span>• الإمارة: <strong className="text-[#142F52]">{driver.emirate}</strong></span>
+                    <span>• انضم في: <strong className="text-[#142F52]">{driver.joinedDate}</strong></span>
                   </div>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedSection('subscription')}
-                  className="bg-white hover:bg-zinc-200 text-black font-bold px-4 py-2.5 rounded-xl text-xs active:scale-95 transition-all shadow-md"
+                  className="bg-[#159B7A] hover:bg-[#108466] text-white font-bold px-4 py-2.5 rounded-xl text-xs active:scale-95 transition-all shadow-xs cursor-pointer"
                 >
                   إدارة الاشتراك 📄
                 </button>
@@ -205,41 +205,41 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
             {/* Direct Contact Numbers */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center justify-between">
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-bold">
-                    <Phone className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-[#EEF4FA] text-[#142F52] flex items-center justify-center font-bold">
+                    <Phone className="w-5 h-5 text-[#159B7A]" />
                   </div>
                   <div>
-                    <div className="text-[11px] text-zinc-400">رقم الاتصال الهاتفي:</div>
-                    <div className="font-bold text-white text-sm font-mono dir-ltr">{driver.callPhone || driver.phone}</div>
+                    <div className="text-[11px] text-[#64748B]">رقم الاتصال الهاتفي:</div>
+                    <div className="font-bold text-[#142F52] text-sm font-mono dir-ltr">{driver.callPhone || driver.phone}</div>
                   </div>
                 </div>
                 <a
                   href={`tel:${driver.callPhone || driver.phone}`}
-                  className="bg-zinc-900 hover:bg-zinc-800 text-white text-xs px-3 py-1.5 rounded-xl border border-zinc-700"
+                  className="bg-white hover:bg-[#EEF4FA] text-[#142F52] text-xs font-bold px-3 py-1.5 rounded-xl border border-[#E5EDF3]"
                 >
                   اتصال
                 </a>
               </div>
 
-              <div className="bg-black p-4 rounded-2xl border border-zinc-800 flex items-center justify-between">
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-bold">
-                    <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 rounded-xl bg-[#EAF6F1] text-[#159B7A] flex items-center justify-center font-bold">
+                    <svg className="w-5 h-5 fill-[#159B7A]" viewBox="0 0 24 24">
                       <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-0.999 3.648 3.742-0.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
                     </svg>
                   </div>
                   <div>
-                    <div className="text-[11px] text-zinc-400">رقم الواتساب:</div>
-                    <div className="font-bold text-white text-sm font-mono dir-ltr">{driver.whatsappPhone}</div>
+                    <div className="text-[11px] text-[#64748B]">رقم الواتساب:</div>
+                    <div className="font-bold text-[#142F52] text-sm font-mono dir-ltr">{driver.whatsappPhone}</div>
                   </div>
                 </div>
                 <a
                   href={`https://wa.me/${driver.whatsappPhone}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white hover:bg-zinc-200 text-black font-bold text-xs px-3 py-1.5 rounded-xl"
+                  className="bg-[#159B7A] hover:bg-[#108466] text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-xs"
                 >
                   واتساب
                 </a>
@@ -247,15 +247,15 @@ export const DriverView: React.FC<DriverViewProps> = ({
             </div>
 
             {/* Vehicle Details & Real Photos Gallery */}
-            <div className="bg-black p-5 rounded-2xl border border-zinc-800 space-y-4">
+            <div className="bg-[#F5F9FC] p-5 rounded-2xl border border-[#E5EDF3] space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-white" />
-                  <h3 className="font-bold text-white text-sm sm:text-base">
+                  <Truck className="w-5 h-5 text-[#159B7A]" />
+                  <h3 className="font-bold text-[#142F52] text-sm sm:text-base">
                     مركبة التوصيل: {driver.vehicleModel} ({driver.vehiclePlate})
                   </h3>
                 </div>
-                <span className="text-xs text-zinc-400 font-bold bg-zinc-900 px-2.5 py-0.5 rounded-full border border-zinc-700">
+                <span className="text-xs text-[#142F52] font-bold bg-[#EEF4FA] px-2.5 py-0.5 rounded-full border border-[#E5EDF3]">
                   {driver.vehiclePhotos ? driver.vehiclePhotos.length : 1} صور
                 </span>
               </div>
@@ -263,13 +263,13 @@ export const DriverView: React.FC<DriverViewProps> = ({
               {/* Photos Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {(driver.vehiclePhotos && driver.vehiclePhotos.length > 0 ? driver.vehiclePhotos : [driver.vehiclePhoto]).map((photoUrl, idx) => (
-                  <div key={idx} className="relative rounded-xl overflow-hidden border border-zinc-800 aspect-video bg-zinc-900 group">
+                  <div key={idx} className="relative rounded-xl overflow-hidden border border-[#E5EDF3] aspect-video bg-white group">
                     <img
                       src={photoUrl}
                       alt={`Vehicle Photo ${idx + 1}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />
-                    <div className="absolute bottom-0 inset-x-0 bg-black/80 py-0.5 text-center text-[9px] text-zinc-300">
+                    <div className="absolute bottom-0 inset-x-0 bg-[#142F52]/80 py-0.5 text-center text-[9px] text-white">
                       صورة {idx + 1}
                     </div>
                   </div>
@@ -278,34 +278,34 @@ export const DriverView: React.FC<DriverViewProps> = ({
             </div>
 
             {/* Verified Official Documents Checklist */}
-            <div className="bg-black p-5 rounded-2xl border border-zinc-800 space-y-3">
-              <h4 className="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-white" />
+            <div className="bg-[#F5F9FC] p-5 rounded-2xl border border-[#E5EDF3] space-y-3">
+              <h4 className="font-bold text-[#142F52] text-xs sm:text-sm flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#159B7A]" />
                 <span>حالة الوثائق والمستندات الرسمية الثلاثة:</span>
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                <div className="bg-white border border-[#E5EDF3] p-3 rounded-xl flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#159B7A] shrink-0" />
                   <div>
-                    <div className="font-bold text-white">رخصة القيادة الإماراتية</div>
-                    <div className="text-[10px] text-zinc-400">مدققة ومطابقة رسمياً ✓</div>
+                    <div className="font-bold text-[#142F52]">رخصة القيادة الإماراتية</div>
+                    <div className="text-[10px] text-[#159B7A]">مدققة ومطابقة رسمياً ✓</div>
                   </div>
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                <div className="bg-white border border-[#E5EDF3] p-3 rounded-xl flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#159B7A] shrink-0" />
                   <div>
-                    <div className="font-bold text-white">ملكية المركبة (رخصة مركبة)</div>
-                    <div className="text-[10px] text-zinc-400">مدققة ومطابقة رسمياً ✓</div>
+                    <div className="font-bold text-[#142F52]">ملكية المركبة (رخصة مركبة)</div>
+                    <div className="text-[10px] text-[#159B7A]">مدققة ومطابقة رسمياً ✓</div>
                   </div>
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                <div className="bg-white border border-[#E5EDF3] p-3 rounded-xl flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#159B7A] shrink-0" />
                   <div>
-                    <div className="font-bold text-white">بطاقة الهوية الإماراتية</div>
-                    <div className="text-[10px] text-zinc-400">مدققة ومطابقة رسمياً ✓</div>
+                    <div className="font-bold text-[#142F52]">بطاقة الهوية الإماراتية</div>
+                    <div className="text-[10px] text-[#159B7A]">مدققة ومطابقة رسمياً ✓</div>
                   </div>
                 </div>
               </div>
@@ -313,9 +313,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
             {/* Bio */}
             {driver.bio && (
-              <div className="bg-black p-4 rounded-2xl border border-zinc-800 text-xs space-y-1">
-                <div className="font-bold text-zinc-400">نبذة عن السائق:</div>
-                <p className="text-white leading-relaxed">{driver.bio}</p>
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] text-xs space-y-1">
+                <div className="font-bold text-[#64748B]">نبذة عن السائق:</div>
+                <p className="text-[#142F52] leading-relaxed">{driver.bio}</p>
               </div>
             )}
 
@@ -332,21 +332,21 @@ export const DriverView: React.FC<DriverViewProps> = ({
           
           {/* Status Alert if account is suspended due to exemption expiration */}
           {isSuspended ? (
-            <div className="bg-black border-2 border-white p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xl animate-in zoom-in-95">
+            <div className="bg-white border border-red-200 p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-in zoom-in-95">
               <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center font-black shrink-0 text-lg shadow">
+                <div className="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center font-black shrink-0 text-lg shadow-xs">
                   ⛔
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-black text-white text-sm sm:text-base">تم تعليق حساب السائق مؤقتاً (Suspended)</h4>
+                    <h4 className="font-black text-red-700 text-sm sm:text-base">تم تعليق حساب السائق مؤقتاً (Suspended)</h4>
                     {driver.usedExemptionCode && (
-                      <span className="bg-zinc-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700">
+                      <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">
                         انتهاء كود الإعفاء: {driver.usedExemptionCode}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
                     انتهت فترة كود الإعفاء المجاني ولم يتم سداد الاشتراك الشهري. يرجى سداد الاشتراك ({subscriptionPrice} AED) لإعادة تفعيل الحساب فوراً والبدء بتقديم عروض الأسعار للعملاء.
                   </p>
                 </div>
@@ -356,30 +356,30 @@ export const DriverView: React.FC<DriverViewProps> = ({
                   if (onOpenSubscription) onOpenSubscription();
                   else setSelectedSection('subscription');
                 }}
-                className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-5 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow-lg"
+                className="w-full sm:w-auto bg-[#159B7A] hover:bg-[#108466] text-white font-black px-5 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 سداد الاشتراك الشهري وتنشيط الحساب ⚡
               </button>
             </div>
           ) : subStatus.isExemption && subStatus.isExpiringSoon ? (
             /* 5-Day Exemption Expiry Warning */
-            <div className="bg-zinc-950 border-2 border-white p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl animate-in zoom-in-95">
+            <div className="bg-white border border-amber-200 p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-in zoom-in-95">
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center font-black shrink-0">
-                  <Bell className="w-5 h-5 text-black" />
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center font-black shrink-0">
+                  <Bell className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-black text-white text-sm sm:text-base">
+                    <h4 className="font-black text-amber-800 text-sm sm:text-base">
                       تنبيه: متبقي {subStatus.daysRemaining} {subStatus.daysRemaining === 1 ? 'يوم' : 'أيام'} على انتهاء فترة كود الإعفاء
                     </h4>
                     {driver.usedExemptionCode && (
-                      <span className="bg-zinc-900 text-white text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700">
+                      <span className="bg-amber-50 text-amber-700 text-[10px] font-mono px-2 py-0.5 rounded border border-amber-200">
                         {driver.usedExemptionCode}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
                     ينتهي الإعفاء بتاريخ {driver.subscriptionExpiry}. يرجى دفع الاشتراك الشهري ({subscriptionPrice} AED) لتجنب تعليق الحساب عند نهاية الفترة.
                   </p>
                 </div>
@@ -389,19 +389,19 @@ export const DriverView: React.FC<DriverViewProps> = ({
                   if (onOpenSubscription) onOpenSubscription();
                   else setSelectedSection('subscription');
                 }}
-                className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-5 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow"
+                className="w-full sm:w-auto bg-[#159B7A] hover:bg-[#108466] text-white font-black px-5 py-2.5 rounded-xl text-xs shrink-0 active:scale-95 transition-all shadow-xs cursor-pointer"
               >
                 سداد الاشتراك الشهري الآن ({subscriptionPrice} AED)
               </button>
             </div>
           ) : isExpired ? (
             /* General Expired Alert */
-            <div className="bg-zinc-950 border-2 border-white p-4 sm:p-5 rounded-3xl flex items-center justify-between gap-4">
+            <div className="bg-white border border-amber-200 p-4 sm:p-5 rounded-3xl flex items-center justify-between gap-4 shadow-xs">
               <div className="flex items-center gap-3">
-                <AlertTriangle className="w-6 h-6 text-white shrink-0" />
+                <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" />
                 <div>
-                  <h4 className="font-black text-white text-sm">حسابك غير مفعل حالياً أو انتهت صلاحية الاشتراك</h4>
-                  <p className="text-xs text-zinc-400">يجب سداد وتأكيد الاشتراك الموحد ({subscriptionPrice} AED) أو إدخال كود إعفاء لتقديم عروض الأسعار للعملاء.</p>
+                  <h4 className="font-black text-[#142F52] text-sm">حسابك غير مفعل حالياً أو انتهت صلاحية الاشتراك</h4>
+                  <p className="text-xs text-[#64748B]">يجب سداد وتأكيد الاشتراك الموحد ({subscriptionPrice} AED) أو إدخال كود إعفاء لتقديم عروض الأسعار للعملاء.</p>
                 </div>
               </div>
               <button
@@ -409,7 +409,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                   if (onOpenSubscription) onOpenSubscription();
                   else setSelectedSection('subscription');
                 }}
-                className="bg-white hover:bg-zinc-200 text-black font-bold px-4 py-2.5 rounded-xl text-xs shrink-0"
+                className="bg-[#159B7A] hover:bg-[#108466] text-white font-bold px-4 py-2.5 rounded-xl text-xs shrink-0 cursor-pointer"
               >
                 تفعيل الاشتراك ⚡
               </button>
@@ -429,26 +429,26 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 return (
                   <div 
                     key={notif.id} 
-                    className="bg-gradient-to-r from-zinc-900 via-zinc-950 to-zinc-900 border-2 border-white p-5 rounded-3xl shadow-2xl space-y-3 animate-in zoom-in-95"
+                    className="bg-[#EAF6F1] border border-[#159B7A]/40 p-5 rounded-3xl shadow-sm space-y-3 animate-in zoom-in-95"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center font-black shrink-0 text-xl shadow-lg">
+                        <div className="w-12 h-12 rounded-2xl bg-[#159B7A] text-white flex items-center justify-center font-black shrink-0 text-xl shadow-xs">
                           🎉
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="bg-white text-black text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">
+                            <span className="bg-[#159B7A] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
                               إشعار فوري: تم قبول عرضك!
                             </span>
                             {notif.price && (
-                              <span className="bg-zinc-800 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border border-zinc-700">
+                              <span className="bg-white text-[#142F52] font-mono text-xs font-bold px-2 py-0.5 rounded border border-[#E5EDF3]">
                                 {notif.price} AED
                               </span>
                             )}
                           </div>
-                          <h4 className="font-black text-white text-base mt-1">{notif.title}</h4>
-                          <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed">
+                          <h4 className="font-black text-[#142F52] text-base mt-1">{notif.title}</h4>
+                          <p className="text-xs text-[#64748B] mt-0.5 leading-relaxed">
                             {notif.message}
                           </p>
                         </div>
@@ -458,7 +458,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onMarkNotificationRead(notif.id)}
-                          className="self-end sm:self-center text-xs text-zinc-400 hover:text-white underline cursor-pointer"
+                          className="self-end sm:self-center text-xs text-[#159B7A] hover:underline cursor-pointer font-bold"
                         >
                           تحديد كمقروء ✓
                         </button>
@@ -466,24 +466,24 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     </div>
 
                     {/* Quick Action Contact Buttons */}
-                    <div className="pt-2 border-t border-zinc-800 flex flex-wrap items-center gap-2">
+                    <div className="pt-2 border-t border-[#159B7A]/20 flex flex-wrap items-center gap-2">
                       {cleanPhone ? (
                         <>
                           <a
                             href={waUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-white hover:bg-zinc-200 text-black font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow active:scale-95 transition-all"
+                            className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
                           >
-                            <MessageCircle className="w-4 h-4 text-black" />
+                            <MessageCircle className="w-4 h-4 text-white" />
                             <span>مراسلة العميل واتساب فوراً ({cleanPhone})</span>
                           </a>
 
                           <a
                             href={`tel:${cleanPhone}`}
-                            className="bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all"
+                            className="bg-white hover:bg-[#F5F9FC] text-[#142F52] border border-[#E5EDF3] font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all"
                           >
-                            <Phone className="w-4 h-4 text-white" />
+                            <Phone className="w-4 h-4 text-[#159B7A]" />
                             <span>اتصال هاتفي بالعميل</span>
                           </a>
                         </>
@@ -492,7 +492,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setRequestTab('active_jobs')}
-                        className="text-xs text-zinc-300 hover:text-white px-3 py-2 rounded-xl bg-black border border-zinc-800 mr-auto"
+                        className="text-xs text-[#142F52] font-bold hover:text-[#159B7A] px-3 py-2 rounded-xl bg-white border border-[#E5EDF3] mr-auto cursor-pointer"
                       >
                         عرض المهمة في "المهام المقبولة" ➔
                       </button>
@@ -504,14 +504,14 @@ export const DriverView: React.FC<DriverViewProps> = ({
           )}
 
           {/* Subtabs for Requests: المتاحة / عروضي المقدمة / المهام النشطة */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5EDF3] pb-4">
             <div className="flex gap-2">
               <button
                 onClick={() => setRequestTab('available')}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                   requestTab === 'available'
-                    ? 'bg-white text-black shadow-md'
-                    : 'text-zinc-400 hover:text-white bg-zinc-900'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'text-[#64748B] hover:text-[#142F52] bg-white border border-[#E5EDF3]'
                 }`}
               >
                 الطلبات المتاحة ({openRequests.length})
@@ -519,10 +519,10 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
               <button
                 onClick={() => setRequestTab('my_bids')}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                   requestTab === 'my_bids'
-                    ? 'bg-white text-black shadow-md'
-                    : 'text-zinc-400 hover:text-white bg-zinc-900'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'text-[#64748B] hover:text-[#142F52] bg-white border border-[#E5EDF3]'
                 }`}
               >
                 عروضي المقدمة ({myBids.length})
@@ -530,10 +530,10 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
               <button
                 onClick={() => setRequestTab('active_jobs')}
-                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                   requestTab === 'active_jobs'
-                    ? 'bg-white text-black shadow-md'
-                    : 'text-zinc-400 hover:text-white bg-zinc-900'
+                    ? 'bg-[#159B7A] text-white shadow-xs'
+                    : 'text-[#64748B] hover:text-[#142F52] bg-white border border-[#E5EDF3]'
                 }`}
               >
                 المهام المقبولة ({activeJobs.length})
@@ -546,7 +546,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 <select
                   value={filterPickup}
                   onChange={(e) => setFilterPickup(e.target.value)}
-                  className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+                  className="bg-white border border-[#E5EDF3] rounded-xl px-3 py-1.5 text-xs text-[#142F52] focus:outline-none"
                 >
                   <option value="all">من: جميع الإمارات</option>
                   {UAE_EMIRATES.map(em => (
@@ -557,7 +557,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 <select
                   value={filterDelivery}
                   onChange={(e) => setFilterDelivery(e.target.value)}
-                  className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+                  className="bg-white border border-[#E5EDF3] rounded-xl px-3 py-1.5 text-xs text-[#142F52] focus:outline-none"
                 >
                   <option value="all">إلى: جميع الإمارات</option>
                   {UAE_EMIRATES.map(em => (
@@ -571,10 +571,10 @@ export const DriverView: React.FC<DriverViewProps> = ({
           {/* List of Requests */}
           {requestTab === 'available' && (
             filteredRequests.length === 0 ? (
-              <div className="bg-zinc-950 rounded-3xl p-8 sm:p-12 text-center border border-zinc-800 space-y-3">
-                <Truck className="w-14 h-14 text-zinc-600 mx-auto stroke-[1.5]" />
-                <h3 className="text-base sm:text-lg font-bold text-white">لا توجد طلبات توصيل متاحة حالياً</h3>
-                <p className="text-zinc-400 text-xs">سيتم تحديث القائمة تلقائياً فور قيام أي عميل بنشر طلب توصيل جديد.</p>
+              <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-3 shadow-xs">
+                <Truck className="w-14 h-14 text-[#94A3B8] mx-auto stroke-[1.5]" />
+                <h3 className="text-base sm:text-lg font-bold text-[#142F52]">لا توجد طلبات توصيل متاحة حالياً</h3>
+                <p className="text-[#64748B] text-xs">سيتم تحديث القائمة تلقائياً فور قيام أي عميل بنشر طلب توصيل جديد.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -586,10 +586,10 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     <div
                       key={req.id}
                       onClick={() => setSelectedRequestForDetails(req)}
-                      className={`bg-zinc-950 border transition-all duration-150 rounded-2xl p-4 sm:p-5 cursor-pointer shadow-lg hover:border-white hover:bg-zinc-900/40 group ${
+                      className={`bg-white border transition-all duration-150 rounded-2xl p-4 sm:p-5 cursor-pointer shadow-xs hover:border-[#159B7A] hover:bg-[#F5F9FC] group ${
                         alreadySubmitted
-                          ? 'border-zinc-700 bg-zinc-950/90'
-                          : 'border-zinc-800'
+                          ? 'border-[#159B7A]/50 bg-[#EAF6F1]/20'
+                          : 'border-[#E5EDF3]'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
@@ -597,39 +597,39 @@ export const DriverView: React.FC<DriverViewProps> = ({
                           {/* Route Emirate Badges */}
                           <div className="flex items-center gap-1.5 shrink-0">
                             <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
-                            <span className="text-zinc-500 text-xs">➔</span>
+                            <span className="text-[#94A3B8] text-xs">➔</span>
                             <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
                           </div>
 
                           {/* Request Title & Meta */}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-black text-white text-sm sm:text-base group-hover:text-zinc-100 transition-colors truncate">
+                              <h4 className="font-black text-[#142F52] text-sm sm:text-base group-hover:text-[#159B7A] transition-colors truncate">
                                 {req.title}
                               </h4>
-                              <span className="bg-zinc-900 text-zinc-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-zinc-700 shrink-0">
+                              <span className="bg-[#EEF4FA] text-[#142F52] text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[#E5EDF3] shrink-0">
                                 {req.packageType}
                               </span>
                               {alreadySubmitted && (
-                                <span className="bg-white text-black text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow shrink-0">
-                                  <Check className="w-3.5 h-3.5 stroke-[3] text-black" />
+                                <span className="bg-[#159B7A] text-white text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs shrink-0">
+                                  <Check className="w-3.5 h-3.5 stroke-[3] text-white" />
                                   <span>تم تقديم عرضك ({myOffer?.price} AED)</span>
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-1 flex-wrap">
+                            <div className="flex items-center gap-2 text-[11px] text-[#64748B] mt-1 flex-wrap">
                               <span>📅 {req.deliveryDate}</span>
                               <span>•</span>
                               <span>{req.createdAt}</span>
                               <span>•</span>
-                              <span className="text-white font-bold">{req.offers?.length || 0} عروض</span>
+                              <span className="text-[#142F52] font-bold">{req.offers?.length || 0} عروض</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Action CTA Button */}
-                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-800/80 w-full sm:w-auto justify-between sm:justify-start">
-                          <div className="text-[11px] text-zinc-400 sm:hidden">
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5EDF3] w-full sm:w-auto justify-between sm:justify-start">
+                          <div className="text-[11px] text-[#64748B] sm:hidden">
                             {alreadySubmitted ? 'اضغط للمعاينة والتعديل' : 'اضغط للمعاينة والتقديم'}
                           </div>
                           {alreadySubmitted ? (
@@ -639,9 +639,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
                                 e.stopPropagation();
                                 setSelectedRequestForDetails(req);
                               }}
-                              className="bg-zinc-900 hover:bg-zinc-800 text-white border-2 border-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                              className="bg-[#EEF4FA] hover:bg-[#E2EDF7] text-[#142F52] border border-[#E5EDF3] font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer"
                             >
-                              <Check className="w-4 h-4 text-white stroke-[2.5]" />
+                              <Check className="w-4 h-4 text-[#159B7A] stroke-[2.5]" />
                               <span>معاينة وتعديل العرض ({myOffer?.price} AED)</span>
                             </button>
                           ) : (
@@ -651,9 +651,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
                                 e.stopPropagation();
                                 setSelectedRequestForDetails(req);
                               }}
-                              className="bg-white hover:bg-zinc-200 text-black font-black px-4.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+                              className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-4.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
                             >
-                              <Eye className="w-3.5 h-3.5 text-black" />
+                              <Eye className="w-3.5 h-3.5 text-white" />
                               <span>معاينة الطلب والتفاصيل</span>
                             </button>
                           )}
@@ -669,7 +669,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
           {/* My Bids Tab */}
           {requestTab === 'my_bids' && (
             myBids.length === 0 ? (
-              <div className="bg-zinc-950 rounded-3xl p-8 text-center border border-zinc-800 text-zinc-400 text-xs">
+              <div className="bg-white rounded-3xl p-8 text-center border border-[#E5EDF3] text-[#64748B] text-xs shadow-xs">
                 لم تقم بتقديم عروض أسعار بعد. استعرض الطلبات المتاحة وقدم عروضك الآن.
               </div>
             ) : (
@@ -680,12 +680,12 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     <div 
                       key={req.id} 
                       onClick={() => setSelectedRequestForDetails(req)}
-                      className="bg-zinc-950 border border-zinc-800 hover:border-white rounded-2xl p-4 sm:p-5 space-y-3 cursor-pointer transition-all shadow-md group"
+                      className="bg-white border border-[#E5EDF3] hover:border-[#159B7A] rounded-2xl p-4 sm:p-5 space-y-3 cursor-pointer transition-all shadow-xs group"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <h3 className="font-bold text-white text-base group-hover:text-zinc-100 transition-colors">{req.title}</h3>
-                          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
+                          <h3 className="font-bold text-[#142F52] text-base group-hover:text-[#159B7A] transition-colors">{req.title}</h3>
+                          <div className="flex items-center gap-2 text-xs text-[#64748B] mt-1">
                             <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
                             <span>➔</span>
                             <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
@@ -695,7 +695,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                         </div>
                         <div className="flex items-center gap-2">
                           {myOffer && (
-                            <span className="bg-white text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow">
+                            <span className="bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20 font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-xs">
                               عرضك: {myOffer.price} AED
                             </span>
                           )}
@@ -708,14 +708,14 @@ export const DriverView: React.FC<DriverViewProps> = ({
                                   onDeleteOffer(req.id, myOffer.id);
                                 }
                               }}
-                              className="p-1.5 sm:p-2 rounded-xl bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-800/60 transition-all flex items-center gap-1 text-xs active:scale-95 cursor-pointer shrink-0"
+                              className="p-1.5 sm:p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all flex items-center gap-1 text-xs active:scale-95 cursor-pointer shrink-0"
                               title="سحب / حذف العرض"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               <span className="hidden sm:inline">سحب العرض</span>
                             </button>
                           )}
-                          <span className="bg-zinc-900 text-zinc-300 text-xs px-3 py-1.5 rounded-xl border border-zinc-700 hidden sm:inline-block">
+                          <span className="bg-[#EEF4FA] text-[#142F52] text-xs font-bold px-3 py-1.5 rounded-xl border border-[#E5EDF3] hidden sm:inline-block">
                             معاينة 👁️
                           </span>
                         </div>
@@ -730,8 +730,8 @@ export const DriverView: React.FC<DriverViewProps> = ({
           {/* Active Jobs Tab */}
           {requestTab === 'active_jobs' && (
             activeJobs.length === 0 ? (
-              <div className="bg-zinc-950 rounded-3xl p-8 text-center border border-zinc-800 text-zinc-400 text-xs space-y-2">
-                <Truck className="w-10 h-10 text-zinc-600 mx-auto" />
+              <div className="bg-white rounded-3xl p-8 text-center border border-[#E5EDF3] text-[#64748B] text-xs space-y-2 shadow-xs">
+                <Truck className="w-10 h-10 text-[#94A3B8] mx-auto" />
                 <p>لا توجد مهام توصيل مقبولة حالياً. فور قبول العميل لعرضك ستظهر هنا مع بيانات العميل للتواصل الفوري.</p>
               </div>
             ) : (
@@ -745,69 +745,69 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     : '#';
 
                   return (
-                    <div key={req.id} className="bg-zinc-950 border-2 border-white rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl">
+                    <div key={req.id} className="bg-white border border-[#E5EDF3] rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
                       {/* Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5EDF3] pb-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                            <span className="bg-white text-black font-black px-3 py-1 rounded-full text-xs shadow">
+                            <span className="bg-[#159B7A] text-white font-black px-3 py-1 rounded-full text-xs shadow-xs">
                               مهمة توصيل مقبولة وجارية 🚚
                             </span>
-                            <span className="bg-zinc-900 text-zinc-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-zinc-700">
+                            <span className="bg-[#EEF4FA] text-[#142F52] text-xs font-bold px-2.5 py-0.5 rounded-full border border-[#E5EDF3]">
                               {req.packageType}
                             </span>
                             {acceptedOffer && (
-                              <span className="bg-zinc-900 text-white font-mono text-xs font-black px-2.5 py-0.5 rounded border border-white/40">
+                              <span className="bg-[#EAF6F1] text-[#159B7A] font-mono text-xs font-black px-2.5 py-0.5 rounded border border-[#159B7A]/30">
                                 السعر المتفق عليه: {acceptedOffer.price} AED
                               </span>
                             )}
                           </div>
-                          <h3 className="font-black text-white text-lg">{req.title}</h3>
+                          <h3 className="font-black text-[#142F52] text-lg">{req.title}</h3>
                         </div>
 
                         <div className="text-left sm:text-right shrink-0">
-                          <div className="text-xs text-zinc-400">تاريخ الطلب: {req.createdAt}</div>
-                          <div className="text-xs font-bold text-white mt-0.5">📅 موعد التسليم: {req.deliveryDate}</div>
+                          <div className="text-xs text-[#64748B]">تاريخ الطلب: {req.createdAt}</div>
+                          <div className="text-xs font-bold text-[#142F52] mt-0.5">📅 موعد التسليم: {req.deliveryDate}</div>
                         </div>
                       </div>
 
                       {/* Locations and Package details */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-900/80 p-4 rounded-2xl border border-zinc-800 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] text-xs">
                         <div className="space-y-1">
-                          <div className="text-zinc-400 font-bold flex items-center gap-1.5">
+                          <div className="text-[#64748B] font-bold flex items-center gap-1.5">
                             <EmirateBadge emirate={req.pickupEmirate} type="pickup" size="sm" />
                             <span>نقطة الاستلام:</span>
                           </div>
-                          <p className="text-white font-medium pr-2">{req.pickupArea}</p>
+                          <p className="text-[#142F52] font-medium pr-2">{req.pickupArea}</p>
                         </div>
 
                         <div className="space-y-1">
-                          <div className="text-zinc-400 font-bold flex items-center gap-1.5">
+                          <div className="text-[#64748B] font-bold flex items-center gap-1.5">
                             <EmirateBadge emirate={req.deliveryEmirate} type="delivery" size="sm" />
                             <span>نقطة التسليم:</span>
                           </div>
-                          <p className="text-white font-medium pr-2">{req.deliveryArea}</p>
+                          <p className="text-[#142F52] font-medium pr-2">{req.deliveryArea}</p>
                         </div>
 
                         {req.notes && (
-                          <div className="sm:col-span-2 pt-2 border-t border-zinc-800">
-                            <span className="text-zinc-400 font-bold">ملاحظات العميل: </span>
-                            <span className="text-zinc-200">{req.notes}</span>
+                          <div className="sm:col-span-2 pt-2 border-t border-[#E5EDF3]">
+                            <span className="text-[#64748B] font-bold">ملاحظات العميل: </span>
+                            <span className="text-[#142F52]">{req.notes}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Customer Contact Card */}
-                      <div className="bg-black border border-zinc-700 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="bg-[#EEF4FA] border border-[#E5EDF3] p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-white shrink-0">
-                            <User className="w-5 h-5 text-white" />
+                          <div className="w-11 h-11 rounded-2xl bg-white border border-[#E5EDF3] flex items-center justify-center font-bold text-[#159B7A] shrink-0">
+                            <User className="w-5 h-5 text-[#159B7A]" />
                           </div>
                           <div>
-                            <div className="text-xs text-zinc-400 font-medium">بيانات العميل للتواصل المباشر:</div>
-                            <div className="font-black text-white text-base">{req.customerName || 'عميل واصل'}</div>
+                            <div className="text-xs text-[#64748B] font-medium">بيانات العميل للتواصل المباشر:</div>
+                            <div className="font-black text-[#142F52] text-base">{req.customerName || 'عميل واصل'}</div>
                             {req.customerPhone && (
-                              <div className="text-xs text-zinc-300 font-mono mt-0.5">
+                              <div className="text-xs text-[#159B7A] font-bold font-mono mt-0.5">
                                 📞 {req.customerPhone}
                               </div>
                             )}
@@ -821,22 +821,22 @@ export const DriverView: React.FC<DriverViewProps> = ({
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-white hover:bg-zinc-200 text-black font-black px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow active:scale-95 transition-all"
+                              className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-xs active:scale-95 transition-all"
                             >
-                              <MessageCircle className="w-4 h-4 text-black" />
+                              <MessageCircle className="w-4 h-4 text-white" />
                               <span>مراسلة عبر واتساب</span>
                             </a>
 
                             <a
                               href={`tel:${cleanPhone}`}
-                              className="bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 active:scale-95 transition-all"
+                              className="bg-white hover:bg-[#F5F9FC] text-[#142F52] border border-[#E5EDF3] font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 active:scale-95 transition-all"
                             >
-                              <Phone className="w-4 h-4 text-white" />
+                              <Phone className="w-4 h-4 text-[#159B7A]" />
                               <span>اتصال هاتفي</span>
                             </a>
                           </div>
                         ) : (
-                          <div className="text-xs text-zinc-400 italic">
+                          <div className="text-xs text-[#64748B] italic">
                             لا يتوفر رقم هاتف مسجل للعميل في هذا الطلب
                           </div>
                         )}
@@ -858,57 +858,57 @@ export const DriverView: React.FC<DriverViewProps> = ({
         <div className="space-y-6">
           
           {/* Subscription Status Card */}
-          <div className="bg-zinc-950 border-2 border-white rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
+          <div className="bg-white border border-[#E5EDF3] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5EDF3] pb-6">
               <div>
-                <span className="bg-zinc-900 text-zinc-300 text-[10px] font-black px-3 py-1 rounded-full border border-zinc-700 inline-block mb-2">
+                <span className="bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20 text-[10px] font-black px-3 py-1 rounded-full inline-block mb-2">
                   الباقة الموحدة للسائقين المعتمدين ⭐
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black text-white">تفاصيل الاشتراك الرسمي والفاتورة</h2>
-                <p className="text-xs text-zinc-400 mt-1">تجديد شهري شامل لجميع مميزات المنصة بدون أي عمولة إضافية</p>
+                <h2 className="text-xl sm:text-2xl font-black text-[#142F52]">تفاصيل الاشتراك الرسمي والفاتورة</h2>
+                <p className="text-xs text-[#64748B] mt-1">تجديد شهري شامل لجميع مميزات المنصة بدون أي عمولة إضافية</p>
               </div>
 
               <div className="text-right sm:text-left">
-                <span className="text-3xl font-black text-white">{subscriptionPrice}</span>
-                <span className="text-xs text-zinc-400 font-bold mr-1">درهم / شهرياً</span>
+                <span className="text-3xl font-black text-[#159B7A]">{subscriptionPrice}</span>
+                <span className="text-xs text-[#64748B] font-bold mr-1">درهم / شهرياً</span>
               </div>
             </div>
 
             {/* Status Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
-              <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-1">
-                <div className="text-zinc-400">حالة الاشتراك الحالية:</div>
-                <div className="font-black text-sm text-white">
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-1">
+                <div className="text-[#64748B]">حالة الاشتراك الحالية:</div>
+                <div className="font-black text-sm text-[#142F52]">
                   {isSuspended ? (
-                    <span className="text-white font-extrabold flex items-center gap-1">
+                    <span className="text-red-600 font-extrabold flex items-center gap-1">
                       <span>⛔ معلق لانتهاء كود الإعفاء</span>
                     </span>
                   ) : subStatus.isExemption ? (
-                    <span className="text-white font-extrabold flex items-center gap-1">
+                    <span className="text-[#159B7A] font-extrabold flex items-center gap-1">
                       <span>🟢 إعفاء نشط ({driver.usedExemptionCode || 'كود ترويجي'})</span>
                     </span>
                   ) : driver.subscriptionStatus === 'active' ? (
-                    '🟢 نشط ومفعل'
+                    <span className="text-[#159B7A]">🟢 نشط ومفعل</span>
                   ) : (
-                    '⚠️ غير نشط'
+                    <span className="text-amber-600">⚠️ غير نشط</span>
                   )}
                 </div>
               </div>
 
-              <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-1">
-                <div className="text-zinc-400">تاريخ انتهاء الاشتراك:</div>
-                <div className="font-bold text-sm text-white font-mono">{driver.subscriptionExpiry}</div>
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-1">
+                <div className="text-[#64748B]">تاريخ انتهاء الاشتراك:</div>
+                <div className="font-bold text-sm text-[#142F52] font-mono">{driver.subscriptionExpiry}</div>
               </div>
 
-              <div className="bg-black p-4 rounded-2xl border border-zinc-800 space-y-1">
-                <div className="text-zinc-400">الأيام المتبقية:</div>
-                <div className="font-bold text-sm text-white">
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-1">
+                <div className="text-[#64748B]">الأيام المتبقية:</div>
+                <div className="font-bold text-sm text-[#142F52]">
                   {isSuspended ? (
-                    <span className="text-zinc-400">انتهت فترة الإعفاء (معلق)</span>
+                    <span className="text-red-500">انتهت فترة الإعفاء (معلق)</span>
                   ) : daysRemaining > 0 ? (
                     `${daysRemaining} يوماً`
                   ) : (
-                    'منتهي الصلاحية'
+                    <span className="text-red-500">منتهي الصلاحية</span>
                   )}
                 </div>
               </div>
@@ -916,11 +916,11 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
             {/* Suspended Notice Banner inside Subscription Section */}
             {isSuspended && (
-              <div className="bg-black border-2 border-white p-4 rounded-2xl text-xs text-white space-y-2">
+              <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-xs text-red-800 space-y-2">
                 <div className="flex items-center gap-2 font-black text-sm">
                   <span>⛔ تنبيه تعليق الحساب (Account Suspended):</span>
                 </div>
-                <p className="text-zinc-300 leading-relaxed text-[11px]">
+                <p className="text-red-700 leading-relaxed text-[11px]">
                   تم تعليق حسابك نظراً لانتهاء فترة كود الإعفاء وعدم سداد الاشتراك الشهري. قم بسداد الاشتراك الشهري عبر بوابة زينة ({subscriptionPrice} AED) أو إدخال كود إعفاء جديد لتنشيط حسابك فوراً.
                 </p>
               </div>
@@ -928,9 +928,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
 
             {/* 5-Day Automated Expiry Reminder Notice */}
             {!isSuspended && (
-              <div className="bg-zinc-900 border border-zinc-700 p-4 rounded-2xl text-xs text-zinc-300 space-y-1.5">
-                <div className="flex items-center gap-2 font-bold text-white">
-                  <Bell className="w-4 h-4 text-white" />
+              <div className="bg-[#EEF4FA] border border-[#E5EDF3] p-4 rounded-2xl text-xs text-[#142F52] space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-[#142F52]">
+                  <Bell className="w-4 h-4 text-[#159B7A]" />
                   <span>
                     {subStatus.isExemption
                       ? 'نظام التنبيه التلقائي قبل انتهاء كود الإعفاء بـ 5 أيام:'
@@ -938,7 +938,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                     }
                   </span>
                 </div>
-                <p className="text-zinc-400 leading-relaxed text-[11px]">
+                <p className="text-[#64748B] leading-relaxed text-[11px]">
                   {subStatus.isExemption
                     ? `يقوم نظام واصل بإرسال إشعار ورسالة تذكير لهاتفك (${driver.phone}) قبل انتهاء كود الإعفاء بـ 5 أيام لتتمكن من سداد الاشتراك الشهري وتجنب تعليق الحساب.`
                     : `يقوم نظام واصل بإرسال رسالة تذكير وفاتورة رسمية لرقم هاتفك المدرج (${driver.phone}) قبل انتهاء موعد اشتراكك بـ 5 أيام لضمان استمرار ظهور عروضك دون انقطاع.`
@@ -952,9 +952,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInvoiceModal(true)}
-                className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 px-4 rounded-2xl text-xs border border-zinc-700 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="bg-white hover:bg-[#F5F9FC] text-[#142F52] font-bold py-3 px-4 rounded-2xl text-xs border border-[#E5EDF3] flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
               >
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 text-[#159B7A]" />
                 <span>عرض الفاتورة الرسمية</span>
               </button>
 
@@ -962,9 +962,9 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 href={getWhatsAppInvoiceUrl(currentInvoice)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 px-4 rounded-2xl text-xs border border-zinc-700 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="bg-white hover:bg-[#F5F9FC] text-[#142F52] font-bold py-3 px-4 rounded-2xl text-xs border border-[#E5EDF3] flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-4 h-4 text-[#159B7A]" />
                 <span>إرسال الفاتورة للواتساب</span>
               </a>
 
@@ -973,7 +973,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                 onClick={() => {
                   if (onOpenSubscription) onOpenSubscription();
                 }}
-                className="bg-white hover:bg-zinc-200 text-black font-black py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl"
+                className="bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md cursor-pointer"
               >
                 <span>
                   {isSuspended 

@@ -57,25 +57,25 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#142F52]/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
       
       {/* Modal Container */}
-      <div className="bg-zinc-950 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl max-w-xl w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+      <div className="bg-white border-t sm:border border-[#E5EDF3] rounded-t-3xl sm:rounded-3xl max-w-xl w-full max-h-[92dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
         
         {/* Mobile Drag Indicator */}
-        <div className="sm:hidden pt-2.5 pb-1 bg-black flex justify-center">
-          <div className="w-12 h-1.5 bg-zinc-700 rounded-full" />
+        <div className="sm:hidden pt-2.5 pb-1 bg-[#F5F9FC] flex justify-center">
+          <div className="w-12 h-1.5 bg-[#CBD5E1] rounded-full" />
         </div>
 
         {/* Modal Header */}
-        <div className="bg-black px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+        <div className="bg-[#F5F9FC] px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E5EDF3] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white text-black flex items-center justify-center font-black shadow-md">
+            <div className="w-10 h-10 rounded-2xl bg-[#159B7A] text-white flex items-center justify-center font-black shadow-md">
               <Package className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-lg font-black text-white">تفاصيل طلب التوصيل</h3>
-              <p className="text-[11px] sm:text-xs text-zinc-400">معاينة متطلبات العميل بدقة قبل تقديم عرض السعر</p>
+              <h3 className="text-sm sm:text-lg font-black text-[#142F52]">تفاصيل طلب التوصيل</h3>
+              <p className="text-[11px] sm:text-xs text-[#64748B]">معاينة متطلبات العميل بدقة قبل تقديم عرض السعر</p>
             </div>
           </div>
 
@@ -83,7 +83,7 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="إغلاق"
-            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors active:scale-95 cursor-pointer"
+            className="p-2 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3] transition-colors active:scale-95 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -93,62 +93,62 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 overscroll-contain touch-pan-y text-right">
           
           {/* Main Title & Badges */}
-          <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3">
+          <div className="bg-[#F5F9FC] border border-[#E5EDF3] rounded-2xl p-4 sm:p-5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="bg-zinc-800 text-zinc-300 text-xs font-bold px-3 py-1 rounded-full border border-zinc-700 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="bg-[#EAF6F1] text-[#159B7A] text-xs font-bold px-3 py-1 rounded-full border border-[#159B7A]/20 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-[#159B7A]" />
                 <span>{request.packageType}</span>
               </span>
 
-              <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium">
+              <div className="flex items-center gap-2 text-[11px] text-[#64748B] font-medium">
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                  <Clock className="w-3.5 h-3.5 text-[#94A3B8]" />
                   {request.createdAt}
                 </span>
                 <span>•</span>
-                <span className="text-white font-bold bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-700">
+                <span className="text-[#159B7A] font-bold bg-[#EAF6F1] px-2 py-0.5 rounded-md border border-[#159B7A]/20">
                   {request.offers?.length || 0} عروض مقدمة
                 </span>
               </div>
             </div>
 
-            <h4 className="text-base sm:text-lg font-black text-white leading-snug">
+            <h4 className="text-base sm:text-lg font-black text-[#142F52] leading-snug">
               {request.title}
             </h4>
           </div>
 
           {/* Route Section (من ➔ إلى) */}
-          <div className="bg-black border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 border-b border-zinc-800 pb-2">
-              <MapPin className="w-4 h-4 text-white" />
+          <div className="bg-white border border-[#E5EDF3] rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#64748B] border-b border-[#E5EDF3] pb-2">
+              <MapPin className="w-4 h-4 text-[#159B7A]" />
               <span>مسار التوصيل ونقاط الاستلام والتسليم</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
               {/* Pickup */}
-              <div className="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-xl space-y-1.5">
+              <div className="bg-[#F5F9FC] border border-[#E5EDF3] p-3.5 rounded-xl space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400 font-semibold">نقطة الاستلام:</span>
+                  <span className="text-[11px] text-[#64748B] font-semibold">نقطة الاستلام:</span>
                   <EmirateBadge emirate={request.pickupEmirate} type="pickup" size="sm" />
                 </div>
-                <div className="font-bold text-white text-sm">
+                <div className="font-bold text-[#142F52] text-sm">
                   {request.pickupEmirate}
                 </div>
-                <div className="text-xs text-zinc-300">
+                <div className="text-xs text-[#64748B]">
                   {request.pickupArea || 'المنطقة غير محددة'}
                 </div>
               </div>
 
               {/* Delivery */}
-              <div className="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-xl space-y-1.5">
+              <div className="bg-[#F5F9FC] border border-[#E5EDF3] p-3.5 rounded-xl space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-zinc-400 font-semibold">نقطة التسليم:</span>
+                  <span className="text-[11px] text-[#64748B] font-semibold">نقطة التسليم:</span>
                   <EmirateBadge emirate={request.deliveryEmirate} type="delivery" size="sm" />
                 </div>
-                <div className="font-bold text-white text-sm">
+                <div className="font-bold text-[#142F52] text-sm">
                   {request.deliveryEmirate}
                 </div>
-                <div className="text-xs text-zinc-300">
+                <div className="text-xs text-[#64748B]">
                   {request.deliveryArea || 'المنطقة غير محددة'}
                 </div>
               </div>
@@ -157,22 +157,22 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
 
           {/* Package Specifications & Delivery Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="bg-zinc-900/90 border border-zinc-800 p-4 rounded-2xl space-y-1">
-              <div className="flex items-center gap-2 text-xs text-zinc-400 font-bold">
-                <Calendar className="w-4 h-4 text-white" />
+            <div className="bg-[#F5F9FC] border border-[#E5EDF3] p-4 rounded-2xl space-y-1">
+              <div className="flex items-center gap-2 text-xs text-[#64748B] font-bold">
+                <Calendar className="w-4 h-4 text-[#159B7A]" />
                 <span>موعد التسليم المطلوب:</span>
               </div>
-              <p className="font-black text-white text-sm pt-1">
+              <p className="font-black text-[#142F52] text-sm pt-1">
                 {request.deliveryDate}
               </p>
             </div>
 
-            <div className="bg-zinc-900/90 border border-zinc-800 p-4 rounded-2xl space-y-1">
-              <div className="flex items-center gap-2 text-xs text-zinc-400 font-bold">
-                <Weight className="w-4 h-4 text-white" />
+            <div className="bg-[#F5F9FC] border border-[#E5EDF3] p-4 rounded-2xl space-y-1">
+              <div className="flex items-center gap-2 text-xs text-[#64748B] font-bold">
+                <Weight className="w-4 h-4 text-[#159B7A]" />
                 <span>الوزن والمواصفات:</span>
               </div>
-              <p className="font-black text-white text-sm pt-1">
+              <p className="font-black text-[#142F52] text-sm pt-1">
                 {request.packageWeight || 'طرد عادي'} {request.packageSize ? `(${request.packageSize})` : ''}
               </p>
             </div>
@@ -180,12 +180,12 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
 
           {/* Customer Special Notes */}
           {request.notes && (
-            <div className="bg-zinc-900/90 border border-zinc-800 p-4 sm:p-5 rounded-2xl space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-zinc-400">
-                <FileText className="w-4 h-4 text-white" />
+            <div className="bg-[#F5F9FC] border border-[#E5EDF3] p-4 sm:p-5 rounded-2xl space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#64748B]">
+                <FileText className="w-4 h-4 text-[#159B7A]" />
                 <span>ملاحظات وتعليمات العميل:</span>
               </div>
-              <p className="text-xs sm:text-sm text-white leading-relaxed bg-black/60 p-3 rounded-xl border border-zinc-800">
+              <p className="text-xs sm:text-sm text-[#142F52] leading-relaxed bg-white p-3 rounded-xl border border-[#E5EDF3]">
                 {request.notes}
               </p>
             </div>
@@ -193,24 +193,24 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
 
           {/* If Driver already submitted an offer */}
           {alreadySubmitted && myOffer && (
-            <div className="bg-zinc-900 border-2 border-white p-4 sm:p-5 rounded-2xl space-y-2.5 shadow-xl animate-in fade-in">
-              <div className="flex items-center gap-2 text-white text-xs sm:text-sm font-black">
-                <CheckCircle2 className="w-5 h-5 text-white" />
+            <div className="bg-[#EAF6F1] border-2 border-[#159B7A] p-4 sm:p-5 rounded-2xl space-y-2.5 shadow-sm animate-in fade-in">
+              <div className="flex items-center gap-2 text-[#159B7A] text-xs sm:text-sm font-black">
+                <CheckCircle2 className="w-5 h-5 text-[#159B7A]" />
                 <span>لقد قمت بتقديم عرضك لهذا الطلب مسبقاً</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                <div className="bg-black p-2.5 rounded-xl border border-zinc-800">
-                  <span className="text-zinc-400 block text-[10px]">سعرك المقترح:</span>
-                  <span className="font-black text-white text-sm font-mono">{myOffer.price} AED</span>
+                <div className="bg-white p-2.5 rounded-xl border border-[#159B7A]/20">
+                  <span className="text-[#64748B] block text-[10px]">سعرك المقترح:</span>
+                  <span className="font-black text-[#159B7A] text-sm font-mono">{myOffer.price} AED</span>
                 </div>
-                <div className="bg-black p-2.5 rounded-xl border border-zinc-800">
-                  <span className="text-zinc-400 block text-[10px]">موعد التوصيل:</span>
-                  <span className="font-bold text-white text-xs truncate block">{myOffer.estimatedDeliveryTime}</span>
+                <div className="bg-white p-2.5 rounded-xl border border-[#159B7A]/20">
+                  <span className="text-[#64748B] block text-[10px]">موعد التوصيل:</span>
+                  <span className="font-bold text-[#142F52] text-xs truncate block">{myOffer.estimatedDeliveryTime}</span>
                 </div>
               </div>
               {myOffer.note && (
-                <div className="text-[11px] text-zinc-300 bg-black/60 p-2 rounded-lg border border-zinc-800">
-                  <span className="text-zinc-400 font-bold">رسالتك: </span>
+                <div className="text-[11px] text-[#142F52] bg-white p-2 rounded-lg border border-[#159B7A]/20">
+                  <span className="text-[#64748B] font-bold">رسالتك: </span>
                   <span>{myOffer.note}</span>
                 </div>
               )}
@@ -220,13 +220,13 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
         </div>
 
         {/* Modal Action Footer */}
-        <div className="bg-black p-4 sm:px-6 border-t border-zinc-800 shrink-0 flex flex-col sm:flex-row items-center gap-3">
+        <div className="bg-[#F5F9FC] p-4 sm:px-6 border-t border-[#E5EDF3] shrink-0 flex flex-col sm:flex-row items-center gap-3">
           {alreadySubmitted ? (
             <>
               <button
                 type="button"
                 onClick={handleProceedToOffer}
-                className="w-full sm:flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 sm:py-3.5 rounded-xl shadow-lg transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                className="w-full sm:flex-1 bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3 sm:py-3.5 rounded-xl shadow-md transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>تحديث / تعديل عرض السعر</span>
@@ -241,7 +241,7 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
                       onDeleteOffer(request.id, myOffer.id);
                     }
                   }}
-                  className="w-full sm:w-auto bg-zinc-900 hover:bg-red-950/60 text-zinc-300 hover:text-red-400 font-bold py-3 sm:py-3.5 px-4 rounded-xl border border-zinc-700 hover:border-red-800/60 transition-all text-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  className="w-full sm:w-auto bg-white hover:bg-red-50 text-red-600 font-bold py-3 sm:py-3.5 px-4 rounded-xl border border-red-200 transition-all text-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>سحب / حذف العرض</span>
@@ -255,7 +255,7 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
                     onClose();
                     onViewMyBids();
                   }}
-                  className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3 sm:py-3.5 px-4 rounded-xl border border-zinc-700 transition-all text-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  className="w-full sm:w-auto bg-white hover:bg-[#EEF4FA] text-[#142F52] font-bold py-3 sm:py-3.5 px-4 rounded-xl border border-[#E5EDF3] transition-all text-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <span>عروضي المقدمة</span>
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -265,7 +265,7 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold py-3 sm:py-3.5 px-5 rounded-xl border border-zinc-700 transition-all text-xs sm:text-sm active:scale-95 cursor-pointer"
+                className="w-full sm:w-auto bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-3 sm:py-3.5 px-5 rounded-xl border border-[#E5EDF3] transition-all text-xs sm:text-sm active:scale-95 cursor-pointer"
               >
                 إلغاء / إغلاق
               </button>
@@ -275,7 +275,7 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
               <button
                 type="button"
                 onClick={handleProceedToOffer}
-                className="w-full sm:flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 sm:py-3.5 rounded-xl shadow-lg transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                className="w-full sm:flex-1 bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3 sm:py-3.5 rounded-xl shadow-md transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>تقديم عرض سعر للعميل الآن</span>
@@ -284,7 +284,7 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold py-3 sm:py-3.5 px-6 rounded-xl border border-zinc-700 transition-all text-xs sm:text-sm active:scale-95 cursor-pointer"
+                className="w-full sm:w-auto bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-3 sm:py-3.5 px-6 rounded-xl border border-[#E5EDF3] transition-all text-xs sm:text-sm active:scale-95 cursor-pointer"
               >
                 إلغاء
               </button>

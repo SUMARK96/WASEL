@@ -158,21 +158,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
     <div className="space-y-6 sm:space-y-8">
       
       {/* Hero Header */}
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 sm:p-8 shadow-xl">
+      <div className="bg-white border border-[#E5EDF3] rounded-3xl p-5 sm:p-8 shadow-sm">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold text-white bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700 mb-2 inline-block">
+            <span className="text-xs font-bold text-[#159B7A] bg-[#EAF6F1] px-3 py-1 rounded-full border border-[#159B7A]/20 mb-2 inline-block">
               لوحة تحكم منصة واصل (WASEL Admin)
             </span>
-            <h1 className="text-xl sm:text-2xl font-black text-white">إحصائيات المنصة واشتراكات السائقين المستقلين</h1>
-            <p className="text-xs text-zinc-400 mt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-[#142F52]">إحصائيات المنصة واشتراكات السائقين المستقلين</h1>
+            <p className="text-xs text-[#64748B] mt-1">
               نموذج الإيرادات: اشتراك شهري موحد ({subscriptionPrice} AED) للسائقين للتوصيل بين إمارات الدولة
             </p>
           </div>
 
-          <div className="text-left bg-black px-5 py-3 rounded-2xl border border-zinc-800">
-            <span className="text-xs text-zinc-400 font-semibold block">إجمالي الدخل الشهري المتوقع</span>
-            <span className="text-xl sm:text-2xl font-black text-white">{totalRevenue.toLocaleString()} AED</span>
+          <div className="text-left bg-[#F5F9FC] px-5 py-3 rounded-2xl border border-[#E5EDF3]">
+            <span className="text-xs text-[#64748B] font-semibold block">إجمالي الدخل الشهري المتوقع</span>
+            <span className="text-xl sm:text-2xl font-black text-[#159B7A]">{totalRevenue.toLocaleString()} AED</span>
           </div>
         </div>
       </div>
@@ -180,48 +180,48 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         
-        <div className="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-bold">إجمالي إيراد الاشتراكات</span>
-            <div className="p-2 rounded-xl bg-zinc-900 text-white border border-zinc-800">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+          <div className="flex items-center justify-between text-[#64748B]">
+            <span className="text-xs font-bold text-[#142F52]">إجمالي إيراد الاشتراكات</span>
+            <div className="p-2 rounded-xl bg-[#EAF6F1] text-[#159B7A]">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">{totalRevenue.toLocaleString()} AED</div>
-          <span className="text-[10px] text-zinc-400 font-bold block">↑ اشتراكات شهرية نشطة ({subscriptionPrice} AED/سائق)</span>
+          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{totalRevenue.toLocaleString()} AED</div>
+          <span className="text-[10px] text-[#159B7A] font-bold block">↑ اشتراكات شهرية نشطة ({subscriptionPrice} AED/سائق)</span>
         </div>
 
-        <div className="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-bold">السائقين المشتركين والنشطين</span>
-            <div className="p-2 rounded-xl bg-zinc-900 text-white border border-zinc-800">
-              <Truck className="w-5 h-5" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+          <div className="flex items-center justify-between text-[#64748B]">
+            <span className="text-xs font-bold text-[#142F52]">السائقين المشتركين والنشطين</span>
+            <div className="p-2 rounded-xl bg-[#EEF4FA] text-[#142F52]">
+              <Truck className="w-5 h-5 text-[#159B7A]" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">{activeDriversCount} سائقين</div>
-          <span className="text-[10px] text-zinc-400 font-bold block">100% تم التوثيق برخصة الإمارات</span>
+          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{activeDriversCount} سائقين</div>
+          <span className="text-[10px] text-[#64748B] font-bold block">100% تم التوثيق برخصة الإمارات</span>
         </div>
 
-        <div className="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-bold">طلبات التوصيل المنشورة</span>
-            <div className="p-2 rounded-xl bg-zinc-900 text-white border border-zinc-800">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+          <div className="flex items-center justify-between text-[#64748B]">
+            <span className="text-xs font-bold text-[#142F52]">طلبات التوصيل المنشورة</span>
+            <div className="p-2 rounded-xl bg-[#EAF6F1] text-[#159B7A]">
               <Package className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">{requests.length} طلبات</div>
-          <span className="text-[10px] text-zinc-400 font-bold block">بين كافة إمارات الدولة</span>
+          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{requests.length} طلبات</div>
+          <span className="text-[10px] text-[#64748B] font-bold block">بين كافة إمارات الدولة</span>
         </div>
 
-        <div className="bg-zinc-950 p-4 sm:p-5 rounded-2xl border border-zinc-800 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-bold">عروض الأسعار المقدمة</span>
-            <div className="p-2 rounded-xl bg-zinc-900 text-white border border-zinc-800">
-              <Sparkles className="w-5 h-5" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] space-y-2 shadow-xs">
+          <div className="flex items-center justify-between text-[#64748B]">
+            <span className="text-xs font-bold text-[#142F52]">عروض الأسعار المقدمة</span>
+            <div className="p-2 rounded-xl bg-[#EEF4FA] text-[#142F52]">
+              <Sparkles className="w-5 h-5 text-[#159B7A]" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">{totalOffersCount} عروض</div>
-          <span className="text-[10px] text-zinc-400 font-bold block">متوسط العروض المتوفرة</span>
+          <div className="text-xl sm:text-2xl font-black text-[#142F52]">{totalOffersCount} عروض</div>
+          <span className="text-[10px] text-[#64748B] font-bold block">متوسط العروض المتوفرة</span>
         </div>
 
       </div>
@@ -229,14 +229,14 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================================= */}
       {/* 1. EDITABLE UNIFIED SUBSCRIPTION PLAN SECTION */}
       {/* ========================================================================= */}
-      <div className="bg-zinc-950 p-5 sm:p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-[#E5EDF3] space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="font-black text-white text-base sm:text-lg flex items-center gap-2">
+            <h3 className="font-black text-[#142F52] text-base sm:text-lg flex items-center gap-2">
               <span>الباقة الموحدة للسائقين</span>
-              <span className="text-xs text-zinc-400 font-normal">(قابلة للتعديل الفوري من الإدارة)</span>
+              <span className="text-xs text-[#64748B] font-normal">(قابلة للتعديل الفوري من الإدارة)</span>
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#64748B] mt-0.5">
               تحديد سعر الاشتراك الشهري الموحد لجميع السائقين الجدد والحاليين، وينعكس السعر مباشرة في نافذة التسجيل والتجديد.
             </p>
           </div>
@@ -247,7 +247,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 setTempPrice(subscriptionPrice.toString());
                 setIsEditingPrice(true);
               }}
-              className="flex items-center gap-1.5 bg-white hover:bg-zinc-200 text-black px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-md self-start sm:self-auto"
+              className="flex items-center gap-1.5 bg-[#159B7A] hover:bg-[#108466] text-white px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-sm self-start sm:self-auto cursor-pointer"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>تعديل سعر الباقة</span>
@@ -256,45 +256,45 @@ export const AdminView: React.FC<AdminViewProps> = ({
         </div>
 
         {priceSaveMessage && (
-          <div className="bg-zinc-900 border border-zinc-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 animate-in fade-in">
-            <Check className="w-4 h-4 text-white" />
+          <div className="bg-[#EAF6F1] border border-[#159B7A]/30 text-[#159B7A] text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 animate-in fade-in">
+            <Check className="w-4 h-4 text-[#159B7A]" />
             <span>{priceSaveMessage}</span>
           </div>
         )}
 
-        <div className="bg-black p-4 sm:p-5 rounded-2xl border border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-[#F5F9FC] p-4 sm:p-5 rounded-2xl border border-[#E5EDF3] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-white text-sm sm:text-base">{UNIFIED_SUBSCRIPTION_PLAN.name}</span>
-              <span className="text-xs font-black text-white bg-zinc-900 px-3 py-1 rounded-full border border-zinc-700">
+              <span className="font-extrabold text-[#142F52] text-sm sm:text-base">{UNIFIED_SUBSCRIPTION_PLAN.name}</span>
+              <span className="text-xs font-black text-[#159B7A] bg-[#EAF6F1] px-3 py-1 rounded-full border border-[#159B7A]/20">
                 {subscriptionPrice} AED / شهر
               </span>
             </div>
-            <p className="text-xs text-zinc-400">باقة واحدة موحدة للجميع مع نظام الأولوية بالتقييم وعمولة 0%</p>
+            <p className="text-xs text-[#64748B]">باقة واحدة موحدة للجميع مع نظام الأولوية بالتقييم وعمولة 0%</p>
           </div>
 
           {isEditingPrice ? (
-            <div className="flex flex-wrap items-center gap-2 bg-zinc-900 p-2.5 rounded-xl border border-zinc-700">
-              <span className="text-xs font-bold text-zinc-300">السعر الجديد (AED):</span>
+            <div className="flex flex-wrap items-center gap-2 bg-white p-2.5 rounded-xl border border-[#E5EDF3]">
+              <span className="text-xs font-bold text-[#142F52]">السعر الجديد (AED):</span>
               <input
                 type="number"
                 min="0"
                 step="1"
                 value={tempPrice}
                 onChange={(e) => setTempPrice(e.target.value)}
-                className="w-24 bg-black border border-zinc-600 rounded-lg px-2.5 py-1.5 text-sm font-black text-white text-center focus:outline-none focus:border-white"
+                className="w-24 bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] rounded-lg px-2.5 py-1.5 text-sm font-black text-[#142F52] text-center focus:outline-none"
                 autoFocus
               />
               <button
                 onClick={handleSavePrice}
-                className="bg-white hover:bg-zinc-200 text-black text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all"
+                className="bg-[#159B7A] hover:bg-[#108466] text-white text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>حفظ</span>
               </button>
               <button
                 onClick={() => setIsEditingPrice(false)}
-                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 active:scale-95"
+                className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>إلغاء</span>
@@ -303,12 +303,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
           ) : (
             <div className="text-left sm:text-right flex items-center gap-4">
               <div>
-                <span className="text-xs text-zinc-400 block">السائقين المشتركين:</span>
-                <span className="text-base sm:text-lg font-black text-white">{activeDriversCount} كباتن نشطين</span>
+                <span className="text-xs text-[#64748B] block">السائقين المشتركين:</span>
+                <span className="text-base sm:text-lg font-black text-[#142F52]">{activeDriversCount} كباتن نشطين</span>
               </div>
-              <div className="border-r border-zinc-800 pr-4">
-                <span className="text-xs text-zinc-400 block">سعر التجديد الحالي:</span>
-                <span className="text-base sm:text-lg font-black text-white">{subscriptionPrice} درهم</span>
+              <div className="border-r border-[#E5EDF3] pr-4">
+                <span className="text-xs text-[#64748B] block">سعر التجديد الحالي:</span>
+                <span className="text-base sm:text-lg font-black text-[#159B7A]">{subscriptionPrice} درهم</span>
               </div>
             </div>
           )}
@@ -318,21 +318,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================================= */}
       {/* 2. EXEMPTION CODES MANAGEMENT SECTION (أكواد الإعفاء والاشتراكات المجانية) */}
       {/* ========================================================================= */}
-      <div className="bg-zinc-950 p-5 sm:p-6 rounded-3xl border border-zinc-800 space-y-4 shadow-xl">
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-[#E5EDF3] space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-white" />
-              <h3 className="font-black text-white text-base sm:text-lg">أكواد الإعفاء والاشتراكات المجانية للسائقين</h3>
+              <Ticket className="w-5 h-5 text-[#159B7A]" />
+              <h3 className="font-black text-[#142F52] text-base sm:text-lg">أكواد الإعفاء والاشتراكات المجانية للسائقين</h3>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#64748B] mt-0.5">
               إنشاء أكواد إعفاء مخصصة تمنح السائقين اشتراكاً مجانياً لفترة محددة (شهر، شهرين، أو أكثر) مع تحديد سقف لعدد السائقين المستفيدين.
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateCodeModal(true)}
-            className="flex items-center gap-1.5 bg-white hover:bg-zinc-200 text-black px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-md self-start sm:self-auto"
+            className="flex items-center gap-1.5 bg-[#159B7A] hover:bg-[#108466] text-white px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shadow-sm self-start sm:self-auto cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>إنشاء كود إعفاء جديد</span>
@@ -341,10 +341,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
         {/* Exemption Codes List */}
         {exemptionCodes.length === 0 ? (
-          <div className="bg-black rounded-2xl p-6 text-center border border-zinc-800 space-y-2">
-            <Ticket className="w-10 h-10 text-zinc-600 mx-auto" />
-            <p className="text-xs text-zinc-400 font-bold">لا توجد أكواد إعفاء منشأة حالياً.</p>
-            <p className="text-[11px] text-zinc-500">اضغط على زر "إنشاء كود إعفاء جديد" لإضافة أول كود للسائقين.</p>
+          <div className="bg-[#F5F9FC] rounded-2xl p-6 text-center border border-[#E5EDF3] space-y-2">
+            <Ticket className="w-10 h-10 text-[#94A3B8] mx-auto" />
+            <p className="text-xs text-[#64748B] font-bold">لا توجد أكواد إعفاء منشأة حالياً.</p>
+            <p className="text-[11px] text-[#94A3B8]">اضغط على زر "إنشاء كود إعفاء جديد" لإضافة أول كود للسائقين.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -357,23 +357,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   key={item.id}
                   className={`p-4 rounded-2xl border transition-all space-y-3 ${
                     item.isActive && !isExhausted
-                      ? 'bg-black border-zinc-700 hover:border-white'
-                      : 'bg-zinc-900/40 border-zinc-800 opacity-80'
+                      ? 'bg-white border-[#E5EDF3] hover:border-[#159B7A]'
+                      : 'bg-[#F5F9FC] border-[#E5EDF3] opacity-80'
                   }`}
                 >
                   {/* Top Bar: Code and Status */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-black text-sm sm:text-base text-white bg-zinc-900 px-3 py-1 rounded-xl border border-zinc-700 tracking-wider">
+                      <span className="font-mono font-black text-sm sm:text-base text-[#142F52] bg-[#EEF4FA] px-3 py-1 rounded-xl border border-[#E5EDF3] tracking-wider">
                         {item.code}
                       </span>
                       <button
                         onClick={() => handleCopyCode(item.code, item.id)}
-                        className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] transition-colors cursor-pointer"
                         title="نسخ الكود"
                       >
                         {copiedCodeId === item.id ? (
-                          <Check className="w-3.5 h-3.5 text-white" />
+                          <Check className="w-3.5 h-3.5 text-[#159B7A]" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
@@ -382,15 +382,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                     <div>
                       {!item.isActive ? (
-                        <span className="text-[10px] font-bold bg-zinc-900 text-zinc-400 px-2 py-0.5 rounded-full border border-zinc-700">
+                        <span className="text-[10px] font-bold bg-[#F5F9FC] text-[#64748B] px-2 py-0.5 rounded-full border border-[#E5EDF3]">
                           معطل
                         </span>
                       ) : isExhausted ? (
-                        <span className="text-[10px] font-bold bg-zinc-900 text-white px-2 py-0.5 rounded-full border border-zinc-700">
+                        <span className="text-[10px] font-bold bg-[#F5F9FC] text-[#142F52] px-2 py-0.5 rounded-full border border-[#E5EDF3]">
                           مستنفذ (مكتمل)
                         </span>
                       ) : (
-                        <span className="text-[10px] font-black bg-white text-black px-2.5 py-0.5 rounded-full">
+                        <span className="text-[10px] font-black bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20 px-2.5 py-0.5 rounded-full">
                           نشط ومتاح 🟢
                         </span>
                       )}
@@ -398,19 +398,19 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   </div>
 
                   {/* Details Grid */}
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-zinc-950 p-2.5 rounded-xl border border-zinc-800">
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-[#F5F9FC] p-2.5 rounded-xl border border-[#E5EDF3]">
                     <div>
-                      <span className="text-[10px] text-zinc-400 block">فترة الإعفاء:</span>
-                      <span className="font-bold text-white flex items-center gap-1 mt-0.5">
-                        <Calendar className="w-3 h-3 text-zinc-400" />
+                      <span className="text-[10px] text-[#64748B] block">فترة الإعفاء:</span>
+                      <span className="font-bold text-[#142F52] flex items-center gap-1 mt-0.5">
+                        <Calendar className="w-3 h-3 text-[#159B7A]" />
                         <span>{item.months} {item.months === 1 ? 'شهر' : item.months === 2 ? 'شهرين' : `${item.months} شهور`} مجاناً</span>
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] text-zinc-400 block">استخدام السائقين:</span>
-                      <span className="font-bold text-white flex items-center gap-1 mt-0.5">
-                        <Users className="w-3 h-3 text-zinc-400" />
+                      <span className="text-[10px] text-[#64748B] block">استخدام السائقين:</span>
+                      <span className="font-bold text-[#142F52] flex items-center gap-1 mt-0.5">
+                        <Users className="w-3 h-3 text-[#159B7A]" />
                         <span>{item.usedDriversCount} من {item.maxDrivers} سائق</span>
                       </span>
                     </div>
@@ -418,33 +418,33 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
                   {/* Usage Progress Bar */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-zinc-400 font-semibold">
+                    <div className="flex justify-between text-[10px] text-[#64748B] font-semibold">
                       <span>نسبة الاستهلاك:</span>
                       <span>{percentUsed}% ({item.maxDrivers - item.usedDriversCount} متبقي)</span>
                     </div>
-                    <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
+                    <div className="w-full bg-[#E5EDF3] h-2 rounded-full overflow-hidden">
                       <div
-                        className="bg-white h-full transition-all duration-300"
+                        className="bg-[#159B7A] h-full transition-all duration-300"
                         style={{ width: `${percentUsed}%` }}
                       />
                     </div>
                   </div>
 
                   {item.notes && (
-                    <p className="text-[11px] text-zinc-400 bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-800 truncate">
+                    <p className="text-[11px] text-[#64748B] bg-[#F5F9FC] px-2.5 py-1.5 rounded-lg border border-[#E5EDF3] truncate">
                       💡 {item.notes}
                     </p>
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between pt-1 border-t border-zinc-800 text-xs">
+                  <div className="flex items-center justify-between pt-1 border-t border-[#E5EDF3] text-xs">
                     {onToggleExemptionCode && (
                       <button
                         onClick={() => onToggleExemptionCode(item.id)}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all ${
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                           item.isActive
-                            ? 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700'
-                            : 'bg-white text-black font-black'
+                            ? 'bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] border border-[#E5EDF3]'
+                            : 'bg-[#159B7A] text-white font-black'
                         }`}
                       >
                         {item.isActive ? 'تعطيل الكود' : 'تفعيل الكود'}
@@ -458,7 +458,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                             onDeleteExemptionCode(item.id);
                           }
                         }}
-                        className="text-zinc-500 hover:text-white p-1 rounded-lg transition-colors"
+                        className="text-[#94A3B8] hover:text-red-600 p-1 rounded-lg transition-colors cursor-pointer"
                         title="حذف الكود"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -476,31 +476,31 @@ export const AdminView: React.FC<AdminViewProps> = ({
       {/* ========================================================================= */}
       {/* 3. DRIVERS REGISTRY TABLE WITH EMIRATE FILTER */}
       {/* ========================================================================= */}
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-5">
+      <div className="bg-white border border-[#E5EDF3] rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
         
         {/* Header & Filter Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5EDF3] pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <Truck className="w-5 h-5 text-white" />
-              <h3 className="font-black text-white text-base sm:text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
+              <Truck className="w-5 h-5 text-[#159B7A]" />
+              <h3 className="font-black text-[#142F52] text-base sm:text-lg">سجل السائقين المستقلين وتراخيصهم</h3>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#64748B] mt-0.5">
               استعراض وإدارة حسابات السائقين والتحقق من التوثيق وفلترة السائقين حسب الإمارة.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-300 font-bold bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-700">
-              المعروض: <strong className="text-white">{filteredDrivers.length}</strong> من <strong className="text-white">{drivers.length}</strong> سائق
+            <span className="text-xs text-[#142F52] font-bold bg-[#EEF4FA] px-3 py-1.5 rounded-xl border border-[#E5EDF3]">
+              المعروض: <strong className="text-[#159B7A]">{filteredDrivers.length}</strong> من <strong className="text-[#142F52]">{drivers.length}</strong> سائق
             </span>
           </div>
         </div>
 
         {/* Emirate Filter Buttons Bar with Counts */}
         <div className="space-y-2.5">
-          <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
-            <Filter className="w-3.5 h-3.5 text-white" />
+          <div className="flex items-center gap-2 text-xs font-bold text-[#142F52]">
+            <Filter className="w-3.5 h-3.5 text-[#159B7A]" />
             <span>فلترة السائقين حسب الإمارة (مع عرض عدد السائقين في كل إمارة):</span>
           </div>
 
@@ -508,17 +508,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
             {/* "All" Option */}
             <button
               onClick={() => setSelectedEmirateFilter('all')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 cursor-pointer ${
                 selectedEmirateFilter === 'all'
-                  ? 'bg-white text-black shadow-lg border border-white'
-                  : 'bg-black text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800'
+                  ? 'bg-[#159B7A] text-white shadow-sm border border-[#159B7A]'
+                  : 'bg-[#F5F9FC] text-[#64748B] hover:text-[#142F52] hover:bg-[#EEF4FA] border border-[#E5EDF3]'
               }`}
             >
               <span>جميع الإمارات</span>
               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                 selectedEmirateFilter === 'all'
-                  ? 'bg-black text-white'
-                  : 'bg-zinc-900 text-zinc-300 border border-zinc-700'
+                  ? 'bg-white text-[#159B7A]'
+                  : 'bg-[#EEF4FA] text-[#142F52] border border-[#E5EDF3]'
               }`}>
                 {drivers.length}
               </span>
@@ -533,20 +533,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <button
                   key={emirate}
                   onClick={() => setSelectedEmirateFilter(emirate)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
                     isSelected
-                      ? 'bg-white text-black font-black shadow-lg border border-white'
-                      : 'bg-black text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800'
+                      ? 'bg-[#159B7A] text-white font-black shadow-sm border border-[#159B7A]'
+                      : 'bg-[#F5F9FC] text-[#64748B] hover:text-[#142F52] hover:bg-[#EEF4FA] border border-[#E5EDF3]'
                   }`}
                 >
-                  <MapPin className={`w-3 h-3 ${isSelected ? 'text-black' : 'text-zinc-500'}`} />
+                  <MapPin className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-[#159B7A]'}`} />
                   <span>{emirate}</span>
                   <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                     isSelected
-                      ? 'bg-black text-white'
+                      ? 'bg-white text-[#159B7A]'
                       : count > 0 
-                        ? 'bg-zinc-900 text-white border border-zinc-700'
-                        : 'bg-zinc-900/60 text-zinc-600 border border-zinc-800'
+                        ? 'bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20'
+                        : 'bg-[#EEF4FA] text-[#94A3B8]'
                   }`}>
                     {count}
                   </span>
@@ -558,17 +558,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
         {/* Drivers Table / Empty State */}
         {filteredDrivers.length === 0 ? (
-          <div className="bg-black rounded-2xl p-8 sm:p-12 text-center border border-zinc-800 space-y-3 animate-in fade-in">
-            <Truck className="w-12 h-12 text-zinc-600 mx-auto stroke-[1.5]" />
-            <h4 className="text-sm sm:text-base font-bold text-white">
+          <div className="bg-[#F5F9FC] rounded-2xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-3 animate-in fade-in">
+            <Truck className="w-12 h-12 text-[#94A3B8] mx-auto stroke-[1.5]" />
+            <h4 className="text-sm sm:text-base font-bold text-[#142F52]">
               لا يوجد سائقين مسجلين في إمارة "{selectedEmirateFilter}" حالياً
             </h4>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-[#64748B]">
               يمكنك اختيار إمارة أخرى أو استعراض كافة السائقين المسجلين في الدولة.
             </p>
             <button
               onClick={() => setSelectedEmirateFilter('all')}
-              className="mt-2 bg-white hover:bg-zinc-200 text-black font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow"
+              className="mt-2 bg-[#159B7A] hover:bg-[#108466] text-white font-black px-4 py-2 rounded-xl text-xs active:scale-95 transition-all shadow-xs cursor-pointer"
             >
               عرض جميع السائقين ({drivers.length})
             </button>
@@ -576,7 +576,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
-              <thead className="bg-black text-zinc-400 uppercase font-bold border-b border-zinc-800">
+              <thead className="bg-[#F5F9FC] text-[#64748B] uppercase font-bold border-b border-[#E5EDF3]">
                 <tr>
                   <th className="p-3">السائق</th>
                   <th className="p-3">الإمارة</th>
@@ -588,22 +588,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <th className="p-3 text-center">إدارة الحساب</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-[#E5EDF3]">
                 {filteredDrivers.map((drv) => (
-                  <tr key={drv.id} className="hover:bg-zinc-900/50 transition-colors">
+                  <tr key={drv.id} className="hover:bg-[#F5F9FC] transition-colors">
                     <td className="p-3 flex items-center gap-3">
-                      <img src={drv.avatar} alt={drv.name} className="w-9 h-9 rounded-xl object-cover border border-zinc-700" />
+                      <img src={drv.avatar} alt={drv.name} className="w-9 h-9 rounded-xl object-cover border border-[#E5EDF3]" />
                       <div>
-                        <div className="font-bold text-white text-sm">{drv.name}</div>
-                        <div className="text-[10px] text-zinc-400">{drv.phone}</div>
+                        <div className="font-bold text-[#142F52] text-sm">{drv.name}</div>
+                        <div className="text-[10px] text-[#64748B]">{drv.phone}</div>
                       </div>
                     </td>
 
-                    <td className="p-3 font-semibold text-zinc-300">{drv.emirate}</td>
+                    <td className="p-3 font-semibold text-[#142F52]">{drv.emirate}</td>
 
                     <td className="p-3">
-                      <div className="font-bold text-zinc-200">{drv.vehicleModel}</div>
-                      <div className="text-[10px] text-zinc-400 font-mono">{drv.vehiclePlate}</div>
+                      <div className="font-bold text-[#142F52]">{drv.vehicleModel}</div>
+                      <div className="text-[10px] text-[#64748B] font-mono">{drv.vehiclePlate}</div>
                     </td>
 
                     {(() => {
@@ -626,23 +626,23 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <td className="p-3">
                             {isSuspended ? (
                               <div className="space-y-1">
-                                <span className="bg-black text-white font-black px-2.5 py-0.5 rounded-lg border border-white inline-flex items-center gap-1 shadow">
+                                <span className="bg-red-50 text-red-600 font-black px-2.5 py-0.5 rounded-lg border border-red-200 inline-flex items-center gap-1 shadow-xs">
                                   <span>معطل / معلق ⛔</span>
                                 </span>
-                                <div className="text-[10px] text-zinc-400">
-                                  الحالة: <strong className="text-zinc-300">غير متاح للطلبات</strong>
+                                <div className="text-[10px] text-[#64748B]">
+                                  الحالة: <strong className="text-red-600">غير متاح للطلبات</strong>
                                 </div>
                               </div>
                             ) : isExemption ? (
                               <div className="space-y-1">
-                                <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
+                                <span className="bg-[#EAF6F1] text-[#159B7A] font-extrabold px-2.5 py-0.5 rounded-lg border border-[#159B7A]/20 inline-flex items-center gap-1">
                                   <span>إعفاء ({drv.usedExemptionCode || 'كود'}) ✓</span>
                                 </span>
-                                <div className="text-[10px] text-zinc-400">
-                                  ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
+                                <div className="text-[10px] text-[#64748B]">
+                                  ينتهي: <strong className="text-[#142F52]">{drv.subscriptionExpiry}</strong>
                                 </div>
                                 {isExpiring && (
-                                  <span className="bg-zinc-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-700 flex items-center gap-1 w-fit animate-pulse">
+                                  <span className="bg-amber-50 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1 w-fit animate-pulse">
                                     <Bell className="w-2.5 h-2.5" />
                                     <span>تنبيه إعفاء 5 أيام (متبقي {daysRemaining} يوم)</span>
                                   </span>
@@ -650,21 +650,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
                               </div>
                             ) : drv.subscriptionStatus === 'active' ? (
                               <div className="space-y-1">
-                                <span className="bg-zinc-900 text-white font-extrabold px-2.5 py-0.5 rounded-lg border border-zinc-700 inline-flex items-center gap-1">
+                                <span className="bg-[#EAF6F1] text-[#159B7A] font-extrabold px-2.5 py-0.5 rounded-lg border border-[#159B7A]/20 inline-flex items-center gap-1">
                                   <span>مفعل ({subscriptionPrice} AED) ✓</span>
                                 </span>
-                                <div className="text-[10px] text-zinc-400">
-                                  ينتهي: <strong className="text-white">{drv.subscriptionExpiry}</strong>
+                                <div className="text-[10px] text-[#64748B]">
+                                  ينتهي: <strong className="text-[#142F52]">{drv.subscriptionExpiry}</strong>
                                 </div>
                                 {isExpiring && (
-                                  <span className="bg-zinc-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-zinc-700 flex items-center gap-1 w-fit animate-pulse">
+                                  <span className="bg-amber-50 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1 w-fit animate-pulse">
                                     <Bell className="w-2.5 h-2.5" />
                                     <span>تذكير 5 أيام (متبقي {daysRemaining} يوم)</span>
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span className="bg-zinc-900 text-zinc-400 font-extrabold px-2.5 py-1 rounded-lg border border-zinc-700 flex items-center gap-1 w-fit">
+                              <span className="bg-[#F5F9FC] text-[#64748B] font-extrabold px-2.5 py-1 rounded-lg border border-[#E5EDF3] flex items-center gap-1 w-fit">
                                 <span>غير مفعل / بانتظار الدفع ⏳</span>
                               </span>
                             )}
@@ -675,10 +675,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setSelectedInvoice(inv)}
-                                className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-colors"
+                                className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] p-1.5 rounded-lg border border-[#E5EDF3] transition-colors cursor-pointer"
                                 title="عرض الفاتورة الرسمية"
                               >
-                                <FileText className="w-3.5 h-3.5" />
+                                <FileText className="w-3.5 h-3.5 text-[#159B7A]" />
                               </button>
 
                               {isSuspended ? (
@@ -686,17 +686,17 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   href={getWhatsAppSuspendedUrl(drv.phone, drv.name, drv.usedExemptionCode)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="bg-black hover:bg-zinc-900 text-white p-1.5 rounded-lg border border-zinc-700 transition-all shadow"
+                                  className="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg border border-red-200 transition-all shadow-xs"
                                   title="إرسال إشعار تعليق الحساب بالواتساب"
                                 >
-                                  <Share2 className="w-3.5 h-3.5 text-white" />
+                                  <Share2 className="w-3.5 h-3.5" />
                                 </a>
                               ) : isExemption && isExpiring ? (
                                 <a
                                   href={getWhatsAppExemptionReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry, drv.usedExemptionCode)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-all"
+                                  className="bg-[#EAF6F1] hover:bg-[#DEF0E8] text-[#159B7A] p-1.5 rounded-lg border border-[#159B7A]/20 transition-all"
                                   title="إرسال تذكير قرب انتهاء الإعفاء بالواتساب (5 أيام)"
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
@@ -706,10 +706,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                                   href={getWhatsAppReminderUrl(drv.phone, drv.name, daysRemaining, drv.subscriptionExpiry)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="bg-zinc-900 hover:bg-zinc-800 text-white p-1.5 rounded-lg border border-zinc-700 transition-all"
+                                  className="bg-[#EEF4FA] hover:bg-[#E2EDF7] text-[#142F52] p-1.5 rounded-lg border border-[#E5EDF3] transition-all"
                                   title="إرسال تذكير التجديد بالواتساب"
                                 >
-                                  <Share2 className="w-3.5 h-3.5" />
+                                  <Share2 className="w-3.5 h-3.5 text-[#159B7A]" />
                                 </a>
                               ) : null}
                             </div>
@@ -718,15 +718,15 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       );
                     })()}
 
-                    <td className="p-3 font-bold text-zinc-200">{drv.completedDeliveries} توصيلة</td>
+                    <td className="p-3 font-bold text-[#142F52]">{drv.completedDeliveries} توصيلة</td>
 
                     <td className="p-3 text-center">
                       <button
                         onClick={() => onToggleVerifyDriver(drv.id)}
-                        className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 text-[11px] ${
+                        className={`px-3 py-1 rounded-lg font-bold transition-all active:scale-95 text-[11px] cursor-pointer ${
                           drv.isVerified
-                            ? 'bg-white text-black border border-white'
-                            : 'bg-zinc-900 text-zinc-400 border border-zinc-700'
+                            ? 'bg-[#EAF6F1] text-[#159B7A] border border-[#159B7A]/20'
+                            : 'bg-[#F5F9FC] text-[#64748B] border border-[#E5EDF3]'
                         }`}
                       >
                         {drv.isVerified ? '✓ موثق' : 'غير موثق'}
@@ -740,20 +740,20 @@ export const AdminView: React.FC<AdminViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onToggleDriverStatus && onToggleDriverStatus(drv.id, 'active')}
-                            className="bg-white hover:bg-zinc-200 text-black font-bold px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 active:scale-95 transition-all shadow"
+                            className="bg-[#159B7A] hover:bg-[#108466] text-white font-bold px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1 active:scale-95 transition-all shadow-xs cursor-pointer"
                             title="إعادة تنشيط وتفعيل حساب السائق"
                           >
-                            <Power className="w-3 h-3 text-black" />
+                            <Power className="w-3 h-3 text-white" />
                             <span>تنشيط</span>
                           </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => onToggleDriverStatus && onToggleDriverStatus(drv.id, 'suspended')}
-                            className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold px-2.5 py-1 rounded-lg text-[11px] border border-zinc-700 flex items-center gap-1 active:scale-95 transition-all"
+                            className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold px-2.5 py-1 rounded-lg text-[11px] border border-[#E5EDF3] flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
                             title="تعطيل وتعليق حساب السائق مؤقتاً"
                           >
-                            <PowerOff className="w-3 h-3 text-zinc-400" />
+                            <PowerOff className="w-3 h-3 text-[#64748B]" />
                             <span>تعطيل</span>
                           </button>
                         )}
@@ -762,10 +762,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setDriverToDelete(drv)}
-                          className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white p-1.5 rounded-lg border border-zinc-700 transition-colors active:scale-95"
+                          className="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg border border-red-200 transition-colors active:scale-95 cursor-pointer"
                           title="حذف حساب السائق نهائياً من المنصة"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
                         </button>
                       </div>
                     </td>
@@ -787,21 +787,21 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Create Exemption Code Modal */}
       {showCreateCodeModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="bg-black px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-[#142F52]/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white border border-[#E5EDF3] rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-[#F5F9FC] px-5 py-4 border-b border-[#E5EDF3] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-white text-black flex items-center justify-center font-black">
+                <div className="w-9 h-9 rounded-xl bg-[#EAF6F1] text-[#159B7A] flex items-center justify-center font-black">
                   <Ticket className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-black text-white text-base">إنشاء كود إعفاء جديد</h4>
-                  <p className="text-[11px] text-zinc-400">تخصيص كود إعفاء مجاني للسائقين مع تحديد المدة والعدد</p>
+                  <h4 className="font-black text-[#142F52] text-base">إنشاء كود إعفاء جديد</h4>
+                  <p className="text-[11px] text-[#64748B]">تخصيص كود إعفاء مجاني للسائقين مع تحديد المدة والعدد</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowCreateCodeModal(false)}
-                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -811,7 +811,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               
               {/* Code Name & Generate Button */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-zinc-300">
+                <label className="block font-bold text-[#142F52]">
                   رمز الكود (الكود الترويجي):
                 </label>
                 <div className="flex gap-2">
@@ -821,12 +821,12 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     value={newCodeName}
                     onChange={(e) => setNewCodeName(e.target.value.toUpperCase())}
                     placeholder="مثال: WASEL2026 أو FREE1M"
-                    className="flex-1 bg-black border border-zinc-700 rounded-xl px-3.5 py-2.5 text-sm font-mono font-black text-white tracking-wider focus:outline-none focus:border-white"
+                    className="flex-1 bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm font-mono font-black text-[#142F52] tracking-wider focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleGenerateRandomCode}
-                    className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white px-3 py-2 rounded-xl border border-zinc-700 font-bold active:scale-95"
+                    className="bg-[#EEF4FA] hover:bg-[#E2EDF7] text-[#142F52] px-3 py-2 rounded-xl border border-[#E5EDF3] font-bold active:scale-95 cursor-pointer"
                   >
                     توليد تلقائي 🎲
                   </button>
@@ -835,7 +835,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
               {/* Exemption Duration (Months) */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-zinc-300">
+                <label className="block font-bold text-[#142F52]">
                   فترة الإعفاء المجاني (بالشهور):
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -844,10 +844,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       key={m}
                       type="button"
                       onClick={() => setNewCodeMonths(m)}
-                      className={`py-2 px-3 rounded-xl font-bold border transition-all text-xs ${
+                      className={`py-2 px-3 rounded-xl font-bold border transition-all text-xs cursor-pointer ${
                         newCodeMonths === m
-                          ? 'bg-white text-black border-white shadow-md'
-                          : 'bg-black text-zinc-400 border-zinc-800 hover:text-white'
+                          ? 'bg-[#159B7A] text-white border-[#159B7A] shadow-xs'
+                          : 'bg-[#F5F9FC] text-[#64748B] border-[#E5EDF3] hover:text-[#142F52]'
                       }`}
                     >
                       {m === 1 ? 'شهر (1)' : m === 2 ? 'شهرين (2)' : `${m} شهور`}
@@ -855,22 +855,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   ))}
                 </div>
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="text-[11px] text-zinc-400">أو عدد مخصص:</span>
+                  <span className="text-[11px] text-[#64748B]">أو عدد مخصص:</span>
                   <input
                     type="number"
                     min="1"
                     max="36"
                     value={newCodeMonths}
                     onChange={(e) => setNewCodeMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-20 bg-black border border-zinc-700 rounded-lg px-2.5 py-1 text-xs font-bold text-white text-center"
+                    className="w-20 bg-[#F5F9FC] border border-[#E5EDF3] rounded-lg px-2.5 py-1 text-xs font-bold text-[#142F52] text-center"
                   />
-                  <span className="text-[11px] text-zinc-400">شهر</span>
+                  <span className="text-[11px] text-[#64748B]">شهر</span>
                 </div>
               </div>
 
               {/* Max Drivers Usage */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-zinc-300">
+                <label className="block font-bold text-[#142F52]">
                   عدد السائقين المسموح لهم باستخدام الكود:
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -879,10 +879,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
                       key={count}
                       type="button"
                       onClick={() => setNewCodeMaxDrivers(count)}
-                      className={`py-2 px-3 rounded-xl font-bold border transition-all text-xs ${
+                      className={`py-2 px-3 rounded-xl font-bold border transition-all text-xs cursor-pointer ${
                         newCodeMaxDrivers === count
-                          ? 'bg-white text-black border-white shadow-md'
-                          : 'bg-black text-zinc-400 border-zinc-800 hover:text-white'
+                          ? 'bg-[#159B7A] text-white border-[#159B7A] shadow-xs'
+                          : 'bg-[#F5F9FC] text-[#64748B] border-[#E5EDF3] hover:text-[#142F52]'
                       }`}
                     >
                       {count} سائق
@@ -890,22 +890,22 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   ))}
                 </div>
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="text-[11px] text-zinc-400">أو عدد مخصص:</span>
+                  <span className="text-[11px] text-[#64748B]">أو عدد مخصص:</span>
                   <input
                     type="number"
                     min="1"
                     max="10000"
                     value={newCodeMaxDrivers}
                     onChange={(e) => setNewCodeMaxDrivers(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    className="w-24 bg-black border border-zinc-700 rounded-lg px-2.5 py-1 text-xs font-bold text-white text-center"
+                    className="w-24 bg-[#F5F9FC] border border-[#E5EDF3] rounded-lg px-2.5 py-1 text-xs font-bold text-[#142F52] text-center"
                   />
-                  <span className="text-[11px] text-zinc-400">سائق</span>
+                  <span className="text-[11px] text-[#64748B]">سائق</span>
                 </div>
               </div>
 
               {/* Notes */}
               <div className="space-y-1.5">
-                <label className="block font-bold text-zinc-300">
+                <label className="block font-bold text-[#142F52]">
                   ملاحظات أو مناسبة الكود (اختياري):
                 </label>
                 <input
@@ -913,18 +913,18 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   value={newCodeNotes}
                   onChange={(e) => setNewCodeNotes(e.target.value)}
                   placeholder="مثال: كود ترويجي لإطلاق الحملة الإعلانية"
-                  className="w-full bg-black border border-zinc-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-white"
+                  className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2 text-xs text-[#142F52] focus:outline-none"
                 />
               </div>
 
               {/* Preview Box */}
-              <div className="bg-black p-3.5 rounded-2xl border border-zinc-800 space-y-1">
-                <div className="font-bold text-white text-[11px] flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-white" />
+              <div className="bg-[#F5F9FC] p-3.5 rounded-2xl border border-[#E5EDF3] space-y-1">
+                <div className="font-bold text-[#142F52] text-[11px] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#159B7A]" />
                   <span>ملخص الكود الجديد:</span>
                 </div>
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  سيتمكن حتى <strong className="text-white">{newCodeMaxDrivers} سائق</strong> من إدخال الكود للحصول على <strong className="text-white">اشتراك مجاني بالكامل لمدة {newCodeMonths} {newCodeMonths === 1 ? 'شهر' : 'شهور'}</strong> فور التسجيل أو التجديد.
+                <p className="text-[11px] text-[#64748B] leading-relaxed">
+                  سيتمكن حتى <strong className="text-[#142F52]">{newCodeMaxDrivers} سائق</strong> من إدخال الكود للحصول على <strong className="text-[#159B7A]">اشتراك مجاني بالكامل لمدة {newCodeMonths} {newCodeMonths === 1 ? 'شهر' : 'شهور'}</strong> فور التسجيل أو التجديد.
                 </p>
               </div>
 
@@ -932,7 +932,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-white hover:bg-zinc-200 text-black font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-lg flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>حفظ وإنشاء الكود</span>
@@ -940,7 +940,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCreateCodeModal(false)}
-                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold py-3 px-5 rounded-xl text-xs active:scale-95"
+                  className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-3 px-5 rounded-xl text-xs active:scale-95 border border-[#E5EDF3] cursor-pointer"
                 >
                   إلغاء
                 </button>
@@ -953,37 +953,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
 
       {/* Delete Driver Confirmation Modal */}
       {driverToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-zinc-950 border-2 border-zinc-700 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="bg-black px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-white font-bold">
-                <Trash2 className="w-5 h-5 text-white" />
+        <div className="fixed inset-0 z-50 bg-[#142F52]/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-[#E5EDF3] rounded-3xl max-w-md w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-[#F5F9FC] px-5 py-4 border-b border-[#E5EDF3] flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-600 font-bold">
+                <Trash2 className="w-5 h-5 text-red-600" />
                 <span className="text-sm sm:text-base">تأكيد حذف حساب السائق نهائياً</span>
               </div>
               <button
                 onClick={() => setDriverToDelete(null)}
-                className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-5 sm:p-6 space-y-4 text-right">
-              <div className="flex items-center gap-3 bg-zinc-900 p-3 rounded-2xl border border-zinc-800">
-                <img src={driverToDelete.avatar} alt={driverToDelete.name} className="w-12 h-12 rounded-xl object-cover border border-zinc-700" />
+              <div className="flex items-center gap-3 bg-[#F5F9FC] p-3 rounded-2xl border border-[#E5EDF3]">
+                <img src={driverToDelete.avatar} alt={driverToDelete.name} className="w-12 h-12 rounded-xl object-cover border border-[#E5EDF3]" />
                 <div>
-                  <div className="font-bold text-white text-sm sm:text-base">{driverToDelete.name}</div>
-                  <div className="text-xs text-zinc-400">{driverToDelete.phone} • {driverToDelete.emirate}</div>
-                  <div className="text-[11px] text-zinc-400 font-mono">{driverToDelete.vehicleModel} ({driverToDelete.vehiclePlate})</div>
+                  <div className="font-bold text-[#142F52] text-sm sm:text-base">{driverToDelete.name}</div>
+                  <div className="text-xs text-[#64748B]">{driverToDelete.phone} • {driverToDelete.emirate}</div>
+                  <div className="text-[11px] text-[#64748B] font-mono">{driverToDelete.vehicleModel} ({driverToDelete.vehiclePlate})</div>
                 </div>
               </div>
 
-              <div className="bg-zinc-900/60 border border-zinc-800 p-3.5 rounded-xl text-xs text-zinc-300 space-y-1.5">
-                <p className="font-bold text-white flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-white shrink-0" />
+              <div className="bg-red-50 border border-red-200 p-3.5 rounded-xl text-xs text-red-800 space-y-1.5">
+                <p className="font-bold text-red-700 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
                   <span>تحذير أمني من إدارة المنصة:</span>
                 </p>
-                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                <p className="text-red-700 text-[11px] leading-relaxed">
                   هل أنت متأكد من رغبتك في حذف حساب هذا السائق نهائياً؟ سيتم مسح بياناته ورقم هاتفه وسجل عروضه من قاعدة البيانات السحابية والتخزين المحلي فوراً ولا يمكن التراجع عن هذا الإجراء.
                 </p>
               </div>
@@ -997,16 +997,16 @@ export const AdminView: React.FC<AdminViewProps> = ({
                     }
                     setDriverToDelete(null);
                   }}
-                  className="flex-1 bg-white hover:bg-zinc-200 text-black font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 shadow transition-all"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 shadow-sm transition-all cursor-pointer"
                 >
-                  <Trash2 className="w-4 h-4 text-black" />
+                  <Trash2 className="w-4 h-4 text-white" />
                   <span>تأكيد الحذف النهائي</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setDriverToDelete(null)}
-                  className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold py-2.5 rounded-xl text-xs border border-zinc-700 active:scale-95 transition-all"
+                  className="flex-1 bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-2.5 rounded-xl text-xs border border-[#E5EDF3] active:scale-95 transition-all cursor-pointer"
                 >
                   إلغاء
                 </button>

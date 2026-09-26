@@ -374,63 +374,62 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     setStep(3);
   };
 
-  
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
-      <div className="bg-zinc-950 border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[94dvh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-50 bg-[#142F52]/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+      <div className="bg-white border-t sm:border border-[#E5EDF3] rounded-t-3xl sm:rounded-3xl max-w-3xl w-full max-h-[94dvh] sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
         
         {/* Mobile Drag Handle */}
-        <div className="sm:hidden pt-2.5 pb-1 bg-black flex justify-center">
-          <div className="w-12 h-1.5 bg-zinc-800 rounded-full" />
+        <div className="sm:hidden pt-2.5 pb-1 bg-[#F5F9FC] flex justify-center">
+          <div className="w-12 h-1.5 bg-[#CBD5E1] rounded-full" />
         </div>
 
         {/* Modal Header */}
-        <div className="bg-black px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+        <div className="bg-[#F5F9FC] px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E5EDF3] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white text-black flex items-center justify-center font-black shadow-lg shrink-0">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#159B7A] text-white flex items-center justify-center font-black shadow-md shrink-0">
               <Truck className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-lg font-black text-white">تسجيل سائق جديد وتوثيق الحساب</h3>
-                <span className="bg-zinc-900 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-700">
+                <h3 className="text-sm sm:text-lg font-black text-[#142F52]">تسجيل سائق جديد وتوثيق الحساب</h3>
+                <span className="bg-[#EAF6F1] text-[#159B7A] text-[10px] font-bold px-2 py-0.5 rounded-full border border-[#159B7A]/20">
                   عمولة 0%
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-zinc-400">انضم لشبكة واصل، وثق مستنداتك واستقبل الطلبات فوراً</p>
+              <p className="text-[11px] sm:text-xs text-[#64748B]">انضم لشبكة واصل، وثق مستنداتك واستقبل الطلبات فوراً</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors active:scale-95"
+            className="p-2 rounded-xl bg-white hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] border border-[#E5EDF3] transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Wizard Progress Bar (3 Steps) */}
-        <div className="bg-zinc-950 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-zinc-800 flex items-center justify-between gap-1 sm:gap-2 text-[11px] sm:text-xs">
-          <div className={`flex items-center gap-1.5 font-bold ${step >= 1 ? 'text-white' : 'text-zinc-500'}`}>
-            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step >= 1 ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}>
+        <div className="bg-[#F5F9FC] px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[#E5EDF3] flex items-center justify-between gap-1 sm:gap-2 text-[11px] sm:text-xs">
+          <div className={`flex items-center gap-1.5 font-bold ${step >= 1 ? 'text-[#159B7A]' : 'text-[#94A3B8]'}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step >= 1 ? 'bg-[#159B7A] text-white' : 'bg-[#E5EDF3] text-[#64748B]'}`}>
               1
             </span>
             <span className="hidden sm:inline">البيانات والصورة</span>
           </div>
 
-          <div className={`h-0.5 flex-1 ${step >= 2 ? 'bg-white' : 'bg-zinc-800'}`} />
+          <div className={`h-0.5 flex-1 ${step >= 2 ? 'bg-[#159B7A]' : 'bg-[#E5EDF3]'}`} />
 
-          <div className={`flex items-center gap-1.5 font-bold ${step >= 2 ? 'text-white' : 'text-zinc-500'}`}>
-            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step >= 2 ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}>
+          <div className={`flex items-center gap-1.5 font-bold ${step >= 2 ? 'text-[#159B7A]' : 'text-[#94A3B8]'}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step >= 2 ? 'bg-[#159B7A] text-white' : 'bg-[#E5EDF3] text-[#64748B]'}`}>
               2
             </span>
             <span className="hidden sm:inline">المركبة والمستندات</span>
           </div>
 
-          <div className={`h-0.5 flex-1 ${step >= 3 ? 'bg-white' : 'bg-zinc-800'}`} />
+          <div className={`h-0.5 flex-1 ${step >= 3 ? 'bg-[#159B7A]' : 'bg-[#E5EDF3]'}`} />
 
-          <div className={`flex items-center gap-1.5 font-bold ${step >= 3 ? 'text-white' : 'text-zinc-500'}`}>
-            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step >= 3 ? 'bg-white text-black' : 'bg-zinc-900 text-zinc-400'}`}>
+          <div className={`flex items-center gap-1.5 font-bold ${step >= 3 ? 'text-[#159B7A]' : 'text-[#94A3B8]'}`}>
+            <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${step >= 3 ? 'bg-[#159B7A] text-white' : 'bg-[#E5EDF3] text-[#64748B]'}`}>
               3
             </span>
             <span className="hidden sm:inline">الاشتراك والدفع</span>
@@ -445,13 +444,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
             <form onSubmit={handleNextStep1} className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
               
               {/* Profile Image Upload Section */}
-              <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 space-y-3">
-                <label className="block text-xs font-bold text-zinc-200 flex items-center justify-between">
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-3">
+                <label className="block text-xs font-bold text-[#142F52] flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Camera className="w-4 h-4 text-white" />
+                    <Camera className="w-4 h-4 text-[#159B7A]" />
                     <span>الصورة الشخصية لحساب السائق *</span>
                   </span>
-                  <span className="text-[11px] text-zinc-400">تظهر للعملاء في كرت العرض والملف</span>
+                  <span className="text-[11px] text-[#64748B]">تظهر للعملاء في كرت العرض والملف</span>
                 </label>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -461,16 +460,16 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <img
                         src={avatar}
                         alt="Driver Avatar"
-                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-zinc-600 shadow-xl"
+                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-[#159B7A] shadow-md"
                       />
                     ) : (
-                      <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-zinc-950 border-2 border-dashed border-zinc-700 flex flex-col items-center justify-center text-zinc-500">
-                        <User className="w-8 h-8 text-zinc-400" />
-                        <span className="text-[9px] text-zinc-400 mt-1 font-medium">لا توجد صورة</span>
+                      <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-white border-2 border-dashed border-[#CBD5E1] flex flex-col items-center justify-center text-[#94A3B8]">
+                        <User className="w-8 h-8 text-[#94A3B8]" />
+                        <span className="text-[9px] text-[#94A3B8] mt-1 font-medium">لا توجد صورة</span>
                       </div>
                     )}
                     {customAvatarUploaded && (
-                      <span className="absolute -bottom-1 -right-1 bg-white text-black text-[10px] font-black p-1 rounded-full shadow-md">
+                      <span className="absolute -bottom-1 -right-1 bg-[#159B7A] text-white text-[10px] font-black p-1 rounded-full shadow-md">
                         <Check className="w-3 h-3" />
                       </span>
                     )}
@@ -493,13 +492,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       />
                       <label
                         htmlFor="avatar-upload"
-                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-4 py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 text-xs transition-all shadow-md active:scale-95"
+                        className="cursor-pointer w-full flex items-center justify-center gap-2 bg-white hover:bg-[#EEF4FA] text-[#142F52] font-bold px-4 py-3 rounded-xl border border-[#E5EDF3] hover:border-[#159B7A] text-xs transition-all shadow-xs active:scale-95"
                       >
-                        <Upload className="w-4 h-4" />
+                        <Upload className="w-4 h-4 text-[#159B7A]" />
                         <span>{customAvatarUploaded ? 'تغيير الصورة الشخصية' : 'تحميل صورة شخصية من جهازك'}</span>
                       </label>
                     </div>
-                    <p className="text-[11px] text-zinc-400 text-center sm:text-right">
+                    <p className="text-[11px] text-[#64748B] text-center sm:text-right">
                       {customAvatarUploaded ? '✓ تم رفع صورتك الشخصية بنجاح' : 'يرجى اختيار صورة واضحة لوجه السائق (JPG أو PNG)'}
                     </p>
                   </div>
@@ -508,8 +507,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>الاسم الكامل الثلاثي *</span>
                   </label>
                   <input
@@ -518,19 +517,19 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="مثال: خليفة سيف الكتبي"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>الإمارة الرئيسية لنشاطك *</span>
                   </label>
                   <select
                     value={emirate}
                     onChange={(e) => setEmirate(e.target.value as Emirate)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] focus:outline-none"
                   >
                     {UAE_EMIRATES.map(em => (
                       <option key={em} value={em}>{em}</option>
@@ -539,8 +538,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>رقم الاتصال الهاتفي المباشر *</span>
                   </label>
                   <input
@@ -549,13 +548,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="مثال: 0501234567 أو +971501234567"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-zinc-500 dir-ltr text-right"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] font-mono focus:outline-none dir-ltr text-right"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>رقم الواتساب (بدون مسافات) *</span>
                   </label>
                   <input
@@ -564,13 +563,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     value={whatsappPhone}
                     onChange={(e) => setWhatsappPhone(e.target.value)}
                     placeholder="مثال: 0501234567 أو 971501234567"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white font-mono focus:outline-none focus:border-zinc-500 dir-ltr text-right"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] font-mono focus:outline-none dir-ltr text-right"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>البريد الإلكتروني (لتسجيل الدخول) *</span>
                   </label>
                   <input
@@ -579,13 +578,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="driver@example.com"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>كلمة المرور للحساب *</span>
                   </label>
                   <input
@@ -594,13 +593,13 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] focus:outline-none"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-zinc-400" />
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[#159B7A]" />
                     <span>نبذة تعريفية بالخبرة والخدمات التي تقدمها:</span>
                   </label>
                   <textarea
@@ -608,7 +607,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="مثال: خبرة 4 سنوات في توصيل البضائع والمستندات والطرود بين دبي وأبوظبي والشارقة. الالتزام بالمواعيد والأمانة شعاري."
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500 resize-none"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl p-3 text-xs sm:text-sm text-[#142F52] focus:outline-none resize-none"
                   />
                 </div>
               </div>
@@ -616,7 +615,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="w-full sm:w-auto bg-white hover:bg-zinc-200 text-black font-black px-6 py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  className="w-full sm:w-auto bg-[#159B7A] hover:bg-[#108466] text-white font-black px-6 py-3 rounded-xl shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                 >
                   <span>متابعة لصور المركبة والوثائق</span>
                   <ArrowLeft className="w-4 h-4" />
@@ -632,38 +631,38 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               {/* Vehicle Model & Plate Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">موديل وسنة صنع المركبة *</label>
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5">موديل وسنة صنع المركبة *</label>
                   <input
                     type="text"
                     required
                     value={vehicleModel}
                     onChange={(e) => setVehicleModel(e.target.value)}
                     placeholder="مثال: تويوتا هايلوكس 2024"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">رقم اللوحة ومصدرها *</label>
+                  <label className="block text-xs font-bold text-[#142F52] mb-1.5">رقم اللوحة ومصدرها *</label>
                   <input
                     type="text"
                     required
                     value={vehiclePlate}
                     onChange={(e) => setVehiclePlate(e.target.value)}
                     placeholder="مثال: دبي X 98234"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-zinc-500"
+                    className="w-full bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] focus:bg-white rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#142F52] focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* 1. Multiple Real Vehicle Photos Upload & Gallery */}
-              <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 space-y-3.5">
+              <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-3.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4 text-zinc-400" />
+                  <label className="text-xs font-bold text-[#142F52] flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-[#159B7A]" />
                     <span>إدراج صور حقيقية للمركبة المعتمدة للتوصيل (يمكنك رفع عدة صور) *</span>
                   </label>
-                  <span className="text-[10px] text-zinc-300 font-bold bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
+                  <span className="text-[10px] text-[#159B7A] font-bold bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
                     {vehiclePhotos.length} {vehiclePhotos.length === 1 ? 'صورة' : 'صور'}
                   </span>
                 </div>
@@ -680,9 +679,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   />
                   <label
                     htmlFor="multiple-vehicle-photos-upload"
-                    className="cursor-pointer w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-4 py-3 rounded-xl border border-dashed border-zinc-700 hover:border-zinc-500 text-xs transition-all active:scale-95 shadow-inner"
+                    className="cursor-pointer w-full flex items-center justify-center gap-2 bg-white hover:bg-[#EEF4FA] text-[#142F52] font-bold px-4 py-3 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#159B7A] text-xs transition-all active:scale-95 shadow-xs"
                   >
-                    <Upload className="w-4 h-4 text-white" />
+                    <Upload className="w-4 h-4 text-[#159B7A]" />
                     <span>+ رفع صور جديدة لمركبتك (اضغط لتحديد صورة أو عدة صور)</span>
                   </label>
                 </div>
@@ -690,14 +689,14 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 {/* Photos Grid Gallery */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                   {vehiclePhotos.map((photoUrl, idx) => (
-                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-zinc-800 aspect-video bg-zinc-950 shadow-md">
+                    <div key={idx} className="relative group rounded-xl overflow-hidden border border-[#E5EDF3] aspect-video bg-white shadow-xs">
                       <img
                         src={photoUrl}
                         alt={`Vehicle ${idx + 1}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                       {idx === 0 && (
-                        <div className="absolute top-1.5 right-1.5 bg-black/90 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded border border-zinc-700 shadow">
+                        <div className="absolute top-1.5 right-1.5 bg-[#159B7A] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
                           الرئيسية
                         </div>
                       )}
@@ -705,61 +704,61 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         <button
                           type="button"
                           onClick={() => handleRemoveVehiclePhoto(idx)}
-                          className="absolute top-1.5 left-1.5 bg-black/90 hover:bg-zinc-800 text-white p-1 rounded-full border border-zinc-700 shadow transition-all opacity-90 group-hover:opacity-100"
+                          className="absolute top-1.5 left-1.5 bg-white/90 hover:bg-red-50 text-red-600 p-1 rounded-full border border-red-200 shadow transition-all opacity-90 group-hover:opacity-100"
                           title="حذف الصورة"
                         >
                           <X className="w-3 h-3" />
                         </button>
                       )}
-                      <div className="absolute bottom-0 inset-x-0 bg-black/80 py-0.5 text-center text-[9px] text-zinc-300">
+                      <div className="absolute bottom-0 inset-x-0 bg-white/90 py-0.5 text-center text-[9px] text-[#64748B] font-bold">
                         صورة {idx + 1}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1">
+                <div className="flex items-center justify-between text-[10px] text-[#64748B] pt-1">
                   <span>💡 يُفضل رفع صور واضحة للمركبة من الأمام والخلف والجانب</span>
-                  <span className="text-white font-bold">جاهزة للعرض ✓</span>
+                  <span className="text-[#159B7A] font-bold">جاهزة للعرض ✓</span>
                 </div>
               </div>
 
               {/* 2. Three Required Official Verification Documents */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-white" />
+                  <label className="text-xs font-bold text-[#142F52] flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-[#159B7A]" />
                     <span>إدراج المستندات الرسمية الثلاثة لتفعيل الحساب وتوثيقه:</span>
                   </label>
-                  <span className="text-[10px] text-zinc-400">سرية وآمنة 100%</span>
+                  <span className="text-[10px] text-[#64748B]">سرية وآمنة 100%</span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
                   
                   {/* DOC 1: UAE Driving License */}
-                  <div className="bg-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-3">
+                  <div className="bg-[#F5F9FC] p-3.5 sm:p-4 rounded-2xl border border-[#E5EDF3] space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
                           <img
                             src={drivingLicensePhoto}
                             alt="Driving License"
-                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-zinc-700 shadow-md"
+                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-[#E5EDF3] shadow-xs"
                           />
                           {drivingLicensePhoto && drivingLicensePhoto !== DEFAULT_DOC_IMG && (
-                            <div className="absolute -top-1.5 -right-1.5 bg-white text-black rounded-full p-0.5 shadow-md">
+                            <div className="absolute -top-1.5 -right-1.5 bg-[#159B7A] text-white rounded-full p-0.5 shadow-md">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
                           )}
                         </div>
                         <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                          <div className="text-xs font-black text-[#142F52] flex items-center gap-1.5">
                             <span>1. رخصة القيادة الرسمية</span>
-                            <span className="text-zinc-300 font-normal text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
+                            <span className="text-[#159B7A] font-normal text-[10px] bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
                               مطلوب
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px]">
+                          <div className="text-[10px] text-[#64748B] mt-0.5 truncate max-w-[220px]">
                             {drivingLicenseName}
                           </div>
                         </div>
@@ -775,7 +774,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         />
                         <label
                           htmlFor="license-upload"
-                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
+                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-[#159B7A] hover:bg-[#108466] text-white font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
                         >
                           <Upload className="w-3.5 h-3.5" />
                           <span>{drivingLicensePhoto !== DEFAULT_DOC_IMG ? 'تغيير صورة الرخصة' : 'تحميل صورة الرخصة'}</span>
@@ -784,40 +783,40 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
 
                     {drivingLicensePhoto !== DEFAULT_DOC_IMG && (
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-zinc-300">
-                        <span className="flex items-center gap-1.5 text-white font-semibold">
+                      <div className="bg-white border border-[#159B7A]/20 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-[#142F52]">
+                        <span className="flex items-center gap-1.5 text-[#159B7A] font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>تم إرفاق صورة رخصة القيادة بنجاح</span>
                         </span>
-                        <span className="text-zinc-400 text-[10px]">جاهز للتوثيق ✓</span>
+                        <span className="text-[#64748B] text-[10px]">جاهز للتوثيق ✓</span>
                       </div>
                     )}
                   </div>
 
                   {/* DOC 2: UAE Mulkiya */}
-                  <div className="bg-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-3">
+                  <div className="bg-[#F5F9FC] p-3.5 sm:p-4 rounded-2xl border border-[#E5EDF3] space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
                           <img
                             src={mulkiyaPhoto}
                             alt="Mulkiya"
-                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-zinc-700 shadow-md"
+                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-[#E5EDF3] shadow-xs"
                           />
                           {mulkiyaPhoto && mulkiyaPhoto !== DEFAULT_DOC_IMG && (
-                            <div className="absolute -top-1.5 -right-1.5 bg-white text-black rounded-full p-0.5 shadow-md">
+                            <div className="absolute -top-1.5 -right-1.5 bg-[#159B7A] text-white rounded-full p-0.5 shadow-md">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
                           )}
                         </div>
                         <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                          <div className="text-xs font-black text-[#142F52] flex items-center gap-1.5">
                             <span>2. ملكية المركبة (رخصة مركبة - الوجه الأمامي)</span>
-                            <span className="text-zinc-300 font-normal text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
+                            <span className="text-[#159B7A] font-normal text-[10px] bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
                               مطلوب
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px]">
+                          <div className="text-[10px] text-[#64748B] mt-0.5 truncate max-w-[220px]">
                             {mulkiyaName}
                           </div>
                         </div>
@@ -833,7 +832,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         />
                         <label
                           htmlFor="mulkiya-upload"
-                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
+                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-[#159B7A] hover:bg-[#108466] text-white font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
                         >
                           <Upload className="w-3.5 h-3.5" />
                           <span>{mulkiyaPhoto !== DEFAULT_DOC_IMG ? 'تغيير صورة الملكية' : 'تحميل صورة الملكية'}</span>
@@ -842,40 +841,40 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
 
                     {mulkiyaPhoto !== DEFAULT_DOC_IMG && (
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-zinc-300">
-                        <span className="flex items-center gap-1.5 text-white font-semibold">
+                      <div className="bg-white border border-[#159B7A]/20 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-[#142F52]">
+                        <span className="flex items-center gap-1.5 text-[#159B7A] font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>تم إرفاق صورة ملكية المركبة بنجاح</span>
                         </span>
-                        <span className="text-zinc-400 text-[10px]">جاهز للتوثيق ✓</span>
+                        <span className="text-[#64748B] text-[10px]">جاهز للتوثيق ✓</span>
                       </div>
                     )}
                   </div>
 
                   {/* DOC 3: UAE Emirates ID */}
-                  <div className="bg-zinc-950 p-3.5 sm:p-4 rounded-2xl border border-zinc-800 space-y-3">
+                  <div className="bg-[#F5F9FC] p-3.5 sm:p-4 rounded-2xl border border-[#E5EDF3] space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
                           <img
                             src={emiratesIdPhoto}
                             alt="Emirates ID"
-                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-zinc-700 shadow-md"
+                            className="w-16 h-11 sm:w-20 sm:h-13 rounded-xl object-cover border border-[#E5EDF3] shadow-xs"
                           />
                           {emiratesIdPhoto && emiratesIdPhoto !== DEFAULT_DOC_IMG && (
-                            <div className="absolute -top-1.5 -right-1.5 bg-white text-black rounded-full p-0.5 shadow-md">
+                            <div className="absolute -top-1.5 -right-1.5 bg-[#159B7A] text-white rounded-full p-0.5 shadow-md">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </div>
                           )}
                         </div>
                         <div>
-                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                          <div className="text-xs font-black text-[#142F52] flex items-center gap-1.5">
                             <span>3. بطاقة الهوية الإماراتية (الوجه الأمامي)</span>
-                            <span className="text-zinc-300 font-normal text-[10px] bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-700">
+                            <span className="text-[#159B7A] font-normal text-[10px] bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">
                               مطلوب
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[220px]">
+                          <div className="text-[10px] text-[#64748B] mt-0.5 truncate max-w-[220px]">
                             {emiratesIdName}
                           </div>
                         </div>
@@ -891,7 +890,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         />
                         <label
                           htmlFor="emiratesid-upload"
-                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-white hover:bg-zinc-200 text-black font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
+                          className="cursor-pointer flex items-center justify-center gap-1.5 bg-[#159B7A] hover:bg-[#108466] text-white font-black px-3.5 py-2 rounded-xl text-xs transition-all shadow-md active:scale-95"
                         >
                           <Upload className="w-3.5 h-3.5" />
                           <span>{emiratesIdPhoto !== DEFAULT_DOC_IMG ? 'تغيير صورة الهوية' : 'تحميل صورة الهوية'}</span>
@@ -900,12 +899,12 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
 
                     {emiratesIdPhoto !== DEFAULT_DOC_IMG && (
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-zinc-300">
-                        <span className="flex items-center gap-1.5 text-white font-semibold">
+                      <div className="bg-white border border-[#159B7A]/20 rounded-xl p-2.5 flex items-center justify-between text-[11px] text-[#142F52]">
+                        <span className="flex items-center gap-1.5 text-[#159B7A] font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>تم إرفاق صورة بطاقة الهوية بنجاح</span>
                         </span>
-                        <span className="text-zinc-400 text-[10px]">جاهز للتوثيق ✓</span>
+                        <span className="text-[#64748B] text-[10px]">جاهز للتوثيق ✓</span>
                       </div>
                     )}
                   </div>
@@ -917,7 +916,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95"
+                  className="bg-white hover:bg-[#EEF4FA] text-[#64748B] font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 border border-[#E5EDF3] active:scale-95"
                 >
                   <ArrowRight className="w-4 h-4" />
                   <span>السابق</span>
@@ -925,7 +924,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
                 <button
                   type="submit"
-                  className="bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center gap-2 active:scale-95 transition-all"
+                  className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-md text-xs sm:text-sm flex items-center gap-2 active:scale-95 transition-all"
                 >
                   <span>متابعة للاشتراك الموحد</span>
                   <ArrowLeft className="w-4 h-4" />
@@ -941,52 +940,52 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               
               {/* STAGE: SUCCESS */}
               {paymentStage === 'success' && createdActiveDriver && (
-                <div className="p-4 sm:p-6 text-center flex flex-col items-center justify-center space-y-4 bg-zinc-950 rounded-2xl border-2 border-white shadow-2xl animate-in zoom-in-95 duration-200">
-                  <div className="w-16 h-16 sm:w-18 sm:h-18 bg-white text-black rounded-full flex items-center justify-center border-2 border-white shadow-xl">
+                <div className="p-4 sm:p-6 text-center flex flex-col items-center justify-center space-y-4 bg-white rounded-2xl border-2 border-[#159B7A] shadow-lg animate-in zoom-in-95 duration-200">
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 bg-[#159B7A] text-white rounded-full flex items-center justify-center shadow-md">
                     <CheckCircle2 className="w-9 h-9 sm:w-10 sm:h-10" />
                   </div>
                   
                   <div className="space-y-1">
-                    <span className="bg-zinc-900 text-zinc-200 text-xs font-black px-3 py-1 rounded-full border border-zinc-700">
+                    <span className="bg-[#EAF6F1] text-[#159B7A] text-xs font-black px-3 py-1 rounded-full border border-[#159B7A]/20">
                       تم تأكيد الدفع الإلكتروني بنجاح وإصدار الفاتورة الرسمية ✓
                     </span>
-                    <h4 className="text-lg sm:text-2xl font-black text-white pt-1">🎉 مبارك يا {createdActiveDriver.name}!</h4>
-                    <p className="text-zinc-300 font-bold text-xs sm:text-sm">
+                    <h4 className="text-lg sm:text-2xl font-black text-[#142F52] pt-1">🎉 مبارك يا {createdActiveDriver.name}!</h4>
+                    <p className="text-[#64748B] font-bold text-xs sm:text-sm">
                       تم تفعيل حسابك كـ "سائق معتمد" واشتراكك الموحد لمدة شهر كامل بالظبط (حتى {createdActiveDriver.subscriptionExpiry}).
                     </p>
                   </div>
 
                   {/* Summary & Invoice Info Box */}
-                  <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 w-full text-right text-xs space-y-2.5">
+                  <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] w-full text-right text-xs space-y-2.5">
                     {generatedInvoice && (
-                      <div className="flex items-center justify-between text-zinc-300 pb-1.5 border-b border-zinc-800">
+                      <div className="flex items-center justify-between text-[#64748B] pb-1.5 border-b border-[#E5EDF3]">
                         <span>رقم الفاتورة الصادرة:</span>
-                        <span className="font-bold text-white font-mono">{generatedInvoice.invoiceNumber}</span>
+                        <span className="font-bold text-[#142F52] font-mono">{generatedInvoice.invoiceNumber}</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between text-zinc-300">
+                    <div className="flex items-center justify-between text-[#64748B]">
                       <span>المركبة واللوحة:</span>
-                      <span className="font-bold text-white">{createdActiveDriver.vehicleModel} ({createdActiveDriver.vehiclePlate})</span>
+                      <span className="font-bold text-[#142F52]">{createdActiveDriver.vehicleModel} ({createdActiveDriver.vehiclePlate})</span>
                     </div>
-                    <div className="flex items-center justify-between text-zinc-300">
+                    <div className="flex items-center justify-between text-[#64748B]">
                       <span>الاشتراك الموحد:</span>
-                      <span className="font-bold text-white">{selectedPlanDetails.name} (199 AED)</span>
+                      <span className="font-bold text-[#142F52]">{selectedPlanDetails.name} (199 AED)</span>
                     </div>
-                    <div className="flex items-center justify-between text-zinc-300">
+                    <div className="flex items-center justify-between text-[#64748B]">
                       <span>تاريخ انتهاء الاشتراك:</span>
-                      <span className="font-bold text-zinc-200">{createdActiveDriver.subscriptionExpiry} (شهر بالظبط)</span>
+                      <span className="font-bold text-[#142F52]">{createdActiveDriver.subscriptionExpiry} (شهر بالظبط)</span>
                     </div>
-                    <div className="flex items-center justify-between text-zinc-300 border-t border-zinc-800 pt-2">
+                    <div className="flex items-center justify-between text-[#64748B] border-t border-[#E5EDF3] pt-2">
                       <span>حالة الحساب:</span>
-                      <span className="text-white font-bold bg-zinc-800 px-2.5 py-0.5 rounded-full border border-zinc-700">
+                      <span className="text-[#159B7A] font-bold bg-[#EAF6F1] px-2.5 py-0.5 rounded-full border border-[#159B7A]/20">
                         مفعل ونشط 🟢
                       </span>
                     </div>
                   </div>
 
                   {/* 5-Day Automated Expiry Reminder Notice */}
-                  <div className="bg-zinc-900 border border-zinc-700 p-3 rounded-xl text-right text-[11px] text-zinc-300 flex items-start gap-2.5 w-full">
-                    <Bell className="w-4 h-4 text-white shrink-0 mt-0.5" />
+                  <div className="bg-[#EAF6F1] border border-[#159B7A]/20 p-3 rounded-xl text-right text-[11px] text-[#142F52] flex items-start gap-2.5 w-full">
+                    <Bell className="w-4 h-4 text-[#159B7A] shrink-0 mt-0.5" />
                     <span>
                       <strong>تنبيه التجديد التلقائي:</strong> سيقوم نظام واصل بإرسال رسالة تذكير لرقم هاتفك ({createdActiveDriver.phone}) قبل انتهاء اشتراكك بـ 5 أيام لضمان استمرار ظهور عروضك دون انقطاع.
                     </span>
@@ -998,9 +997,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <button
                         type="button"
                         onClick={() => setShowInvoiceModal(true)}
-                        className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs border border-zinc-700 flex items-center justify-center gap-1.5 transition-colors active:scale-95"
+                        className="bg-white hover:bg-[#EEF4FA] text-[#142F52] font-bold py-2.5 px-4 rounded-xl text-xs border border-[#E5EDF3] flex items-center justify-center gap-1.5 transition-colors active:scale-95 shadow-xs"
                       >
-                        <FileText className="w-4 h-4" />
+                        <FileText className="w-4 h-4 text-[#159B7A]" />
                         <span>عرض وتحميل الفاتورة الرسمية</span>
                       </button>
 
@@ -1008,7 +1007,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                         href={getWhatsAppInvoiceUrl(generatedInvoice)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-white hover:bg-zinc-200 text-black font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                        className="bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
                       >
                         <Share2 className="w-4 h-4" />
                         <span>إرسال الفاتورة لواتساب السائق</span>
@@ -1019,7 +1018,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   <button
                     type="button"
                     onClick={handleCompleteRegistration}
-                    className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
+                    className="w-full bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3.5 rounded-xl shadow-md transition-all text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95"
                   >
                     <span>الدخول إلى حسابي واستقبال طلبات التوصيل</span>
                     <ArrowLeft className="w-4 h-4" />
@@ -1029,35 +1028,35 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
               {/* STAGE: VERIFYING */}
               {paymentStage === 'verifying' && (
-                <div className="p-8 text-center flex flex-col items-center justify-center space-y-5 bg-zinc-950 rounded-2xl border border-zinc-700">
+                <div className="p-8 text-center flex flex-col items-center justify-center space-y-5 bg-white rounded-2xl border border-[#E5EDF3]">
                   <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-4 border-zinc-800 border-t-white animate-spin" />
+                    <div className="w-16 h-16 rounded-full border-4 border-[#E5EDF3] border-t-[#159B7A] animate-spin" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-white animate-pulse" />
+                      <Zap className="w-6 h-6 text-[#159B7A] animate-pulse" />
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <h4 className="text-base sm:text-lg font-bold text-white">جاري التحقق من إتمام عملية الدفع الإلكتروني...</h4>
-                    <p className="text-xs text-zinc-400">التحقق من إتمام الحوالة وتأكيد دفع الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
+                    <h4 className="text-base sm:text-lg font-bold text-[#142F52]">جاري التحقق من إتمام عملية الدفع الإلكتروني...</h4>
+                    <p className="text-xs text-[#64748B]">التحقق من إتمام الحوالة وتأكيد دفع الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
                   </div>
                 </div>
               )}
 
               {/* STAGE: FAILED */}
               {paymentStage === 'failed' && (
-                <div className="p-6 text-center flex flex-col items-center justify-center space-y-4 bg-zinc-950 rounded-2xl border border-zinc-700 animate-in fade-in">
-                  <div className="w-16 h-16 bg-zinc-900 text-white rounded-full flex items-center justify-center border border-zinc-700">
+                <div className="p-6 text-center flex flex-col items-center justify-center space-y-4 bg-white rounded-2xl border border-red-200 animate-in fade-in">
+                  <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center border border-red-200">
                     <AlertTriangle className="w-8 h-8" />
                   </div>
                   
                   <div className="space-y-1">
-                    <h4 className="text-lg font-black text-white">فشلت عملية الدفع أو لم تكتمل!</h4>
-                    <p className="text-zinc-400 text-xs sm:text-sm">{paymentError}</p>
+                    <h4 className="text-lg font-black text-[#142F52]">فشلت عملية الدفع أو لم تكتمل!</h4>
+                    <p className="text-[#64748B] text-xs sm:text-sm">{paymentError}</p>
                   </div>
                   
-                  <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl w-full text-right text-xs text-zinc-300 space-y-1.5">
-                    <p className="font-bold text-white">⛔ تنبيه عدم تفعيل الحساب:</p>
-                    <p className="text-zinc-400 leading-relaxed text-[11px]">
+                  <div className="bg-[#F5F9FC] border border-[#E5EDF3] p-4 rounded-2xl w-full text-right text-xs text-[#64748B] space-y-1.5">
+                    <p className="font-bold text-[#142F52]">⛔ تنبيه عدم تفعيل الحساب:</p>
+                    <p className="leading-relaxed text-[11px]">
                       حساب السائق غير مفعل حالياً. وفقاً لشروط المنصة، لا يمكن تفعيل الحساب أو منح شارة التوثيق واستقبال الطلبات إلا بعد تأكيد إتمام الدفع بنجاح.
                     </p>
                   </div>
@@ -1066,7 +1065,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     <button
                       type="button"
                       onClick={handleOpenPaymentGateway}
-                      className="w-full sm:flex-1 bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                      className="w-full sm:flex-1 bg-[#159B7A] hover:bg-[#108466] text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
                     >
                       <RotateCw className="w-4 h-4" />
                       <span>إعادة محاولة الدفع الإلكتروني</span>
@@ -1074,7 +1073,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     <button
                       type="button"
                       onClick={() => setPaymentStage('ready')}
-                      className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold py-3 px-5 rounded-xl text-xs active:scale-95"
+                      className="w-full sm:w-auto bg-white hover:bg-[#EEF4FA] text-[#64748B] font-bold py-3 px-5 rounded-xl text-xs border border-[#E5EDF3] active:scale-95"
                     >
                       الرجوع لتفاصيل الباقة
                     </button>
@@ -1085,23 +1084,23 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               {/* STAGE: LINK_OPENED (User returned from Payment Gateway and can confirm) */}
               {paymentStage === 'link_opened' && (
                 <div className="space-y-4 animate-in fade-in duration-200">
-                  <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 sm:p-5 space-y-3">
+                  <div className="bg-[#F5F9FC] border border-[#E5EDF3] rounded-2xl p-4 sm:p-5 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center font-bold shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#159B7A] text-white flex items-center justify-center font-bold shrink-0">
                         <ExternalLink className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-sm sm:text-base">تم فتح صفحة الدفع الإلكتروني المباشر في صفحة خارجية</h4>
-                        <p className="text-xs text-zinc-400">يرجى إتمام عملية سداد رسوم الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
+                        <h4 className="font-bold text-[#142F52] text-sm sm:text-base">تم فتح صفحة الدفع الإلكتروني المباشر في صفحة خارجية</h4>
+                        <p className="text-xs text-[#64748B]">يرجى إتمام عملية سداد رسوم الاشتراك الموحد ({selectedPlanDetails.price} AED)</p>
                       </div>
                     </div>
 
-                    <div className="text-xs text-zinc-300 bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-2 leading-relaxed">
-                      <div className="flex items-center gap-2 text-white font-bold">
+                    <div className="text-xs text-[#64748B] bg-white p-3.5 rounded-xl border border-[#E5EDF3] space-y-2 leading-relaxed">
+                      <div className="flex items-center gap-2 text-[#142F52] font-bold">
                         <span>1.</span>
                         <span>قم بإتمام الدفع عبر Apple Pay أو بطاقتك البنكية في صفحة الدفع المفتوحة.</span>
                       </div>
-                      <div className="flex items-center gap-2 text-white font-bold">
+                      <div className="flex items-center gap-2 text-[#142F52] font-bold">
                         <span>2.</span>
                         <span>عند نجاح الدفع، اضغط على زر "تأكيد والتحقق من نجاح الدفع" أدناه لتفعيل حسابك فوراً.</span>
                       </div>
@@ -1109,8 +1108,8 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   </div>
 
                   {/* Optional Reference Input */}
-                  <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 space-y-2">
-                    <label className="block text-xs font-semibold text-zinc-300">
+                  <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-2">
+                    <label className="block text-xs font-semibold text-[#142F52]">
                       رقم مرجع الحوالة / الإيصال (اختياري للتوثيق):
                     </label>
                     <input
@@ -1118,7 +1117,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       value={transactionRef}
                       onChange={(e) => setTransactionRef(e.target.value)}
                       placeholder="مثال: REF-981240"
-                      className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-zinc-500"
+                      className="w-full bg-white border border-[#E5EDF3] focus:border-[#159B7A] rounded-xl px-3.5 py-2.5 text-xs text-[#142F52] font-mono focus:outline-none"
                     />
                   </div>
 
@@ -1127,7 +1126,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     <button
                       type="button"
                       onClick={handleVerifyPayment}
-                      className="w-full bg-white hover:bg-zinc-200 text-black font-black py-3.5 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                      className="w-full bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3.5 rounded-xl shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>✅ لقد أتممت الدفع بنجاح (التحقق وتفعيل الحساب)</span>
@@ -1137,18 +1136,18 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <button
                         type="button"
                         onClick={handleOpenPaymentGateway}
-                        className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold py-2.5 rounded-xl text-xs border border-zinc-700 flex items-center justify-center gap-1.5 active:scale-95"
+                        className="flex-1 bg-white hover:bg-[#EEF4FA] text-[#142F52] font-bold py-2.5 rounded-xl text-xs border border-[#E5EDF3] flex items-center justify-center gap-1.5 active:scale-95 shadow-xs"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-3.5 h-3.5 text-[#159B7A]" />
                         <span>إعادة فتح صفحة الدفع</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={handlePaymentFailure}
-                        className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 font-bold py-2.5 rounded-xl text-xs border border-zinc-800 flex items-center justify-center gap-1.5 active:scale-95"
+                        className="flex-1 bg-white hover:bg-red-50 text-red-600 font-bold py-2.5 rounded-xl text-xs border border-red-200 flex items-center justify-center gap-1.5 active:scale-95 shadow-xs"
                       >
-                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
                         <span>فشلت العملية / إلغاء الدفع</span>
                       </button>
                     </div>
@@ -1160,46 +1159,46 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
               {paymentStage === 'ready' && (
                 <>
                   {/* Single Unified Plan Card */}
-                  <div className="bg-zinc-950 p-5 sm:p-6 rounded-2xl border-2 border-white shadow-xl relative overflow-hidden">
+                  <div className="bg-white p-5 sm:p-6 rounded-2xl border-2 border-[#159B7A] shadow-md relative overflow-hidden">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                       <div>
-                        <span className="bg-white text-black text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mb-1 shadow-sm">
+                        <span className="bg-[#159B7A] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full inline-block mb-1 shadow-xs">
                           الباقة الموحدة لجميع السائقين ⭐
                         </span>
-                        <h4 className="font-black text-white text-base sm:text-xl">{selectedPlanDetails.name}</h4>
+                        <h4 className="font-black text-[#142F52] text-base sm:text-xl">{selectedPlanDetails.name}</h4>
                       </div>
 
                       <div className="text-right sm:text-left">
                         {appliedExemption ? (
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-zinc-500 line-through text-sm font-bold">{selectedPlanDetails.price} AED</span>
-                              <span className="text-2xl sm:text-3xl font-black text-white">0 AED</span>
+                              <span className="text-[#94A3B8] line-through text-sm font-bold">{selectedPlanDetails.price} AED</span>
+                              <span className="text-2xl sm:text-3xl font-black text-[#159B7A]">0 AED</span>
                             </div>
-                            <span className="text-[10px] text-zinc-300 font-black bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-700">
+                            <span className="text-[10px] text-[#159B7A] font-black bg-[#EAF6F1] px-2 py-0.5 rounded-md border border-[#159B7A]/20">
                               إعفاء مجاني ({appliedExemption.months} شهر)
                             </span>
                           </div>
                         ) : (
                           <div>
-                            <span className="text-2xl sm:text-3xl font-black text-white">{selectedPlanDetails.price}</span>
-                            <span className="text-xs text-zinc-400 font-semibold mr-1">درهم / شهرياً</span>
+                            <span className="text-2xl sm:text-3xl font-black text-[#142F52]">{selectedPlanDetails.price}</span>
+                            <span className="text-xs text-[#64748B] font-semibold mr-1">درهم / شهرياً</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-zinc-800 text-xs text-zinc-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-3 border-t border-[#E5EDF3] text-xs text-[#64748B]">
                       {selectedPlanDetails.features.map((feat, idx) => (
                         <div key={idx} className="flex items-start gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-white shrink-0 mt-0.5" />
+                          <Check className="w-3.5 h-3.5 text-[#159B7A] shrink-0 mt-0.5" />
                           <span>{feat}</span>
                         </div>
                       ))}
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-zinc-800 bg-zinc-900 p-3 rounded-xl flex items-center gap-2.5 text-xs text-zinc-300 font-semibold">
-                      <Star className="w-4 h-4 text-white fill-white shrink-0" />
+                    <div className="mt-4 pt-3 border-t border-[#E5EDF3] bg-[#F5F9FC] p-3 rounded-xl flex items-center gap-2.5 text-xs text-[#64748B] font-semibold">
+                      <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
                       <span>
                         <strong>نظام أولوية التقييم:</strong> كلما حصلت على تقييمات إيجابية أعلى من العملاء بعد إتمام التوصيل، تظهر عروضك في المرتبة الأولى تلقائياً وتتصدر شاشة العميل!
                       </span>
@@ -1207,25 +1206,25 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                   </div>
 
                   {/* Exemption & Promo Code Section */}
-                  <div className="bg-zinc-900/80 p-4 rounded-2xl border border-zinc-700 space-y-3">
+                  <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Ticket className="w-4 h-4 text-white" />
-                        <span className="font-black text-white text-xs sm:text-sm">لديك كود إعفاء أو اشتراك ترويجي؟</span>
+                        <Ticket className="w-4 h-4 text-[#159B7A]" />
+                        <span className="font-black text-[#142F52] text-xs sm:text-sm">لديك كود إعفاء أو اشتراك ترويجي؟</span>
                       </div>
-                      <span className="text-[10px] text-zinc-400 font-semibold">إعفاء 100% بدون دفع</span>
+                      <span className="text-[10px] text-[#159B7A] font-semibold bg-[#EAF6F1] px-2 py-0.5 rounded-full border border-[#159B7A]/20">إعفاء 100% بدون دفع</span>
                     </div>
 
                     {appliedExemption ? (
-                      <div className="bg-black p-3.5 rounded-xl border border-zinc-700 flex items-center justify-between gap-3 animate-in fade-in">
+                      <div className="bg-white p-3.5 rounded-xl border border-[#159B7A] flex items-center justify-between gap-3 animate-in fade-in">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="bg-white text-black text-xs font-black px-2 py-0.5 rounded font-mono">
+                            <span className="bg-[#159B7A] text-white text-xs font-black px-2 py-0.5 rounded font-mono">
                               {appliedExemption.code}
                             </span>
-                            <span className="text-white text-xs font-black">✓ تم تفعيل كود الإعفاء بنجاح</span>
+                            <span className="text-[#159B7A] text-xs font-black">✓ تم تفعيل كود الإعفاء بنجاح</span>
                           </div>
-                          <p className="text-[11px] text-zinc-300">
+                          <p className="text-[11px] text-[#64748B]">
                             اشتراك مجاني بالكامل لمدة <strong>{appliedExemption.months} {appliedExemption.months === 1 ? 'شهر' : 'شهور'}</strong> دون الحاجة لأي بطاقة دفع.
                           </p>
                         </div>
@@ -1236,7 +1235,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                             setPromoSuccess(null);
                             setInputPromoCode('');
                           }}
-                          className="text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 px-2.5 py-1.5 rounded-lg border border-zinc-700"
+                          className="text-[10px] font-bold text-[#64748B] hover:text-red-600 bg-[#F5F9FC] hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-[#E5EDF3]"
                         >
                           إلغاء الكود
                         </button>
@@ -1252,26 +1251,26 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                               setPromoError(null);
                             }}
                             placeholder="أدخل رمز الكود (مثال: WASEL2026)"
-                            className="flex-1 bg-black border border-zinc-700 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-white tracking-wider focus:outline-none focus:border-white"
+                            className="flex-1 bg-white border border-[#E5EDF3] focus:border-[#159B7A] rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-[#142F52] tracking-wider focus:outline-none"
                           />
                           <button
                             type="button"
                             onClick={handleApplyPromo}
-                            className="bg-white hover:bg-zinc-200 text-black text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 shadow"
+                            className="bg-[#159B7A] hover:bg-[#108466] text-white text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 shadow"
                           >
                             تطبيق الكود
                           </button>
                         </div>
 
                         {promoError && (
-                          <div className="text-red-400 text-[11px] font-bold flex items-center gap-1.5 animate-in fade-in">
-                            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                          <div className="text-red-600 text-[11px] font-bold flex items-center gap-1.5 animate-in fade-in">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
                             <span>{promoError}</span>
                           </div>
                         )}
 
                         {promoSuccess && (
-                          <div className="text-white bg-zinc-900 p-2 rounded-lg border border-zinc-700 text-[11px] font-bold animate-in fade-in">
+                          <div className="text-[#159B7A] bg-[#EAF6F1] p-2 rounded-lg border border-[#159B7A]/30 text-[11px] font-bold animate-in fade-in">
                             {promoSuccess}
                           </div>
                         )}
@@ -1281,21 +1280,21 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
 
                   {/* Payment Gateway Box (If no exemption code applied) */}
                   {!appliedExemption && (
-                    <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800 flex items-center justify-between gap-3">
+                    <div className="bg-[#F5F9FC] p-4 rounded-2xl border border-[#E5EDF3] flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-zinc-800 text-white flex items-center justify-center font-black shadow shrink-0 text-sm">
+                        <div className="w-9 h-9 rounded-xl bg-[#EAF6F1] text-[#159B7A] flex items-center justify-center font-black shadow-xs shrink-0 text-sm border border-[#159B7A]/20">
                           💳
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <div className="text-xs font-bold text-[#142F52] flex items-center gap-1.5">
                             <span>بوابة الدفع الإلكتروني المباشر</span>
-                            <span className="text-[10px] text-zinc-300 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700 font-bold">آمن ومشفر</span>
+                            <span className="text-[10px] text-[#159B7A] bg-[#EAF6F1] px-1.5 py-0.2 rounded border border-[#159B7A]/20 font-bold">آمن ومشفر</span>
                           </div>
-                          <p className="text-[11px] text-zinc-400">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
+                          <p className="text-[11px] text-[#64748B]">تدعم بطاقات الفيزا، ماستركارد، و Apple Pay مباشرة</p>
                         </div>
                       </div>
                       <div className="text-left shrink-0">
-                        <span className="text-base font-black text-white">{selectedPlanDetails.price} AED</span>
+                        <span className="text-base font-black text-[#142F52]">{selectedPlanDetails.price} AED</span>
                       </div>
                     </div>
                   )}
@@ -1304,7 +1303,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 active:scale-95"
+                      className="bg-white hover:bg-[#EEF4FA] text-[#64748B] font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs flex items-center gap-1.5 border border-[#E5EDF3] active:scale-95"
                     >
                       <ArrowRight className="w-4 h-4" />
                       <span>السابق</span>
@@ -1314,9 +1313,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <button
                         type="button"
                         onClick={handleActivateWithExemption}
-                        className="flex-1 mr-3 bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                        className="flex-1 mr-3 bg-[#159B7A] hover:bg-[#108466] text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                       >
-                        <CheckCircle2 className="w-4 h-4 text-black" />
+                        <CheckCircle2 className="w-4 h-4 text-white" />
                         <span>✨ تفعيل الحساب فوراً بالاشتراك المجاني ({appliedExemption.months} شهر)</span>
                         <ArrowLeft className="w-4 h-4" />
                       </button>
@@ -1324,7 +1323,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                       <button
                         type="button"
                         onClick={handleOpenPaymentGateway}
-                        className="flex-1 mr-3 bg-white hover:bg-zinc-200 text-black font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+                        className="flex-1 mr-3 bg-[#159B7A] hover:bg-[#108466] text-white font-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
                       >
                         <ExternalLink className="w-4 h-4" />
                         <span>الانتقال للدفع الإلكتروني المباشر ({selectedPlanDetails.price} AED)</span>
