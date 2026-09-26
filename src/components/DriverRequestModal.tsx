@@ -13,7 +13,11 @@ import {
   Tag, 
   Clock, 
   ArrowLeft,
-  Trash2
+  Trash2,
+  Lock,
+  MessageCircle,
+  Phone,
+  User
 } from 'lucide-react';
 
 interface DriverRequestModalProps {
@@ -50,6 +54,21 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
   });
 
   const alreadySubmitted = Boolean(myOffer);
+
+  // Customer contact is visible ONLY when the customer has accepted this driver's offer
+  const isAcceptedByCustomer = Boolean(
+    request.selectedOfferId && 
+    myOffer && 
+    (request.selectedOfferId === myOffer.id || myOffer.status === 'accepted')
+  );
+
+  const cleanCustomerPhone = (request.customerPhone || '').replace(/[^0-9]/g, '');
+  const formattedCustomerWa = cleanCustomerPhone 
+    ? (cleanCustomerPhone.startsWith('971') ? cleanCustomerPhone : '971' + cleanCustomerPhone.replace(/^0+/, '')) 
+    : '';
+  const customerWaUrl = formattedCustomerWa
+    ? `https://wa.me/${formattedCustomerWa}?text=${encodeURIComponent(`مرحباً ${request.customerName || 'عزيزي العميل'}، أنا الكابتن ${driver.name} من منصة واصل بخصوص قبول طلبك "${request.title}". جاهز للتنفيذ فوراً.`)}`
+    : '#';
 
   const handleProceedToOffer = () => {
     onClose();
@@ -214,6 +233,61 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
                   <span>{myOffer.note}</span>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Customer Contact Details - Visible ONLY after customer accepts this driver's offer */}
+          {isAcceptedByCustomer ? (
+            <div className="bg-[#EAF6F1] border-2 border-[#159B7A] p-4 sm:p-5 rounded-2xl space-y-3 shadow-sm animate-in zoom-in-95">
+              <div className="flex items-center gap-2 text-[#159B7A] text-xs sm:text-sm font-black">
+                <CheckCircle2 className="w-5 h-5 text-[#159B7A]" />
+                <span>🎉 وافق العميل على عرضك! بيانات التواصل المباشر:</span>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-[#159B7A]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#EAF6F1] text-[#159B7A] flex items-center justify-center font-bold shrink-0">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-[#64748B] font-medium">العميل:</div>
+                    <div className="font-black text-[#142F52] text-sm sm:text-base">{request.customerName || 'عميل واصل'}</div>
+                    {request.customerPhone && (
+                      <div className="text-xs text-[#159B7A] font-bold font-mono mt-0.5">📞 {request.customerPhone}</div>
+                    )}
+                  </div>
+                </div>
+
+                {cleanCustomerPhone && (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={customerWaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-white" />
+                      <span>واتساب</span>
+                    </a>
+                    <a
+                      href={`tel:${cleanCustomerPhone}`}
+                      className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#142F52] border border-[#E5EDF3] font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-[#159B7A]" />
+                      <span>اتصال</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-[#EEF4FA] border border-[#E5EDF3] p-3.5 rounded-2xl flex items-center gap-3 text-xs text-[#142F52]">
+              <div className="w-8 h-8 rounded-xl bg-white border border-[#E5EDF3] flex items-center justify-center shrink-0 font-bold text-[#159B7A] shadow-2xs">
+                <Lock className="w-4 h-4 text-[#159B7A]" />
+              </div>
+              <div>
+                <span className="font-bold block text-[#142F52]">بيانات التواصل بالعميل محمية</span>
+                <span className="text-[11px] text-[#64748B]">تظهر بيانات الاتصال المباشر (الهاتف والواتساب) للسائق فور قبول العميل لعرضك لضمان الخصوصية وسرية البيانات.</span>
+              </div>
             </div>
           )}
 
