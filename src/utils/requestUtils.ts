@@ -160,37 +160,85 @@ export const areRequestListsEqual = (listA: DeliveryRequest[] | null | undefined
 
 /**
  * Merges previous in-memory requests with incoming requests.
- * Guarantees that no in-flight request or newly received offer is ever dropped or shaken.
+ * Guarantees that no in-flight request or newly received offer is ever dropped or shaken,
+ * while preventing deleted requests from resurrecting.
  */
-export const mergeRequestLists = (prevList: DeliveryRequest[] | undefined | null, incomingList: DeliveryRequest[] | undefined | null): DeliveryRequest[] => {
+export const mergeRequestLists = (
+  prevList: DeliveryRequest[] | undefined | null, 
+  incomingList: DeliveryRequest[] | undefined | null,
+  deletedIds?: Set<string>
+): DeliveryRequest[] => {
   const prev = Array.isArray(prevList) ? prevList : [];
   const incoming = Array.isArray(incomingList) ? incomingList : [];
 
+  let delSet = deletedIds;
+  if (!delSet && typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('wasel_deleted_requests_v1');
+      if (raw) delSet = new Set(JSON.parse(raw));
+    } catch (e) {}
+  }
+  const isDeleted = (id: string) => delSet ? delSet.has(id) : false;
+
+  const isIncremental = incoming.length === 1 && prev.length > 1;
   const map = new Map<string, DeliveryRequest>();
 
-  // 1. Load all incoming requests from DB / fetch
-  incoming.forEach(r => map.set(r.id, r));
+  // 1. Add incoming requests (excluding deleted ones)
+  incoming.filter(r => !isDeleted(r.id)).forEach(r => map.set(r.id, r));
 
-  // 2. Merge with previous in-memory state to preserve uncommitted or fast-received offers
-  prev.forEach(prevReq => {
-    const incomingReq = map.get(prevReq.id);
-    if (!incomingReq) {
-      map.set(prevReq.id, prevReq);
-    } else {
-      const offerMap = new Map<string, DriverOffer>();
-      (incomingReq.offers || []).forEach(o => offerMap.set(o.id, o));
-      (prevReq.offers || []).forEach(o => offerMap.set(o.id, o));
+  if (isIncremental) {
+    // Incremental update (e.g. single new request or single updated request) -> preserve existing prev items
+    prev.filter(r => !isDeleted(r.id)).forEach(prevReq => {
+      const incomingReq = map.get(prevReq.id);
+      if (!incomingReq) {
+        map.set(prevReq.id, prevReq);
+      } else {
+        const offerMap = new Map<string, DriverOffer>();
+        (incomingReq.offers || []).forEach(o => offerMap.set(o.id, o));
+        (prevReq.offers || []).forEach(o => offerMap.set(o.id, o));
 
-      map.set(prevReq.id, {
-        ...incomingReq,
-        selectedOfferId: incomingReq.selectedOfferId || prevReq.selectedOfferId,
-        status: incomingReq.status !== 'open' ? incomingReq.status : prevReq.status,
-        createdAt: prevReq.createdAt === 'الآن' ? 'الآن' : (incomingReq.createdAt || prevReq.createdAt),
-        createdAtTimestamp: getRequestTimestamp(incomingReq) || getRequestTimestamp(prevReq),
-        offers: sortOffersDeterministically(Array.from(offerMap.values()))
-      });
-    }
-  });
+        map.set(prevReq.id, {
+          ...incomingReq,
+          selectedOfferId: incomingReq.selectedOfferId || prevReq.selectedOfferId,
+          status: incomingReq.status !== 'open' ? incomingReq.status : prevReq.status,
+          createdAt: prevReq.createdAt === 'الآن' ? 'الآن' : (incomingReq.createdAt || prevReq.createdAt),
+          createdAtTimestamp: getRequestTimestamp(incomingReq) || getRequestTimestamp(prevReq),
+          offers: sortOffersDeterministically(Array.from(offerMap.values()))
+        });
+      }
+    });
+  } else {
+    // Full sync from DB: incoming is the authoritative list.
+    // Merge offers from prev if prev has newer offers for existing items in incoming.
+    incoming.filter(r => !isDeleted(r.id)).forEach(incomingReq => {
+      const prevReq = prev.find(p => p.id === incomingReq.id);
+      if (prevReq) {
+        const offerMap = new Map<string, DriverOffer>();
+        (incomingReq.offers || []).forEach(o => offerMap.set(o.id, o));
+        (prevReq.offers || []).forEach(o => offerMap.set(o.id, o));
+
+        map.set(incomingReq.id, {
+          ...incomingReq,
+          selectedOfferId: incomingReq.selectedOfferId || prevReq.selectedOfferId,
+          status: incomingReq.status !== 'open' ? incomingReq.status : prevReq.status,
+          createdAt: prevReq.createdAt === 'الآن' ? 'الآن' : (incomingReq.createdAt || prevReq.createdAt),
+          createdAtTimestamp: getRequestTimestamp(incomingReq) || getRequestTimestamp(prevReq),
+          offers: sortOffersDeterministically(Array.from(offerMap.values()))
+        });
+      }
+    });
+
+    // Also preserve very fresh local requests created in last 15s if DB hasn't caught up
+    const now = Date.now();
+    prev.filter(r => !isDeleted(r.id)).forEach(prevReq => {
+      if (!map.has(prevReq.id)) {
+        const time = getRequestTimestamp(prevReq);
+        if (time > 0 && (now - time < 15000)) {
+          map.set(prevReq.id, prevReq);
+        }
+      }
+    });
+  }
 
   const merged = sortRequestsNewestFirst(Array.from(map.values()));
   return areRequestListsEqual(prev, merged) ? prev : merged;

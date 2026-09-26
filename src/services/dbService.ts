@@ -514,6 +514,67 @@ export const dbService = {
     }
   },
 
+  removeLocalRequest(requestId: string): void {
+    this.addDeletedRequestId(requestId);
+    const current = this.getLocalRequests();
+    const updated = current.filter(r => r.id !== requestId);
+    this.saveLocalRequests(updated);
+  },
+
+  removeLocalOffer(requestId: string, offerId: string): void {
+    this.addDeletedOfferId(offerId);
+    const current = this.getLocalRequests();
+    const updated = current.map(req => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          offers: (req.offers || []).filter(o => o.id !== offerId)
+        };
+      }
+      return req;
+    });
+    this.saveLocalRequests(updated);
+  },
+
+  addOrUpdateLocalOffer(offer: DriverOffer): void {
+    const deletedOffIds = this.getDeletedOfferIds();
+    if (deletedOffIds.has(offer.id)) {
+      deletedOffIds.delete(offer.id);
+      try {
+        localStorage.setItem(STORAGE_KEY_DELETED_OFFERS, JSON.stringify(Array.from(deletedOffIds)));
+      } catch (e) {}
+    }
+
+    const current = this.getLocalRequests();
+    const updated = current.map(req => {
+      if (req.id === offer.requestId) {
+        const existingOffers = (req.offers || []).filter(o => o.id !== offer.id && !deletedOffIds.has(o.id));
+        return {
+          ...req,
+          offers: sortOffersDeterministically([offer, ...existingOffers])
+        };
+      }
+      return req;
+    });
+    this.saveLocalRequests(updated);
+  },
+
+  addOrUpdateLocalRequest(request: DeliveryRequest): void {
+    const deletedReqIds = this.getDeletedRequestIds();
+    if (deletedReqIds.has(request.id)) {
+      return;
+    }
+    const current = this.getLocalRequests();
+    const existing = current.find(r => r.id === request.id);
+    let updated: DeliveryRequest[];
+    if (existing) {
+      updated = current.map(r => r.id === request.id ? { ...r, ...request } : r);
+    } else {
+      updated = sortRequestsNewestFirst([request, ...current]);
+    }
+    this.saveLocalRequests(updated);
+  },
+
   async deleteRequest(requestId: string): Promise<boolean> {
     // 1. Record in deleted set so it never re-seeds from mock data
     this.addDeletedRequestId(requestId);
@@ -650,14 +711,19 @@ export const dbService = {
         // Merge strategy: map by id and merge offers so newly submitted driver offers are never wiped out
         const requestMap = new Map<string, DeliveryRequest>();
         
-        // 1. Load cloud requests first
+        // 1. Load cloud requests first (excluding deleted ones)
         cloudRequests.filter(r => !deletedReqIds.has(r.id)).forEach(r => requestMap.set(r.id, r));
 
-        // 2. Merge with local requests to preserve any pending local offers
+        // 2. For local requests: only preserve if newly created locally (< 30s) or existing in cloud
+        const now = Date.now();
         localRequests.filter(r => !deletedReqIds.has(r.id)).forEach(localReq => {
           const cloudReq = requestMap.get(localReq.id);
           if (!cloudReq) {
-            requestMap.set(localReq.id, localReq);
+            // Keep fresh local request if created in last 30s
+            const reqTime = getRequestTimestamp(localReq);
+            if (reqTime > 0 && (now - reqTime < 30000)) {
+              requestMap.set(localReq.id, localReq);
+            }
           } else {
             // Merge offers by offer ID
             const offerMap = new Map<string, DriverOffer>();

@@ -5,7 +5,7 @@ import { dbService, onSyncEvent } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
-import { areRequestListsEqual, mergeRequestLists, sortOffersDeterministically } from './utils/requestUtils';
+import { areRequestListsEqual, mergeRequestLists, sortOffersDeterministically, sortRequestsNewestFirst } from './utils/requestUtils';
 
 import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
 import { LandingView } from './components/LandingView';
@@ -237,7 +237,12 @@ export function App() {
     const unsubscribeLocalSync = onSyncEvent(async (event) => {
       if (event.type === 'NEW_REQUEST' && event.payload) {
         const newReq: DeliveryRequest = event.payload;
-        setRequests(prev => mergeRequestLists(prev, [newReq]));
+        dbService.addOrUpdateLocalRequest(newReq);
+        setRequests(prev => {
+          const existing = prev.find(r => r.id === newReq.id);
+          if (existing) return prev;
+          return sortRequestsNewestFirst([newReq, ...prev]);
+        });
         setNotifications(prev => [
           {
             id: `notif-${newReq.id}`,
@@ -259,17 +264,17 @@ export function App() {
         });
       } else if (event.type === 'NEW_OFFER' && event.payload) {
         const newOffer: DriverOffer = event.payload;
-        setRequests(prev => {
-          const targetReq = prev.find(r => r.id === newOffer.requestId);
-          if (!targetReq) return prev;
-          const existingOffers = targetReq.offers || [];
-          if (existingOffers.some(o => o.id === newOffer.id)) return prev;
-          const updatedReq: DeliveryRequest = {
-            ...targetReq,
-            offers: sortOffersDeterministically([newOffer, ...existingOffers])
-          };
-          return mergeRequestLists(prev, [updatedReq]);
-        });
+        dbService.addOrUpdateLocalOffer(newOffer);
+        setRequests(prev => prev.map(req => {
+          if (req.id === newOffer.requestId) {
+            const existingOffers = (req.offers || []).filter(o => o.id !== newOffer.id);
+            return {
+              ...req,
+              offers: sortOffersDeterministically([newOffer, ...existingOffers])
+            };
+          }
+          return req;
+        }));
         setCustomerNotifications(prev => [
           {
             id: `cust-notif-${newOffer.id}`,
@@ -339,11 +344,13 @@ export function App() {
         });
       } else if (event.type === 'DELETE_REQUEST' && event.payload) {
         const { requestId } = event.payload;
+        dbService.removeLocalRequest(requestId);
         setRequests(prev => prev.filter(r => r.id !== requestId));
         setNotifications(prev => prev.filter(n => n.requestId !== requestId));
         setCustomerNotifications(prev => prev.filter(n => n.requestId !== requestId));
       } else if (event.type === 'DELETE_OFFER' && event.payload) {
         const { requestId, offerId } = event.payload;
+        dbService.removeLocalOffer(requestId, offerId);
         setRequests(prev => prev.map(req => {
           if (req.id === requestId) {
             return {
@@ -382,26 +389,61 @@ export function App() {
             async (payload: any) => {
               if (payload && payload.eventType === 'DELETE' && payload.old) {
                 const deletedId = payload.old.id;
+                dbService.removeLocalRequest(deletedId);
                 setRequests(prev => prev.filter(r => r.id !== deletedId));
                 setNotifications(prev => prev.filter(n => n.requestId !== deletedId));
                 setCustomerNotifications(prev => prev.filter(n => n.requestId !== deletedId));
                 return;
               }
-              const latestReqs = await dbService.getRequests();
-              if (latestReqs && latestReqs.length > 0) {
-                setRequests(prev => mergeRequestLists(prev, latestReqs));
-              }
 
-              // Alert drivers if new delivery request was created
-              if (payload && payload.eventType === 'INSERT' && payload.new) {
-                const newReq = payload.new;
-                sendDeviceNotification({
-                  title: `🔔 طلب توصيل جديد: من ${newReq.pickup_emirate || ''} إلى ${newReq.delivery_emirate || ''}`,
-                  body: `${newReq.title || 'طرد جديد'} - اضغط لتقديم عرض سعرك فوراً!`,
-                  tag: `new-req-${newReq.id}`,
-                  soundType: 'new_request',
-                  url: '/?action=driver_portal'
+              if (payload && (payload.eventType === 'INSERT' || payload.new)) {
+                const r = payload.new;
+                const newReq: DeliveryRequest = {
+                  id: r.id,
+                  title: r.title,
+                  customerId: r.customer_id,
+                  customerName: r.customer_name,
+                  customerPhone: r.customer_phone,
+                  pickupEmirate: r.pickup_emirate,
+                  pickupArea: r.pickup_area,
+                  deliveryEmirate: r.delivery_emirate,
+                  deliveryArea: r.delivery_area,
+                  packageType: r.package_type,
+                  packageSize: r.package_size,
+                  packageWeight: r.package_weight,
+                  deliveryDate: r.delivery_date,
+                  urgency: r.urgency,
+                  notes: r.notes || '',
+                  status: r.status || 'open',
+                  createdAt: r.created_at ? (r.created_at.includes('T') ? new Date(r.created_at).toLocaleDateString('ar-AE') : r.created_at) : 'الآن',
+                  createdAtTimestamp: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+                  selectedOfferId: r.selected_offer_id,
+                  isCustomerRated: Boolean(r.is_customer_rated),
+                  customerRating: r.customer_rating,
+                  customerReviewNote: r.customer_review_note,
+                  offers: []
+                };
+
+                dbService.addOrUpdateLocalRequest(newReq);
+                setRequests(prev => {
+                  if (prev.some(req => req.id === newReq.id)) return prev;
+                  return sortRequestsNewestFirst([newReq, ...prev]);
                 });
+
+                if (payload.eventType === 'INSERT') {
+                  sendDeviceNotification({
+                    title: `🔔 طلب توصيل جديد: من ${newReq.pickupEmirate || ''} إلى ${newReq.deliveryEmirate || ''}`,
+                    body: `${newReq.title || 'طرد جديد'} - اضغط لتقديم عرض سعرك فوراً!`,
+                    tag: `new-req-${newReq.id}`,
+                    soundType: 'new_request',
+                    url: '/?action=driver_portal'
+                  });
+                }
+              } else {
+                const latestReqs = await dbService.getRequests();
+                if (latestReqs && latestReqs.length > 0) {
+                  setRequests(prev => mergeRequestLists(prev, latestReqs));
+                }
               }
             }
           )
@@ -411,6 +453,12 @@ export function App() {
             async (payload: any) => {
               if (payload && payload.eventType === 'DELETE' && payload.old) {
                 const deletedOfferId = payload.old.id;
+                const targetReqId = payload.old.request_id;
+                if (targetReqId) {
+                  dbService.removeLocalOffer(targetReqId, deletedOfferId);
+                } else {
+                  dbService.addDeletedOfferId(deletedOfferId);
+                }
                 setRequests(prev => prev.map(r => ({
                   ...r,
                   offers: (r.offers || []).filter(o => o.id !== deletedOfferId)
@@ -418,23 +466,55 @@ export function App() {
                 setCustomerNotifications(prev => prev.filter(n => n.offerId !== deletedOfferId));
                 return;
               }
-              const latestReqs = await dbService.getRequests();
-              if (latestReqs && latestReqs.length > 0) {
-                setRequests(prev => mergeRequestLists(prev, latestReqs));
-              }
 
-              // Instant notification & sound for customer when driver submits an offer
+              // Instant offer injection & notification for customer when driver submits an offer
               if (payload && (payload.eventType === 'INSERT' || payload.new)) {
                 const o = payload.new;
                 if (o && o.request_id) {
-                  const targetReq = latestReqs.find(r => r.id === o.request_id);
                   const offerPrice = Number(o.price) || 0;
                   const driverName = o.driver_name || 'سائق معتمد';
 
+                  const newOffer: DriverOffer = {
+                    id: o.id,
+                    requestId: o.request_id,
+                    driverId: o.driver_id,
+                    driverName,
+                    driverAvatar: o.driver_avatar,
+                    driverRating: Number(o.driver_rating) || 5.0,
+                    driverVehicle: o.driver_vehicle,
+                    driverVehicleType: o.driver_vehicle_type,
+                    driverPhone: o.driver_phone,
+                    driverWhatsappPhone: o.driver_whatsapp_phone,
+                    driverCallPhone: o.driver_call_phone,
+                    driverCompletedCount: o.driver_completed_count || 0,
+                    driverVerified: Boolean(o.driver_verified),
+                    price: offerPrice,
+                    estimatedDeliveryTime: o.estimated_delivery_time,
+                    note: o.note || '',
+                    createdAt: o.created_at ? (o.created_at.includes('T') ? new Date(o.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : o.created_at) : 'الآن',
+                    status: o.status || 'pending'
+                  };
+
+                  // 1. Immediately store in local storage
+                  dbService.addOrUpdateLocalOffer(newOffer);
+
+                  // 2. Immediately inject into state without waiting for network round-trips
+                  setRequests(prev => prev.map(req => {
+                    if (req.id === newOffer.requestId) {
+                      const existingOffers = (req.offers || []).filter(off => off.id !== newOffer.id);
+                      return {
+                        ...req,
+                        offers: sortOffersDeterministically([newOffer, ...existingOffers])
+                      };
+                    }
+                    return req;
+                  }));
+
+                  // 3. Customer Notification
                   const newCustNotif: CustomerNotification = {
                     id: `cust-notif-${o.id || Date.now()}`,
                     requestId: o.request_id,
-                    requestTitle: targetReq?.title || 'طلب توصيل',
+                    requestTitle: 'طلب توصيل',
                     offerId: o.id,
                     driverName,
                     driverAvatar: o.driver_avatar,
@@ -454,7 +534,7 @@ export function App() {
 
                   sendDeviceNotification({
                     title: `💬 عرض سعر جديد (${offerPrice} AED) من الكابتن ${driverName}`,
-                    body: `قدم عرض توصيل لطلبك: "${targetReq?.title || 'طلبك'}". اضغط للمعاينة والتواصل المباشر.`,
+                    body: `قدم عرض توصيل لطلبك. اضغط للمعاينة والتواصل المباشر.`,
                     tag: `offer-${o.id}`,
                     soundType: 'new_offer',
                     url: '/?action=customer'
