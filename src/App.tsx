@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { AppScreen, DriverProfile, CustomerProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
 import { INITIAL_DRIVERS } from './data/mockData';
-import { dbService, onSyncEvent } from './services/dbService';
+import { dbService, onSyncEvent, onRealtimeStatusChange, getRealtimeStatus } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
 import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
@@ -116,6 +116,13 @@ export function App() {
   // Subscription Price & Exemption Codes State
   const [subscriptionPrice, setSubscriptionPrice] = useState<number>(() => dbService.getSubscriptionPrice());
   const [exemptionCodes, setExemptionCodes] = useState<ExemptionCode[]>(() => dbService.getExemptionCodes());
+  const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'disconnected'>(() => getRealtimeStatus());
+
+  useEffect(() => {
+    return onRealtimeStatusChange((st) => {
+      setRealtimeStatus(st);
+    });
+  }, []);
 
   // Toast Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -127,16 +134,27 @@ export function App() {
     }, 4500);
   };
 
-  const handleUpdateSubscriptionPrice = async (newPrice: number) => {
-    setSubscriptionPrice(newPrice);
-    await dbService.setSubscriptionPrice(newPrice);
-    showToast(`✨ تم تحديث سعر الباقة الموحدة إلى ${newPrice} درهم ومزامنته فوراً`);
+  const handleUpdateSubscriptionPrice = async (newPrice: number): Promise<void> => {
+    try {
+      await dbService.setSubscriptionPrice(newPrice);
+      setSubscriptionPrice(newPrice);
+      showToast(`✨ تم تحديث سعر الباقة الموحدة إلى ${newPrice} درهم ومزامنته سحابياً`);
+    } catch (err: any) {
+      showToast(`❌ فشل حفظ السعر: ${err.message || 'خطأ في الاتصال'}`);
+      throw err;
+    }
   };
 
-  const handleCreateExemptionCode = async (codeData: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => {
+  const handleCreateExemptionCode = async (codeData: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>): Promise<void> => {
+    const cleanCode = codeData.code.trim().toUpperCase();
+    if (exemptionCodes.some(c => c.code.toUpperCase() === cleanCode)) {
+      showToast(`⚠️ كود الإعفاء "${cleanCode}" موجود بالفعل مسبقاً`);
+      throw new Error(`كود الإعفاء "${cleanCode}" موجود بالفعل`);
+    }
+
     const newCode: ExemptionCode = {
       id: `code-${Date.now()}`,
-      code: codeData.code.toUpperCase(),
+      code: cleanCode,
       months: codeData.months,
       maxDrivers: codeData.maxDrivers,
       usedDriversCount: 0,
@@ -145,62 +163,45 @@ export function App() {
       createdAt: new Date().toISOString().split('T')[0],
       notes: codeData.notes
     };
-    const updated = [newCode, ...exemptionCodes];
-    setExemptionCodes(updated);
-    await dbService.saveExemptionCodes(updated);
-    showToast(`🎫 تم إنشاء كود الإعفاء "${newCode.code}" (${newCode.months} شهر مجاناً) ومزامنته`);
+
+    const updated = [newCode, ...exemptionCodes.filter(c => c.code.toUpperCase() !== cleanCode)];
+    try {
+      await dbService.saveExemptionCodes(updated);
+      setExemptionCodes(updated);
+      showToast(`🎫 تم إنشاء كود الإعفاء "${newCode.code}" (${newCode.months} شهر مجاناً) ومزامنته`);
+    } catch (err: any) {
+      showToast(`❌ فشل إنشاء كود الإعفاء: ${err.message || 'خطأ في الاتصال'}`);
+      throw err;
+    }
   };
 
-  const handleDeleteExemptionCode = async (codeId: string) => {
+  const handleDeleteExemptionCode = async (codeId: string): Promise<void> => {
     const updated = exemptionCodes.filter(c => c.id !== codeId);
-    setExemptionCodes(updated);
-    await dbService.saveExemptionCodes(updated);
-    showToast('🗑️ تم حذف كود الإعفاء ومزامنته بنجاح');
+    try {
+      await dbService.saveExemptionCodes(updated);
+      setExemptionCodes(updated);
+      showToast('🗑️ تم حذف كود الإعفاء ومزامنته بنجاح');
+    } catch (err: any) {
+      showToast(`❌ فشل حذف كود الإعفاء: ${err.message || 'خطأ في الاتصال'}`);
+      throw err;
+    }
   };
 
-  const handleToggleExemptionCode = async (codeId: string) => {
+  const handleToggleExemptionCode = async (codeId: string): Promise<void> => {
     const updated = exemptionCodes.map(c => c.id === codeId ? { ...c, isActive: !c.isActive } : c);
-    setExemptionCodes(updated);
-    await dbService.saveExemptionCodes(updated);
-    const target = updated.find(c => c.id === codeId);
-    showToast(target?.isActive ? `🟢 تم تفعيل كود الإعفاء "${target.code}"` : `⚪ تم تعطيل كود الإعفاء "${target?.code}"`);
+    try {
+      await dbService.saveExemptionCodes(updated);
+      setExemptionCodes(updated);
+      const target = updated.find(c => c.id === codeId);
+      showToast(target?.isActive ? `🟢 تم تفعيل كود الإعفاء "${target.code}"` : `⚪ تم تعطيل كود الإعفاء "${target?.code}"`);
+    } catch (err: any) {
+      showToast(`❌ فشل تحديث حالة الكود: ${err.message || 'خطأ في الاتصال'}`);
+      throw err;
+    }
   };
 
-  const handleApplyExemptionCode = (codeStr: string, driverId?: string) => {
-    const clean = codeStr.trim().toUpperCase();
-    const found = exemptionCodes.find(c => c.code.toUpperCase() === clean);
-    if (!found) {
-      return { success: false, message: 'كود الإعفاء غير موجود، يرجى التأكد من الرمز' };
-    }
-    if (!found.isActive) {
-      return { success: false, message: 'هذا الكود معطل حالياً من إدارة المنصة' };
-    }
-    if (found.usedDriversCount >= found.maxDrivers) {
-      return { success: false, message: 'تم استنفاد الحد الأقصى للسائقين المسموح لهم بهذا الكود' };
-    }
-    if (driverId && found.usedDriverIds?.includes(driverId)) {
-      return { success: false, message: 'لقد قمت باستخدام كود الإعفاء هذا مسبقاً' };
-    }
-
-    // Record usage
-    const updated = exemptionCodes.map(c => {
-      if (c.id === found.id) {
-        return {
-          ...c,
-          usedDriversCount: c.usedDriversCount + 1,
-          usedDriverIds: driverId ? [...c.usedDriverIds, driverId] : c.usedDriverIds
-        };
-      }
-      return c;
-    });
-    setExemptionCodes(updated);
-    dbService.saveExemptionCodes(updated);
-
-    return {
-      success: true,
-      months: found.months,
-      message: `تم تطبيق كود الإعفاء (${found.months} شهر مجاناً) بنجاح`
-    };
+  const handleApplyExemptionCode = async (codeStr: string, driverId?: string) => {
+    return await dbService.applyExemptionCode(codeStr, driverId);
   };
 
   // SEO & Deep Linking: URL search parameter parser and popstate listener
@@ -299,12 +300,11 @@ export function App() {
     // Initial fetch from DB Service (Central Supabase + Local Fallback)
     const loadInitialData = async () => {
       try {
-        const [loadedDrivers, loadedCustomers, loadedRequests, loadedPrice, loadedCodes] = await Promise.all([
+        const [loadedDrivers, loadedCustomers, loadedRequests, platformSettings] = await Promise.all([
           dbService.getDrivers(),
           dbService.getCustomers(),
           dbService.getRequests(),
-          dbService.fetchSubscriptionPrice(),
-          dbService.fetchExemptionCodes()
+          dbService.fetchPlatformSettings()
         ]);
         if (loadedDrivers && loadedDrivers.length > 0) {
           setDrivers(loadedDrivers);
@@ -315,11 +315,13 @@ export function App() {
         if (loadedRequests && loadedRequests.length > 0) {
           setRequests(prev => mergeRequestLists(prev, loadedRequests));
         }
-        if (loadedPrice !== undefined && loadedPrice !== null) {
-          setSubscriptionPrice(loadedPrice);
-        }
-        if (loadedCodes && loadedCodes.length > 0) {
-          setExemptionCodes(loadedCodes);
+        if (platformSettings) {
+          if (platformSettings.subscriptionPrice !== undefined && platformSettings.subscriptionPrice !== null) {
+            setSubscriptionPrice(platformSettings.subscriptionPrice);
+          }
+          if (platformSettings.exemptionCodes && Array.isArray(platformSettings.exemptionCodes)) {
+            setExemptionCodes(platformSettings.exemptionCodes);
+          }
         }
       } catch (err) {
         console.warn('Could not load from DB service:', err);
@@ -512,6 +514,27 @@ export function App() {
 
               if (payload && (payload.eventType === 'INSERT' || payload.new)) {
                 const r = payload.new;
+
+                // Check if this is the centralized system settings record
+                if (r && (r.id === 'SYS_WASEL_PLATFORM_SETTINGS' || (typeof r.id === 'string' && r.id.startsWith('SYS_')))) {
+                  try {
+                    const parsed = typeof r.notes === 'string' ? JSON.parse(r.notes) : r.notes;
+                    if (parsed && typeof parsed === 'object') {
+                      if (typeof parsed.subscriptionPrice === 'number' && parsed.subscriptionPrice >= 0) {
+                        setSubscriptionPrice(parsed.subscriptionPrice);
+                        dbService.setSubscriptionPriceLocal(parsed.subscriptionPrice);
+                      }
+                      if (Array.isArray(parsed.exemptionCodes)) {
+                        setExemptionCodes(parsed.exemptionCodes);
+                        dbService.saveExemptionCodesLocal(parsed.exemptionCodes);
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Error parsing settings from realtime postgres_changes:', err);
+                  }
+                  return; // Exclude system config rows from delivery requests!
+                }
+
                 const newReq: DeliveryRequest = {
                   id: r.id,
                   title: r.title,
@@ -715,12 +738,11 @@ export function App() {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
       try {
-        const [refreshedRequests, refreshedDrivers, refreshedCustomers, refreshedPrice, refreshedCodes] = await Promise.all([
+        const [refreshedRequests, refreshedDrivers, refreshedCustomers, platformSettings] = await Promise.all([
           dbService.getRequests(),
           dbService.getDrivers(),
           dbService.getCustomers(),
-          dbService.fetchSubscriptionPrice(),
-          dbService.fetchExemptionCodes()
+          dbService.fetchPlatformSettings()
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
           setRequests(prev => mergeRequestLists(prev, refreshedRequests));
@@ -737,11 +759,13 @@ export function App() {
             return isDifferent ? refreshedCustomers : prev;
           });
         }
-        if (refreshedPrice !== undefined && refreshedPrice !== null) {
-          setSubscriptionPrice(refreshedPrice);
-        }
-        if (refreshedCodes && refreshedCodes.length > 0) {
-          setExemptionCodes(refreshedCodes);
+        if (platformSettings) {
+          if (platformSettings.subscriptionPrice !== undefined && platformSettings.subscriptionPrice !== null) {
+            setSubscriptionPrice(platformSettings.subscriptionPrice);
+          }
+          if (platformSettings.exemptionCodes && Array.isArray(platformSettings.exemptionCodes)) {
+            setExemptionCodes(platformSettings.exemptionCodes);
+          }
         }
       } catch (err) {
         // Silent background sync
@@ -1519,6 +1543,7 @@ export function App() {
               onCreateExemptionCode={handleCreateExemptionCode}
               onDeleteExemptionCode={handleDeleteExemptionCode}
               onToggleExemptionCode={handleToggleExemptionCode}
+              isRealtimeConnected={realtimeStatus === 'connected'}
             />
           </div>
         )}

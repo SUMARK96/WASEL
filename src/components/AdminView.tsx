@@ -31,21 +31,24 @@ import {
   MapPin,
   Power,
   PowerOff,
-  AlertTriangle
+  AlertTriangle,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 interface AdminViewProps {
   drivers: DriverProfile[];
   requests: DeliveryRequest[];
-  onToggleVerifyDriver: (driverId: string) => void;
-  onDeleteDriver?: (driverId: string) => void;
-  onToggleDriverStatus?: (driverId: string, newStatus: 'active' | 'suspended') => void;
+  onToggleVerifyDriver: (driverId: string) => void | Promise<void>;
+  onDeleteDriver?: (driverId: string) => void | Promise<void>;
+  onToggleDriverStatus?: (driverId: string, newStatus: 'active' | 'suspended') => void | Promise<void>;
   subscriptionPrice?: number;
-  onUpdateSubscriptionPrice?: (newPrice: number) => void;
+  onUpdateSubscriptionPrice?: (newPrice: number) => Promise<void> | void;
   exemptionCodes?: ExemptionCode[];
-  onCreateExemptionCode?: (code: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => void;
-  onDeleteExemptionCode?: (id: string) => void;
-  onToggleExemptionCode?: (id: string) => void;
+  onCreateExemptionCode?: (code: Omit<ExemptionCode, 'id' | 'usedDriversCount' | 'usedDriverIds' | 'createdAt'>) => Promise<void> | void;
+  onDeleteExemptionCode?: (id: string) => Promise<void> | void;
+  onToggleExemptionCode?: (id: string) => Promise<void> | void;
+  isRealtimeConnected?: boolean;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -59,7 +62,8 @@ export const AdminView: React.FC<AdminViewProps> = ({
   exemptionCodes = [],
   onCreateExemptionCode,
   onDeleteExemptionCode,
-  onToggleExemptionCode
+  onToggleExemptionCode,
+  isRealtimeConnected = true
 }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<SubscriptionInvoice | null>(null);
   const [driverToDelete, setDriverToDelete] = useState<DriverProfile | null>(null);
@@ -67,7 +71,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   // Price Edit State
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [tempPrice, setTempPrice] = useState<string>(subscriptionPrice.toString());
+  const [isSavingPrice, setIsSavingPrice] = useState(false);
   const [priceSaveMessage, setPriceSaveMessage] = useState<string | null>(null);
+  const [priceErrorMessage, setPriceErrorMessage] = useState<string | null>(null);
 
   // Exemption Code Creation Form State
   const [showCreateCodeModal, setShowCreateCodeModal] = useState(false);
@@ -75,6 +81,9 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [newCodeMonths, setNewCodeMonths] = useState<number>(1);
   const [newCodeMaxDrivers, setNewCodeMaxDrivers] = useState<number>(10);
   const [newCodeNotes, setNewCodeNotes] = useState('');
+  const [isCreatingCode, setIsCreatingCode] = useState(false);
+  const [codeErrorMessage, setCodeErrorMessage] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
   // Drivers Registry Filter State
@@ -108,18 +117,26 @@ export const AdminView: React.FC<AdminViewProps> = ({
     ? drivers
     : drivers.filter(d => d.emirate === selectedEmirateFilter);
 
-  const handleSavePrice = () => {
+  const handleSavePrice = async () => {
     const val = parseInt(tempPrice, 10);
     if (isNaN(val) || val < 0) {
       alert('يرجى إدخال سعر صحيح بالأرقام');
       return;
     }
-    if (onUpdateSubscriptionPrice) {
-      onUpdateSubscriptionPrice(val);
+    setIsSavingPrice(true);
+    setPriceErrorMessage(null);
+    try {
+      if (onUpdateSubscriptionPrice) {
+        await onUpdateSubscriptionPrice(val);
+      }
+      setIsEditingPrice(false);
+      setPriceSaveMessage(`✅ تم حفظ سعر الباقة الموحدة (${val} AED) في قاعدة البيانات المركزية ومزامنته مع كافة الأجهزة المتصلة بنجاح.`);
+      setTimeout(() => setPriceSaveMessage(null), 4000);
+    } catch (err: any) {
+      setPriceErrorMessage(err.message || 'حدث خطأ أثناء حفظ السعر في قاعدة البيانات');
+    } finally {
+      setIsSavingPrice(false);
     }
-    setIsEditingPrice(false);
-    setPriceSaveMessage(`تم تحديث سعر الباقة إلى ${val} درهم بنجاح`);
-    setTimeout(() => setPriceSaveMessage(null), 3500);
   };
 
   const handleGenerateRandomCode = () => {
@@ -128,7 +145,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setNewCodeName(`${prefix}-${randomStr}`);
   };
 
-  const handleCreateCodeSubmit = (e: React.FormEvent) => {
+  const handleCreateCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = newCodeName.trim().toUpperCase();
     if (!cleanCode) {
@@ -144,22 +161,30 @@ export const AdminView: React.FC<AdminViewProps> = ({
       return;
     }
 
-    if (onCreateExemptionCode) {
-      onCreateExemptionCode({
-        code: cleanCode,
-        months: newCodeMonths,
-        maxDrivers: newCodeMaxDrivers,
-        isActive: true,
-        notes: newCodeNotes.trim() || `إعفاء لمدة ${newCodeMonths} شهر لـ ${newCodeMaxDrivers} سائق`
-      });
-    }
+    setIsCreatingCode(true);
+    setCodeErrorMessage(null);
+    try {
+      if (onCreateExemptionCode) {
+        await onCreateExemptionCode({
+          code: cleanCode,
+          months: newCodeMonths,
+          maxDrivers: newCodeMaxDrivers,
+          isActive: true,
+          notes: newCodeNotes.trim() || `إعفاء لمدة ${newCodeMonths} شهر لـ ${newCodeMaxDrivers} سائق`
+        });
+      }
 
-    // Reset Form
-    setNewCodeName('');
-    setNewCodeMonths(1);
-    setNewCodeMaxDrivers(10);
-    setNewCodeNotes('');
-    setShowCreateCodeModal(false);
+      // Reset Form
+      setNewCodeName('');
+      setNewCodeMonths(1);
+      setNewCodeMaxDrivers(10);
+      setNewCodeNotes('');
+      setShowCreateCodeModal(false);
+    } catch (err: any) {
+      setCodeErrorMessage(err.message || 'فشل إنشاء كود الإعفاء');
+    } finally {
+      setIsCreatingCode(false);
+    }
   };
 
   const handleCopyCode = (code: string, id: string) => {
@@ -168,8 +193,53 @@ export const AdminView: React.FC<AdminViewProps> = ({
     setTimeout(() => setCopiedCodeId(null), 2500);
   };
 
+  const handleToggleCodeAction = async (id: string) => {
+    if (!onToggleExemptionCode) return;
+    setActionLoadingId(id);
+    try {
+      await onToggleExemptionCode(id);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDeleteCodeAction = async (id: string, codeName: string) => {
+    if (!onDeleteExemptionCode) return;
+    if (!confirm(`هل أنت متأكد من حذف كود الإعفاء "${codeName}" نهائياً من قاعدة البيانات؟`)) {
+      return;
+    }
+    setActionLoadingId(id);
+    try {
+      await onDeleteExemptionCode(id);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8">
+
+      {/* Central Realtime Sync Status Banner */}
+      <div className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs transition-all ${
+        isRealtimeConnected
+          ? 'bg-[#EAF6F1] border-[#159B7A]/30 text-[#159B7A]'
+          : 'bg-amber-50 border-amber-200 text-amber-900'
+      }`}>
+        <div className="flex items-center gap-2.5">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+            isRealtimeConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-ping'
+          }`} />
+          <span className="font-bold">
+            {isRealtimeConnected 
+              ? '⚡ المزامنة السحابية المركزية اللحظية متصلة ونشطة (أي تعديل يُحفظ فوراً في السحابة وينعكس لجميع الأجهزة)'
+              : '⏳ جاري الاتصال بالمزامنة المركزية السحابية والتحقق من أحدث البيانات...'
+            }
+          </span>
+        </div>
+        <span className="text-[11px] font-black bg-white px-2.5 py-1 rounded-xl shadow-xs border border-[#E5EDF3] shrink-0">
+          Supabase Realtime 🟢
+        </span>
+      </div>
 
       {/* 3 Interactive KPI Cards (Dynamic, Auto-Updating & Deeply Linked to Live Data) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -350,31 +420,42 @@ export const AdminView: React.FC<AdminViewProps> = ({
           </div>
 
           {isEditingPrice ? (
-            <div className="flex flex-wrap items-center gap-2 bg-white p-2.5 rounded-xl border border-[#E5EDF3]">
-              <span className="text-xs font-bold text-[#142F52]">السعر الجديد (AED):</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={tempPrice}
-                onChange={(e) => setTempPrice(e.target.value)}
-                className="w-24 bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] rounded-lg px-2.5 py-1.5 text-sm font-black text-[#142F52] text-center focus:outline-none"
-                autoFocus
-              />
-              <button
-                onClick={handleSavePrice}
-                className="bg-[#159B7A] hover:bg-[#108466] text-white text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>حفظ</span>
-              </button>
-              <button
-                onClick={() => setIsEditingPrice(false)}
-                className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>إلغاء</span>
-              </button>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2 bg-white p-2.5 rounded-xl border border-[#E5EDF3]">
+                <span className="text-xs font-bold text-[#142F52]">السعر الجديد (AED):</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  disabled={isSavingPrice}
+                  value={tempPrice}
+                  onChange={(e) => setTempPrice(e.target.value)}
+                  className="w-24 bg-[#F5F9FC] border border-[#E5EDF3] focus:border-[#159B7A] rounded-lg px-2.5 py-1.5 text-sm font-black text-[#142F52] text-center focus:outline-none disabled:opacity-50"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSavePrice}
+                  disabled={isSavingPrice}
+                  className="bg-[#159B7A] hover:bg-[#108466] disabled:opacity-50 text-white text-xs font-black px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+                >
+                  {isSavingPrice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>{isSavingPrice ? 'جاري الحفظ...' : 'حفظ'}</span>
+                </button>
+                <button
+                  onClick={() => setIsEditingPrice(false)}
+                  disabled={isSavingPrice}
+                  className="bg-[#F5F9FC] hover:bg-[#EEF4FA] disabled:opacity-50 text-[#64748B] text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>إلغاء</span>
+                </button>
+              </div>
+              {priceErrorMessage && (
+                <div className="bg-red-50 text-red-700 text-xs p-2 rounded-lg border border-red-200 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                  <span>{priceErrorMessage}</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-left sm:text-right flex items-center gap-4">
@@ -516,28 +597,33 @@ export const AdminView: React.FC<AdminViewProps> = ({
                   <div className="flex items-center justify-between pt-1 border-t border-[#E5EDF3] text-xs">
                     {onToggleExemptionCode && (
                       <button
-                        onClick={() => onToggleExemptionCode(item.id)}
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        onClick={() => handleToggleCodeAction(item.id)}
+                        disabled={actionLoadingId === item.id}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                          actionLoadingId === item.id ? 'opacity-50 cursor-wait' : ''
+                        } ${
                           item.isActive
                             ? 'bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] border border-[#E5EDF3]'
                             : 'bg-[#159B7A] text-white font-black'
                         }`}
                       >
-                        {item.isActive ? 'تعطيل الكود' : 'تفعيل الكود'}
+                        {actionLoadingId === item.id && <Loader2 className="w-3 h-3 animate-spin" />}
+                        <span>{item.isActive ? 'تعطيل الكود' : 'تفعيل الكود'}</span>
                       </button>
                     )}
 
                     {onDeleteExemptionCode && (
                       <button
-                        onClick={() => {
-                          if (confirm(`هل أنت متأكد من حذف كود الإعفاء "${item.code}"؟`)) {
-                            onDeleteExemptionCode(item.id);
-                          }
-                        }}
-                        className="text-[#94A3B8] hover:text-red-600 p-1 rounded-lg transition-colors cursor-pointer"
+                        onClick={() => handleDeleteCodeAction(item.id, item.code)}
+                        disabled={actionLoadingId === item.id}
+                        className="text-[#94A3B8] hover:text-red-600 p-1 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
                         title="حذف الكود"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {actionLoadingId === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                     )}
                   </div>
@@ -1004,19 +1090,37 @@ export const AdminView: React.FC<AdminViewProps> = ({
                 </p>
               </div>
 
+              {codeErrorMessage && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                  <span>{codeErrorMessage}</span>
+                </div>
+              )}
+
               {/* Submit Buttons */}
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#159B7A] hover:bg-[#108466] text-white font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={isCreatingCode}
+                  className="flex-1 bg-[#159B7A] hover:bg-[#108466] disabled:opacity-50 text-white font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>حفظ وإنشاء الكود</span>
+                  {isCreatingCode ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>جاري الحفظ في الخادم المركزي...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>حفظ وإنشاء الكود</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
+                  disabled={isCreatingCode}
                   onClick={() => setShowCreateCodeModal(false)}
-                  className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-3 px-5 rounded-xl text-xs active:scale-95 border border-[#E5EDF3] cursor-pointer"
+                  className="bg-[#F5F9FC] hover:bg-[#EEF4FA] text-[#64748B] hover:text-[#142F52] font-bold py-3 px-5 rounded-xl text-xs active:scale-95 border border-[#E5EDF3] cursor-pointer disabled:opacity-50"
                 >
                   إلغاء
                 </button>

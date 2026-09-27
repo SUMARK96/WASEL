@@ -27,7 +27,8 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertTriangle,
-  Ticket
+  Ticket,
+  Loader2
 } from 'lucide-react';
 
 interface DriverRegistrationModalProps {
@@ -35,7 +36,7 @@ interface DriverRegistrationModalProps {
   onRegisterSuccess: (newDriver: DriverProfile) => void;
   subscriptionPrice?: number;
   exemptionCodes?: ExemptionCode[];
-  onApplyExemptionCode?: (codeStr: string, driverId?: string) => { success: boolean; message: string; months?: number };
+  onApplyExemptionCode?: (codeStr: string, driverId?: string) => Promise<{ success: boolean; message: string; months?: number }> | { success: boolean; message: string; months?: number };
 }
 
 // Default avatar placeholder if not uploaded yet
@@ -102,7 +103,9 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
     price: subscriptionPrice
   };
 
-  const handleApplyPromo = () => {
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+
+  const handleApplyPromo = async () => {
     setPromoError(null);
     setPromoSuccess(null);
     const clean = inputPromoCode.trim().toUpperCase();
@@ -110,26 +113,34 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
       setPromoError('يرجى كتابة رمز الكود أولاً');
       return;
     }
-    if (onApplyExemptionCode) {
-      const res = onApplyExemptionCode(clean);
-      if (res.success && res.months) {
-        setAppliedExemption({ code: clean, months: res.months });
-        setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! اشتراك مجاني بنسبة 100% لمدة ${res.months} ${res.months === 1 ? 'شهر' : res.months === 2 ? 'شهرين' : `${res.months} شهور`} دون أي رسوم.`);
-      } else {
-        setPromoError(res.message || 'كود الإعفاء غير صالح أو انتهت صلاحيته');
-      }
-    } else {
-      const found = exemptionCodes?.find(c => c.code.toUpperCase() === clean && c.isActive);
-      if (found) {
-        if (found.usedDriversCount >= found.maxDrivers) {
-          setPromoError('تم استنفاد الحد الأقصى لعدد السائقين المسموح لهم باستخدام هذا الكود');
-          return;
+
+    setIsApplyingPromo(true);
+    try {
+      if (onApplyExemptionCode) {
+        const res = await onApplyExemptionCode(clean);
+        if (res.success && res.months) {
+          setAppliedExemption({ code: clean, months: res.months });
+          setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! اشتراك مجاني بنسبة 100% لمدة ${res.months} ${res.months === 1 ? 'شهر' : res.months === 2 ? 'شهرين' : `${res.months} شهور`} دون أي رسوم.`);
+        } else {
+          setPromoError(res.message || 'كود الإعفاء غير صالح أو انتهت صلاحيته');
         }
-        setAppliedExemption({ code: found.code, months: found.months });
-        setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! اشتراك مجاني بنسبة 100% لمدة ${found.months} ${found.months === 1 ? 'شهر' : found.months === 2 ? 'شهرين' : `${found.months} شهور`} دون أي رسوم.`);
       } else {
-        setPromoError('كود الإعفاء غير صحيح أو غير مفعل');
+        const found = exemptionCodes?.find(c => c.code.toUpperCase() === clean && c.isActive);
+        if (found) {
+          if (found.usedDriversCount >= found.maxDrivers) {
+            setPromoError('تم استنفاد الحد الأقصى لعدد السائقين المسموح لهم باستخدام هذا الكود');
+            return;
+          }
+          setAppliedExemption({ code: found.code, months: found.months });
+          setPromoSuccess(`🎉 تم تفعيل كود الإعفاء بنجاح! اشتراك مجاني بنسبة 100% لمدة ${found.months} ${found.months === 1 ? 'شهر' : found.months === 2 ? 'شهرين' : `${found.months} شهور`} دون أي رسوم.`);
+        } else {
+          setPromoError('كود الإعفاء غير صحيح أو غير مفعل');
+        }
       }
+    } catch (err: any) {
+      setPromoError(err.message || 'فشل التحقق من كود الإعفاء');
+    } finally {
+      setIsApplyingPromo(false);
     }
   };
 
@@ -1256,9 +1267,11 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                           <button
                             type="button"
                             onClick={handleApplyPromo}
-                            className="bg-[#159B7A] hover:bg-[#108466] text-white text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 shadow"
+                            disabled={isApplyingPromo}
+                            className="bg-[#159B7A] hover:bg-[#108466] disabled:opacity-50 text-white text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 shadow flex items-center gap-1.5 cursor-pointer"
                           >
-                            تطبيق الكود
+                            {isApplyingPromo && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            <span>{isApplyingPromo ? 'جاري التحقق...' : 'تطبيق الكود'}</span>
                           </button>
                         </div>
 

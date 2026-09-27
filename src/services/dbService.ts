@@ -28,6 +28,24 @@ let pendingDriversPromise: Promise<DriverProfile[]> | null = null;
 let pendingRequestsPromise: Promise<DeliveryRequest[]> | null = null;
 let pendingCustomersPromise: Promise<CustomerProfile[]> | null = null;
 
+// Realtime WebSocket & Sync Status Tracking
+let realtimeStatus: 'connected' | 'connecting' | 'disconnected' = 'connecting';
+const realtimeStatusListeners = new Set<(status: 'connected' | 'connecting' | 'disconnected') => void>();
+
+export const getRealtimeStatus = (): 'connected' | 'connecting' | 'disconnected' => realtimeStatus;
+export const onRealtimeStatusChange = (cb: (status: 'connected' | 'connecting' | 'disconnected') => void): (() => void) => {
+  realtimeStatusListeners.add(cb);
+  cb(realtimeStatus);
+  return () => { realtimeStatusListeners.delete(cb); };
+};
+
+const notifyRealtimeStatus = (status: 'connected' | 'connecting' | 'disconnected') => {
+  realtimeStatus = status;
+  realtimeStatusListeners.forEach(cb => {
+    try { cb(status); } catch (e) { console.error(e); }
+  });
+};
+
 // Global Supabase Realtime WebSocket Broadcast Channel (Sub-50ms Cross-Device Sync)
 let globalRealtimeChannel: any = null;
 export const getGlobalRealtimeChannel = () => {
@@ -36,9 +54,18 @@ export const getGlobalRealtimeChannel = () => {
       globalRealtimeChannel = supabase.channel('wasel-live-sync-room', {
         config: { broadcast: { self: false } }
       });
-      globalRealtimeChannel.subscribe();
+      globalRealtimeChannel.subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          notifyRealtimeStatus('connected');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          notifyRealtimeStatus('disconnected');
+        } else {
+          notifyRealtimeStatus('connecting');
+        }
+      });
     } catch (e) {
       console.warn('Could not init global realtime room:', e);
+      notifyRealtimeStatus('disconnected');
     }
   }
   return globalRealtimeChannel;
@@ -484,7 +511,7 @@ export const dbService = {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed
-            .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id))
+            .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id) && !r.id.startsWith('SYS_') && (r.status as string) !== '_system_config_')
             .map((r: DeliveryRequest) => ({
               ...r,
               offers: (r.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id))
@@ -495,7 +522,7 @@ export const dbService = {
       console.error('Error reading local requests:', e);
     }
     return INITIAL_REQUESTS
-      .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id))
+      .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id) && !r.id.startsWith('SYS_') && (r.status as string) !== '_system_config_')
       .map((r: DeliveryRequest) => ({
         ...r,
         offers: (r.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id))
@@ -508,7 +535,7 @@ export const dbService = {
     try {
       if (Array.isArray(requests)) {
         const filtered = requests
-          .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id))
+          .filter((r: DeliveryRequest) => !deletedReqIds.has(r.id) && !r.id.startsWith('SYS_') && (r.status as string) !== '_system_config_')
           .map((r: DeliveryRequest) => ({
             ...r,
             offers: (r.offers || []).filter((o: DriverOffer) => !deletedOffIds.has(o.id))
@@ -659,7 +686,7 @@ export const dbService = {
             const allOffers = (!offRes.error && offRes.data) ? offRes.data : [];
 
             cloudRequests = reqRes.data
-              .filter((r: any) => !deletedReqIds.has(r.id))
+              .filter((r: any) => !deletedReqIds.has(r.id) && !r.id.startsWith('SYS_') && r.status !== '_system_config_')
               .map((r: any) => {
                 const finalTimestamp = getRequestTimestamp(r);
                 const matchingOffers = allOffers.filter((o: any) => o.request_id === r.id && !deletedOffIds.has(o.id));
@@ -1215,133 +1242,220 @@ export const dbService = {
   },
 
   // ==================== SUBSCRIPTION PRICE & EXEMPTION CODES ====================
+  // Central system configuration record ID in Supabase
+  SETTINGS_ROW_ID: 'SYS_WASEL_PLATFORM_SETTINGS',
+
   // Instant synchronous local read for initial render
   getSubscriptionPrice(): number {
-    const local = localStorage.getItem(STORAGE_KEY_SUBSCRIPTION_PRICE);
-    if (local) {
-      const parsed = parseInt(local, 10);
-      if (!isNaN(parsed) && parsed >= 0) {
-        return parsed;
+    try {
+      const local = localStorage.getItem(STORAGE_KEY_SUBSCRIPTION_PRICE);
+      if (local) {
+        const parsed = parseInt(local, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+          return parsed;
+        }
       }
+    } catch (e) {
+      console.error('Error reading local subscription price:', e);
     }
     return UNIFIED_SUBSCRIPTION_PLAN.price;
   },
 
   setSubscriptionPriceLocal(price: number): void {
-    localStorage.setItem(STORAGE_KEY_SUBSCRIPTION_PRICE, price.toString());
-  },
-
-  // Centralized cloud-persisted update that broadcasts to all devices in real-time
-  async setSubscriptionPrice(price: number): Promise<void> {
-    // 1. Immediately persist locally
-    this.setSubscriptionPriceLocal(price);
-
-    // 2. Broadcast to all connected tabs and cross-device clients (<50ms)
-    broadcastSyncEvent('SETTINGS_UPDATED', { subscriptionPrice: price });
-
-    // 3. Persist to Supabase centralized storage
-    if (this.isConnected()) {
-      try {
-        await supabase
-          .from('platform_settings')
-          .upsert({
-            id: 'subscription_price',
-            value: price,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
-      } catch (err) {
-        console.warn('Supabase setSubscriptionPrice error:', err);
-      }
+    try {
+      localStorage.setItem(STORAGE_KEY_SUBSCRIPTION_PRICE, price.toString());
+    } catch (e) {
+      console.error('Error saving local subscription price:', e);
     }
-  },
-
-  // Asynchronous cloud fetch from Supabase
-  async fetchSubscriptionPrice(): Promise<number> {
-    if (this.isConnected()) {
-      try {
-        const { data, error } = await supabase
-          .from('platform_settings')
-          .select('value')
-          .eq('id', 'subscription_price')
-          .single();
-
-        if (!error && data && data.value !== undefined && data.value !== null) {
-          const parsed = typeof data.value === 'number' ? data.value : parseInt(data.value, 10);
-          if (!isNaN(parsed) && parsed >= 0) {
-            this.setSubscriptionPriceLocal(parsed);
-            return parsed;
-          }
-        }
-      } catch (err) {
-        // Fall back gracefully to local storage
-      }
-    }
-    return this.getSubscriptionPrice();
   },
 
   // Synchronous local read for exemption codes
   getExemptionCodes(): ExemptionCode[] {
-    const local = localStorage.getItem(STORAGE_KEY_EXEMPTION_CODES);
-    if (local) {
-      try {
+    try {
+      const local = localStorage.getItem(STORAGE_KEY_EXEMPTION_CODES);
+      if (local) {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error('Failed to parse exemption codes:', e);
       }
+    } catch (e) {
+      console.error('Failed to parse local exemption codes:', e);
     }
     return INITIAL_EXEMPTION_CODES;
   },
 
   saveExemptionCodesLocal(codes: ExemptionCode[]): void {
-    localStorage.setItem(STORAGE_KEY_EXEMPTION_CODES, JSON.stringify(codes));
+    try {
+      localStorage.setItem(STORAGE_KEY_EXEMPTION_CODES, JSON.stringify(codes));
+    } catch (e) {
+      console.error('Error saving local exemption codes:', e);
+    }
   },
 
-  // Centralized cloud-persisted save that broadcasts to all devices in real-time
-  async saveExemptionCodes(codes: ExemptionCode[]): Promise<void> {
-    // 1. Save locally
-    this.saveExemptionCodesLocal(codes);
-
-    // 2. Broadcast to all connected tabs and cross-device clients
-    broadcastSyncEvent('EXEMPTION_CODES_UPDATED', { exemptionCodes: codes });
-
-    // 3. Persist to Supabase centralized storage
+  // Authoritative Central Database Fetch for all platform settings
+  async fetchPlatformSettings(): Promise<{ subscriptionPrice: number; exemptionCodes: ExemptionCode[] }> {
     if (this.isConnected()) {
       try {
-        await supabase
-          .from('platform_settings')
-          .upsert({
-            id: 'exemption_codes',
-            value: codes,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
+        const { data, error } = await supabase
+          .from('delivery_requests')
+          .select('notes')
+          .eq('id', this.SETTINGS_ROW_ID)
+          .maybeSingle();
+
+        if (!error && data && data.notes) {
+          const parsed = typeof data.notes === 'string' ? JSON.parse(data.notes) : data.notes;
+          if (parsed && typeof parsed === 'object') {
+            const price = typeof parsed.subscriptionPrice === 'number' && parsed.subscriptionPrice >= 0
+              ? parsed.subscriptionPrice
+              : this.getSubscriptionPrice();
+            
+            const codes = Array.isArray(parsed.exemptionCodes) && parsed.exemptionCodes.length > 0
+              ? parsed.exemptionCodes
+              : this.getExemptionCodes();
+
+            this.setSubscriptionPriceLocal(price);
+            this.saveExemptionCodesLocal(codes);
+            return { subscriptionPrice: price, exemptionCodes: codes };
+          }
+        } else if (!error && !data) {
+          // Initialize centralized database record with defaults if first run
+          const defaultPrice = this.getSubscriptionPrice();
+          const defaultCodes = this.getExemptionCodes();
+          const initialPayload = {
+            subscriptionPrice: defaultPrice,
+            exemptionCodes: defaultCodes
+          };
+          await this.savePlatformSettings(initialPayload);
+          return initialPayload;
+        }
       } catch (err) {
-        console.warn('Supabase saveExemptionCodes error:', err);
+        console.warn('Supabase fetchPlatformSettings failed, falling back to local cache:', err);
       }
     }
+    return {
+      subscriptionPrice: this.getSubscriptionPrice(),
+      exemptionCodes: this.getExemptionCodes()
+    };
+  },
+
+  // Authoritative Central Database Persistence for platform settings
+  async savePlatformSettings(settings: { subscriptionPrice: number; exemptionCodes: ExemptionCode[] }): Promise<boolean> {
+    // 1. Immediately cache locally
+    this.setSubscriptionPriceLocal(settings.subscriptionPrice);
+    this.saveExemptionCodesLocal(settings.exemptionCodes);
+
+    // 2. Broadcast via Supabase WebSocket Realtime (<50ms) & local tab channel
+    broadcastSyncEvent('SETTINGS_UPDATED', { subscriptionPrice: settings.subscriptionPrice });
+    broadcastSyncEvent('EXEMPTION_CODES_UPDATED', { exemptionCodes: settings.exemptionCodes });
+
+    // 3. Central database write in Supabase
+    if (this.isConnected()) {
+      const payload = JSON.stringify({
+        subscriptionPrice: settings.subscriptionPrice,
+        exemptionCodes: settings.exemptionCodes,
+        updatedAt: new Date().toISOString()
+      });
+
+      const { error } = await supabase
+        .from('delivery_requests')
+        .upsert({
+          id: this.SETTINGS_ROW_ID,
+          title: 'WASEL_PLATFORM_SETTINGS',
+          customer_name: 'WASEL_ADMIN',
+          customer_phone: '+971000000000',
+          pickup_emirate: 'الإمارات',
+          pickup_area: 'النظام',
+          delivery_emirate: 'الإمارات',
+          delivery_area: 'النظام',
+          package_type: 'SYSTEM_SETTINGS',
+          package_size: 'SYSTEM',
+          package_weight: '0',
+          delivery_date: '2099-12-31',
+          urgency: 'SYSTEM',
+          notes: payload,
+          status: '_system_config_'
+        }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Supabase savePlatformSettings error:', error);
+        throw new Error(`فشل حفظ الإعدادات في قاعدة البيانات المركزية: ${error.message}`);
+      }
+    }
+    return true;
+  },
+
+  // Asynchronous cloud fetch from Supabase
+  async fetchSubscriptionPrice(): Promise<number> {
+    const settings = await this.fetchPlatformSettings();
+    return settings.subscriptionPrice;
+  },
+
+  // Centralized cloud-persisted update that broadcasts to all devices in real-time
+  async setSubscriptionPrice(price: number): Promise<boolean> {
+    const currentSettings = await this.fetchPlatformSettings();
+    return this.savePlatformSettings({
+      subscriptionPrice: price,
+      exemptionCodes: currentSettings.exemptionCodes
+    });
   },
 
   // Asynchronous cloud fetch for exemption codes
   async fetchExemptionCodes(): Promise<ExemptionCode[]> {
-    if (this.isConnected()) {
-      try {
-        const { data, error } = await supabase
-          .from('platform_settings')
-          .select('value')
-          .eq('id', 'exemption_codes')
-          .single();
+    const settings = await this.fetchPlatformSettings();
+    return settings.exemptionCodes;
+  },
 
-        if (!error && data && data.value) {
-          const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            this.saveExemptionCodesLocal(parsed);
-            return parsed;
-          }
-        }
-      } catch (err) {
-        // Fall back gracefully to local storage
-      }
+  // Centralized cloud-persisted save that broadcasts to all devices in real-time
+  async saveExemptionCodes(codes: ExemptionCode[]): Promise<boolean> {
+    const currentPrice = await this.fetchSubscriptionPrice();
+    return this.savePlatformSettings({
+      subscriptionPrice: currentPrice,
+      exemptionCodes: codes
+    });
+  },
+
+  // Authoritative Exemption Code Application with Server-Side Validation
+  async applyExemptionCode(codeStr: string, driverId?: string): Promise<{ success: boolean; message: string; months?: number }> {
+    const clean = codeStr.trim().toUpperCase();
+    if (!clean) {
+      return { success: false, message: 'يرجى كتابة رمز الكود أولاً' };
     }
-    return this.getExemptionCodes();
+
+    // Always fetch latest authoritative codes from central database
+    const settings = await this.fetchPlatformSettings();
+    const codes = settings.exemptionCodes;
+    const found = codes.find(c => c.code.toUpperCase() === clean);
+
+    if (!found) {
+      return { success: false, message: 'كود الإعفاء غير موجود، يرجى التأكد من الرمز' };
+    }
+    if (!found.isActive) {
+      return { success: false, message: 'هذا الكود معطل حالياً من إدارة المنصة' };
+    }
+    if (found.usedDriversCount >= found.maxDrivers) {
+      return { success: false, message: 'تم استنفاد الحد الأقصى للسائقين المسموح لهم بهذا الكود' };
+    }
+    if (driverId && found.usedDriverIds?.includes(driverId)) {
+      return { success: false, message: 'لقد قمت باستخدام كود الإعفاء هذا مسبقاً' };
+    }
+
+    // Atomically update usage count on central database
+    const updatedCodes = codes.map(c => {
+      if (c.id === found.id) {
+        return {
+          ...c,
+          usedDriversCount: c.usedDriversCount + 1,
+          usedDriverIds: driverId ? Array.from(new Set([...(c.usedDriverIds || []), driverId])) : (c.usedDriverIds || [])
+        };
+      }
+      return c;
+    });
+
+    await this.saveExemptionCodes(updatedCodes);
+
+    return {
+      success: true,
+      months: found.months,
+      message: `تم تطبيق كود الإعفاء (${found.months} ${found.months === 1 ? 'شهر' : found.months === 2 ? 'شهرين' : `${found.months} شهور`} مجاناً) بنجاح`
+    };
   }
 };
