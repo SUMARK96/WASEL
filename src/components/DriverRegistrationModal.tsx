@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { DriverProfile, Emirate, SubscriptionPlanId, SubscriptionInvoice, ExemptionCode } from '../types';
 import { createSubscriptionInvoice, calculateOneMonthExpiry, calculateExpiryByMonths, getWhatsAppInvoiceUrl } from '../utils/subscriptionUtils';
 import { InvoiceModal } from './InvoiceModal';
 import { UNIFIED_SUBSCRIPTION_PLAN, UAE_EMIRATES } from '../data/mockData';
+import { dbService } from '../services/dbService';
 import {
   X,
   ExternalLink,
@@ -97,10 +98,28 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
 
+  const [livePrice, setLivePrice] = useState<number>(subscriptionPrice);
+
+  useEffect(() => {
+    setLivePrice(subscriptionPrice);
+  }, [subscriptionPrice]);
+
+  useEffect(() => {
+    let isMounted = true;
+    dbService.fetchSubscriptionPrice().then((freshPrice) => {
+      if (isMounted && typeof freshPrice === 'number' && freshPrice > 0) {
+        setLivePrice(freshPrice);
+      }
+    }).catch((err) => {
+      console.warn('DriverRegistrationModal fetchSubscriptionPrice fallback error:', err);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
   const PAYMENT_GATEWAY_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
   const selectedPlanDetails = {
     ...UNIFIED_SUBSCRIPTION_PLAN,
-    price: subscriptionPrice
+    price: livePrice
   };
 
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
@@ -249,7 +268,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
         transactionRef || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
         todayStr,
         formattedExpiry,
-        subscriptionPrice
+        livePrice
       );
 
       setGeneratedInvoice(invoice);
@@ -980,7 +999,7 @@ export const DriverRegistrationModal: React.FC<DriverRegistrationModalProps> = (
                     </div>
                     <div className="flex items-center justify-between text-[#64748B]">
                       <span>الاشتراك الموحد:</span>
-                      <span className="font-bold text-[#142F52]">{selectedPlanDetails.name} (199 AED)</span>
+                      <span className="font-bold text-[#142F52]">{selectedPlanDetails.name} ({selectedPlanDetails.price} AED)</span>
                     </div>
                     <div className="flex items-center justify-between text-[#64748B]">
                       <span>تاريخ انتهاء الاشتراك:</span>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { DriverProfile, SubscriptionPlanId, SubscriptionInvoice, ExemptionCode } from '../types';
 import { UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
+import { dbService } from '../services/dbService';
 import { 
   X, 
   Check, 
@@ -59,10 +60,28 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
 
+  const [livePrice, setLivePrice] = useState<number>(subscriptionPrice);
+
+  useEffect(() => {
+    setLivePrice(subscriptionPrice);
+  }, [subscriptionPrice]);
+
+  useEffect(() => {
+    let isMounted = true;
+    dbService.fetchSubscriptionPrice().then((freshPrice) => {
+      if (isMounted && typeof freshPrice === 'number' && freshPrice > 0) {
+        setLivePrice(freshPrice);
+      }
+    }).catch((err) => {
+      console.warn('SubscriptionModal fetchSubscriptionPrice fallback error:', err);
+    });
+    return () => { isMounted = false; };
+  }, []);
+
   const ZIINA_PAYMENT_URL = 'https://pay.ziina.com/Waslasd/IWXxU478H?source=app';
   const plan = {
     ...UNIFIED_SUBSCRIPTION_PLAN,
-    price: subscriptionPrice
+    price: livePrice
   };
 
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
@@ -152,7 +171,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         refNumber || `ZIN-${Math.floor(100000 + Math.random() * 900000)}`,
         todayStr,
         newExpiry,
-        subscriptionPrice
+        livePrice
       );
       setGeneratedInvoice(inv);
       setStage('success');
