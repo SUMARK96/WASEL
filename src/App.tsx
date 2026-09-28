@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { AppScreen, DriverProfile, CustomerProfile, DeliveryRequest, DriverOffer, SubscriptionPlanId, DriverNotification, CustomerNotification, ExemptionCode } from './types';
-import { INITIAL_DRIVERS } from './data/mockData';
 import { dbService, onSyncEvent, onRealtimeStatusChange, getRealtimeStatus } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
@@ -45,13 +44,15 @@ export function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing');
   
   const [drivers, setDrivers] = useState<DriverProfile[]>(() => dbService.getLocalDrivers());
-  const [activeDriverId, setActiveDriverId] = useState<string>(() => {
+  const [activeDriverId, setActiveDriverId] = useState<string | null>(() => {
     const saved = localStorage.getItem('wasel_active_driver_id');
-    const local = dbService.getLocalDrivers();
-    if (saved && local.some(d => d.id === saved)) {
-      return saved;
+    if (saved) {
+      const local = dbService.getLocalDrivers();
+      if (local.some(d => d.id === saved)) {
+        return saved;
+      }
     }
-    return local[0]?.id || INITIAL_DRIVERS[0].id;
+    return null;
   });
   const [requests, setRequests] = useState<DeliveryRequest[]>(() => dbService.getLocalRequests());
   
@@ -868,7 +869,7 @@ export function App() {
     });
   }, [drivers]);
 
-  const currentDriver = drivers.find(d => d.id === activeDriverId) || drivers[0];
+  const currentDriver = drivers.find(d => d.id === activeDriverId) || null;
 
   // Customer Authentication & Profile Handlers
   const handleCustomerLoginSuccess = (customer: CustomerProfile) => {
@@ -974,7 +975,7 @@ export function App() {
 
   // Driver submits an offer with WhatsApp & Call numbers -> AUTOMATIC ALERT TO CUSTOMER (Device Push + Sound)
   const handleSubmitOffer = async (price: number, estimatedDeliveryTime: string, note: string, whatsappPhone: string, callPhone: string) => {
-    if (!selectedRequestForOffer) return;
+    if (!selectedRequestForOffer || !currentDriver) return;
 
     const newOffer: DriverOffer = {
       id: `off-${Date.now()}`,
@@ -1152,6 +1153,7 @@ export function App() {
 
   // Driver Subscription Update (Computed from moment of payment / renewal)
   const handleSubscribeSuccess = async (planId: SubscriptionPlanId, newExpiry?: string, usedPromoCode?: string, isExemption?: boolean) => {
+    if (!currentDriver) return;
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const formattedExpiry = newExpiry || calculateOneMonthExpiry(now);
@@ -1211,6 +1213,7 @@ export function App() {
 
   // Driver Logout Handler
   const handleDriverLogout = () => {
+    setActiveDriverId(null);
     localStorage.removeItem('wasel_active_driver_id');
     setCurrentScreen('landing');
     showToast('👋 تم تسجيل الخروج بنجاح');
@@ -1350,24 +1353,15 @@ export function App() {
     if (!currentCustomer) return [];
     return requests.filter((r: DeliveryRequest) => {
       // 1. Direct customer ID match
-      if (r.customerId && r.customerId === currentCustomer.id) return true;
-
-      // 2. Normalized phone match (last 7+ digits)
-      const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
-      const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-      if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
-        if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
+      if (r.customerId) {
+        return r.customerId === currentCustomer.id;
       }
 
-      // 3. Exact customer name match (if not generic/default placeholder)
-      if (
-        r.customerName &&
-        currentCustomer.name &&
-        r.customerName.trim().toLowerCase() === currentCustomer.name.trim().toLowerCase() &&
-        r.customerName.trim() !== 'عميل واصل' &&
-        r.customerName.trim() !== 'عميل'
-      ) {
-        return true;
+      // 2. Strict normalized 9-digit phone match (fallback for legacy records without customerId)
+      const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '').slice(-9);
+      const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '').slice(-9);
+      if (normPhone1 && normPhone2 && normPhone1.length === 9 && normPhone2.length === 9) {
+        return normPhone1 === normPhone2;
       }
 
       return false;
@@ -1406,6 +1400,8 @@ export function App() {
         }}
         onOpenSubscription={() => setIsSubscriptionOpen(true)}
         onOpenCustomerProfile={() => setIsCustomerProfileOpen(true)}
+        onCustomerLogout={handleCustomerLogout}
+        onDriverLogout={handleDriverLogout}
         currentDriver={currentDriver}
         currentCustomer={currentCustomer}
         customerSection={customerSection}
@@ -1483,40 +1479,57 @@ export function App() {
 
         {/* 6. Customer View */}
         {currentScreen === 'customer' && (
-          <CustomerView
-            currentCustomer={currentCustomer}
-            requests={requests}
-            drivers={drivers}
-            customerNotifications={customerFilteredNotifications}
-            onMarkCustomerNotificationRead={handleMarkCustomerNotificationRead}
-            onOpenNewRequest={() => setIsNewRequestOpen(true)}
-            onOpenProfile={() => setIsCustomerProfileOpen(true)}
-            onAcceptOffer={handleAcceptOffer}
-            onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
-            onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
-            onMarkDelivered={handleMarkDelivered}
-            onDeleteRequest={handleDeleteRequest}
-            selectedSection={customerSection}
-            onSelectSection={setCustomerSection}
-            onLogout={handleCustomerLogout}
-          />
+          !currentCustomer ? (
+            <CustomerPortalGate
+              onSelectNewCustomer={() => setIsCustomerRegisterOpen(true)}
+              onSelectExistingCustomer={() => setCurrentScreen('customer_login')}
+              onBackToLanding={() => setCurrentScreen('landing')}
+            />
+          ) : (
+            <CustomerView
+              currentCustomer={currentCustomer}
+              requests={requests}
+              drivers={drivers}
+              customerNotifications={customerFilteredNotifications}
+              onMarkCustomerNotificationRead={handleMarkCustomerNotificationRead}
+              onOpenNewRequest={() => setIsNewRequestOpen(true)}
+              onOpenProfile={() => setIsCustomerProfileOpen(true)}
+              onAcceptOffer={handleAcceptOffer}
+              onViewDriverProfile={(driverOffer) => setSelectedDriverForProfile(driverOffer)}
+              onOpenRateDriver={(req, offer) => setSelectedRequestForRating({ request: req, offer })}
+              onMarkDelivered={handleMarkDelivered}
+              onDeleteRequest={handleDeleteRequest}
+              selectedSection={customerSection}
+              onSelectSection={setCustomerSection}
+              onLogout={handleCustomerLogout}
+            />
+          )
         )}
 
         {/* 7. Driver View */}
         {currentScreen === 'driver' && (
-          <DriverView
-            driver={currentDriver}
-            requests={requests}
-            notifications={notifications}
-            selectedSection={driverSection}
-            onSelectSection={setDriverSection}
-            onOpenSubscription={() => setIsSubscriptionOpen(true)}
-            onOpenSubmitOffer={(req) => setSelectedRequestForOffer(req)}
-            onDeleteOffer={handleDeleteOffer}
-            onMarkNotificationRead={handleMarkNotificationRead}
-            onLogout={handleDriverLogout}
-            subscriptionPrice={subscriptionPrice}
-          />
+          !currentDriver ? (
+            <DriverPortalGate
+              onSelectNewDriver={() => setIsDriverRegisterOpen(true)}
+              onSelectExistingDriver={() => setCurrentScreen('driver_login')}
+              onBackToLanding={() => setCurrentScreen('landing')}
+              subscriptionPrice={subscriptionPrice}
+            />
+          ) : (
+            <DriverView
+              driver={currentDriver}
+              requests={requests}
+              notifications={notifications}
+              selectedSection={driverSection}
+              onSelectSection={setDriverSection}
+              onOpenSubscription={() => setIsSubscriptionOpen(true)}
+              onOpenSubmitOffer={(req) => setSelectedRequestForOffer(req)}
+              onDeleteOffer={handleDeleteOffer}
+              onMarkNotificationRead={handleMarkNotificationRead}
+              onLogout={handleDriverLogout}
+              subscriptionPrice={subscriptionPrice}
+            />
+          )
         )}
 
         {/* 6. Protected Admin View */}
@@ -1633,7 +1646,7 @@ export function App() {
         />
       )}
 
-      {isSubscriptionOpen && (
+      {isSubscriptionOpen && currentDriver && (
         <SubscriptionModal
           driver={currentDriver}
           onClose={() => setIsSubscriptionOpen(false)}
@@ -1651,7 +1664,7 @@ export function App() {
         />
       )}
 
-      {selectedRequestForOffer && (
+      {selectedRequestForOffer && currentDriver && (
         <SubmitOfferModal
           request={selectedRequestForOffer}
           driver={currentDriver}

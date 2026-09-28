@@ -70,31 +70,24 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     }
   };
 
-  // Filter requests belonging specifically to the logged-in customer (memoized, sorted newest first)
+  // Filter requests belonging strictly to the authenticated customer (memoized, sorted newest first)
   const customerRequests = useMemo(() => {
-    if (!currentCustomer) {
+    if (!currentCustomer || !currentCustomer.id) {
       return [];
     }
     const filtered = requests.filter(r => {
-      // 1. Direct ID match
-      if (r.customerId && r.customerId === currentCustomer.id) return true;
-
-      // 2. Normalized phone number match (check last 7+ digits)
-      const normPhone1 = (r.customerPhone || '').replace(/[^0-9]/g, '');
-      const normPhone2 = (currentCustomer.phone || '').replace(/[^0-9]/g, '');
-      if (normPhone1 && normPhone2 && normPhone1.length >= 7 && normPhone2.length >= 7) {
-        if (normPhone1.slice(-7) === normPhone2.slice(-7)) return true;
+      // 1. Primary strict check: authenticated customer ID matches
+      if (r.customerId) {
+        return r.customerId === currentCustomer.id;
       }
 
-      // 3. Exact customer name match (if not default/generic placeholder)
-      if (
-        r.customerName &&
-        currentCustomer.name &&
-        r.customerName.trim().toLowerCase() === currentCustomer.name.trim().toLowerCase() &&
-        r.customerName.trim() !== 'عميل واصل' &&
-        r.customerName.trim() !== 'عميل'
-      ) {
-        return true;
+      // 2. Strict normalized phone match ONLY if request has no customerId (for legacy requests created with same phone)
+      if (r.customerPhone && currentCustomer.phone) {
+        const normPhone1 = r.customerPhone.replace(/[^0-9]/g, '');
+        const normPhone2 = currentCustomer.phone.replace(/[^0-9]/g, '');
+        if (normPhone1.length >= 9 && normPhone2.length >= 9) {
+          return normPhone1.slice(-9) === normPhone2.slice(-9);
+        }
       }
 
       return false;
@@ -396,17 +389,28 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
         <div className="space-y-6">
           
           {customerRequests.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-3 shadow-xs">
-              <Package className="w-14 h-14 text-[#94A3B8] mx-auto stroke-[1.5]" />
-              <h3 className="text-base sm:text-lg font-bold text-[#142F52]">لا توجد طلبات لديك حالياً</h3>
-              <p className="text-[#64748B] text-xs max-w-sm mx-auto">
-                يمكنك نشر طلب توصيل طرد جديد في أي وقت لاستقبال عروض السائقين المعتمدين.
-              </p>
+            <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-4 shadow-xs">
+              <div className="w-16 h-16 rounded-2xl bg-[#EAF6F1] text-[#159B7A] flex items-center justify-center mx-auto shadow-xs">
+                <Package className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base sm:text-lg font-black text-[#142F52]">
+                  لا توجد لديك طلبات حتى الآن
+                </h3>
+                <p className="text-[#64748B] text-xs max-w-md mx-auto leading-relaxed">
+                  ابدأ بإنشاء طلبك الأول لتوصيل طرد أو بضائع واستقبال عروض الأسعار التنافسية من السائقين المعتمدين فوراً.
+                </p>
+                <p className="text-[#94A3B8] text-[11px] dir-ltr font-medium">
+                  You don't have any orders yet. Create your first order to get started.
+                </p>
+              </div>
               <button
+                type="button"
                 onClick={onOpenNewRequest}
-                className="bg-[#159B7A] hover:bg-[#108466] text-white font-bold px-5 py-2.5 rounded-xl text-xs active:scale-95 transition-all shadow-sm cursor-pointer"
+                className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-6 py-3 rounded-xl text-xs sm:text-sm active:scale-95 transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
               >
-                + نشر طلب الآن
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>+ إنشاء طلبك الأول الآن</span>
               </button>
             </div>
           ) : (

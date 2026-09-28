@@ -39,16 +39,15 @@ export const DriverRequestModal: React.FC<DriverRequestModalProps> = ({
 }) => {
   if (!request) return null;
 
-  // Helper to check if the driver already submitted an offer
+  // Helper to check if the driver already submitted an offer (strictly by driverId or 9-digit phone for legacy)
   const myOffer = request.offers?.find(o => {
-    if (o.driverId === driver.id) return true;
-    const phoneA = (o.driverPhone || o.driverWhatsappPhone || o.driverCallPhone || '').replace(/[^0-9]/g, '');
-    const phoneB = (driver.phone || driver.whatsappPhone || driver.callPhone || '').replace(/[^0-9]/g, '');
-    if (phoneA && phoneB && phoneA.length >= 7 && phoneB.length >= 7 && phoneA.slice(-7) === phoneB.slice(-7)) {
-      return true;
-    }
-    if (o.driverName && driver.name && o.driverName.trim().toLowerCase() === driver.name.trim().toLowerCase()) {
-      return true;
+    if (o.driverId && o.driverId === driver.id) return true;
+    if (!o.driverId) {
+      const phoneA = (o.driverPhone || o.driverWhatsappPhone || o.driverCallPhone || '').replace(/[^0-9]/g, '').slice(-9);
+      const phoneB = (driver.phone || driver.whatsappPhone || driver.callPhone || '').replace(/[^0-9]/g, '').slice(-9);
+      if (phoneA && phoneB && phoneA.length === 9 && phoneB.length === 9) {
+        return phoneA === phoneB;
+      }
     }
     return false;
   });

@@ -86,20 +86,18 @@ export const DriverView: React.FC<DriverViewProps> = ({
     driver.isExemptionActive ? 0 : subscriptionPrice
   );
 
-  // Robust helper to check if an offer belongs to the current driver (by id, phone variations, or name)
+  // Robust helper to check if an offer belongs to the current driver (strictly by id, or 9-digit phone for legacy data)
   const isOfferByCurrentDriver = (offer: DriverOffer, d: DriverProfile): boolean => {
     if (!offer || !d) return false;
-    if (offer.driverId === d.id) return true;
+    if (offer.driverId && offer.driverId === d.id) return true;
     
-    const phoneA = (offer.driverPhone || offer.driverWhatsappPhone || offer.driverCallPhone || '').replace(/[^0-9]/g, '');
-    const phoneB = (d.phone || d.whatsappPhone || d.callPhone || '').replace(/[^0-9]/g, '');
-    if (phoneA && phoneB) {
-      if (phoneA === phoneB) return true;
-      if (phoneA.length >= 7 && phoneB.length >= 7 && phoneA.slice(-7) === phoneB.slice(-7)) return true;
-    }
-    
-    if (offer.driverName && d.name && offer.driverName.trim().toLowerCase() === d.name.trim().toLowerCase()) {
-      return true;
+    // Only fall back to strict 9-digit phone match if offer.driverId is missing
+    if (!offer.driverId) {
+      const phoneA = (offer.driverPhone || offer.driverWhatsappPhone || offer.driverCallPhone || '').replace(/[^0-9]/g, '').slice(-9);
+      const phoneB = (d.phone || d.whatsappPhone || d.callPhone || '').replace(/[^0-9]/g, '').slice(-9);
+      if (phoneA && phoneB && phoneA.length === 9 && phoneB.length === 9) {
+        return phoneA === phoneB;
+      }
     }
     return false;
   };
@@ -584,7 +582,8 @@ export const DriverView: React.FC<DriverViewProps> = ({
               <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-3 shadow-xs">
                 <Truck className="w-14 h-14 text-[#94A3B8] mx-auto stroke-[1.5]" />
                 <h3 className="text-base sm:text-lg font-bold text-[#142F52]">لا توجد طلبات توصيل متاحة حالياً</h3>
-                <p className="text-[#64748B] text-xs">سيتم تحديث القائمة تلقائياً فور قيام أي عميل بنشر طلب توصيل جديد.</p>
+                <p className="text-[#64748B] text-xs font-medium">No available delivery requests in your emirate at the moment.</p>
+                <p className="text-[#94A3B8] text-xs">سيتم تحديث القائمة تلقائياً فور قيام أي عميل بنشر طلب توصيل جديد.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -664,7 +663,7 @@ export const DriverView: React.FC<DriverViewProps> = ({
                               className="bg-[#159B7A] hover:bg-[#108466] text-white font-black px-4.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5 text-white" />
-                              <span>معاينة الطلب والتفاصيل</span>
+                              <span>معاينة الطلب والتقديم</span>
                             </button>
                           )}
                         </div>
@@ -679,8 +678,21 @@ export const DriverView: React.FC<DriverViewProps> = ({
           {/* My Bids Tab */}
           {requestTab === 'my_bids' && (
             myBids.length === 0 ? (
-              <div className="bg-white rounded-3xl p-8 text-center border border-[#E5EDF3] text-[#64748B] text-xs shadow-xs">
-                لم تقم بتقديم عروض أسعار بعد. استعرض الطلبات المتاحة وقدم عروضك الآن.
+              <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-3 shadow-xs">
+                <FileText className="w-14 h-14 text-[#94A3B8] mx-auto stroke-[1.5]" />
+                <h3 className="text-base sm:text-lg font-bold text-[#142F52]">لا توجد لديك عروض أسعار مقدمة حتى الآن</h3>
+                <p className="text-[#64748B] text-xs font-medium">You haven't submitted any offers yet.</p>
+                <p className="text-[#94A3B8] text-xs">استعرض الطلبات المتاحة في إمارتك وقدم عروضك التنافسية للعملاء.</p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setRequestTab('available')}
+                    className="bg-[#159B7A] hover:bg-[#108466] text-white font-bold px-5 py-2.5 rounded-xl text-xs inline-flex items-center gap-2 shadow-xs active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Truck className="w-4 h-4" />
+                    <span>استعراض الطلبات المتاحة للتقديم</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -740,9 +752,11 @@ export const DriverView: React.FC<DriverViewProps> = ({
           {/* Active Jobs Tab */}
           {requestTab === 'active_jobs' && (
             activeJobs.length === 0 ? (
-              <div className="bg-white rounded-3xl p-8 text-center border border-[#E5EDF3] text-[#64748B] text-xs space-y-2 shadow-xs">
-                <Truck className="w-10 h-10 text-[#94A3B8] mx-auto" />
-                <p>لا توجد مهام توصيل مقبولة حالياً. فور قبول العميل لعرضك ستظهر هنا مع بيانات العميل للتواصل الفوري.</p>
+              <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-[#E5EDF3] space-y-3 shadow-xs">
+                <Truck className="w-14 h-14 text-[#94A3B8] mx-auto stroke-[1.5]" />
+                <h3 className="text-base sm:text-lg font-bold text-[#142F52]">لا توجد مهام توصيل مقبولة أو جارية حالياً</h3>
+                <p className="text-[#64748B] text-xs font-medium">You don't have any active delivery jobs yet.</p>
+                <p className="text-[#94A3B8] text-xs">فور قبول العميل لأحد عروضك، ستظهر المهمة هنا فوراً مع تفاصيل العنوان وأرقام التواصل المباشر.</p>
               </div>
             ) : (
               <div className="space-y-4">

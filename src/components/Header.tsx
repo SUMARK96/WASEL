@@ -24,7 +24,9 @@ interface HeaderProps {
   onOpenNewRequest: () => void;
   onOpenSubscription?: () => void;
   onOpenCustomerProfile?: () => void;
-  currentDriver?: DriverProfile;
+  onCustomerLogout?: () => void;
+  onDriverLogout?: () => void;
+  currentDriver?: DriverProfile | null;
   currentCustomer?: CustomerProfile | null;
   customerSection?: CustomerHeaderSection;
   onSelectCustomerSection?: (section: CustomerHeaderSection) => void;
@@ -41,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenSubscription: _onOpenSubscription,
   onOpenCustomerProfile,
+  onCustomerLogout,
+  onDriverLogout,
   currentDriver,
   currentCustomer,
   customerSection = 'my_requests',
@@ -82,7 +86,11 @@ export const Header: React.FC<HeaderProps> = ({
   const handleCustomerSelect = (sec: CustomerHeaderSection | 'logout') => {
     setIsCustomerDropdownOpen(false);
     if (sec === 'logout') {
-      onNavigate('landing');
+      if (onCustomerLogout) {
+        onCustomerLogout();
+      } else {
+        onNavigate('landing');
+      }
       return;
     }
     if (sec === 'profile' && onOpenCustomerProfile) {
@@ -97,7 +105,11 @@ export const Header: React.FC<HeaderProps> = ({
   const handleDriverSelect = (sec: DriverHeaderSection | 'logout') => {
     setIsDriverDropdownOpen(false);
     if (sec === 'logout') {
-      onNavigate('landing');
+      if (onDriverLogout) {
+        onDriverLogout();
+      } else {
+        onNavigate('landing');
+      }
       return;
     }
     if (onSelectDriverSection) {
