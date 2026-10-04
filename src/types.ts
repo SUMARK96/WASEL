@@ -138,6 +138,7 @@ export interface DeliveryRequest {
 export interface DriverNotification {
   id: string;
   requestId?: string;
+  driverId?: string;
   title: string;
   pickupEmirate?: Emirate;
   deliveryEmirate?: Emirate;

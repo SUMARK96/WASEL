@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_DRIVERS, INITIAL_CUSTOMERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
-import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode } from '../types';
+import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode, DriverNotification } from '../types';
 import { sortRequestsNewestFirst, getRequestTimestamp, sortOffersDeterministically } from '../utils/requestUtils';
 
 // Keys for local backup
@@ -927,6 +927,7 @@ export const dbService = {
         await supabase.from('driver_notifications').upsert({
           id: `notif-accept-${offerId}`,
           request_id: requestId,
+          driver_id: acceptedOffer?.driverId || null,
           title: `🎉 مبروك! قبل العميل (${targetReq?.customerName || 'العميل'}) عرضك${acceptedOffer?.price ? ` بقيمة (${acceptedOffer.price} AED)` : ''}`,
           message: `وافق العميل (${targetReq?.customerName || 'العميل'}) على عرضك لنقل "${targetReq?.title || 'الطلب'}". يمكنك الآن التواصل المباشر معه عبر الواتساب (${targetReq?.customerPhone || ''}).`,
           pickup_emirate: targetReq?.pickupEmirate,
@@ -936,6 +937,48 @@ export const dbService = {
       } catch (err) {
         console.warn('Supabase acceptOffer failed:', err);
       }
+    }
+  },
+
+  async getDriverNotifications(): Promise<DriverNotification[]> {
+    if (!this.isConnected()) return [];
+    try {
+      const { data, error } = await supabase
+        .from('driver_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(60);
+      if (error) {
+        console.warn('Supabase getDriverNotifications error:', error);
+        return [];
+      }
+      return (data || []).map((n: any) => ({
+        id: n.id,
+        requestId: n.request_id,
+        driverId: n.driver_id,
+        title: n.title,
+        message: n.message,
+        pickupEmirate: n.pickup_emirate,
+        deliveryEmirate: n.delivery_emirate,
+        timestamp: n.created_at ? (n.created_at.includes('T') ? new Date(n.created_at).toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) : n.created_at) : 'الآن',
+        isRead: Boolean(n.is_read),
+        type: n.title?.includes('مبروك') || n.message?.includes('وافق') ? 'offer_accepted' : 'request'
+      }));
+    } catch (err) {
+      console.warn('Supabase getDriverNotifications failed:', err);
+      return [];
+    }
+  },
+
+  async markNotificationRead(notificationId: string): Promise<void> {
+    if (!this.isConnected()) return;
+    try {
+      await supabase
+        .from('driver_notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+    } catch (err) {
+      console.warn('Supabase markNotificationRead failed:', err);
     }
   },
 

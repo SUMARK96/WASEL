@@ -57,26 +57,7 @@ export function App() {
   const [requests, setRequests] = useState<DeliveryRequest[]>(() => dbService.getLocalRequests());
   
   // Real-time Driver Notifications Broadcast Store
-  const [notifications, setNotifications] = useState<DriverNotification[]>([
-    {
-      id: 'notif-1',
-      requestId: 'req-201',
-      title: 'توصيل طرد قطع غيار سيارات من أبوظبي إلى الشارقة',
-      pickupEmirate: 'أبوظبي',
-      deliveryEmirate: 'الشارقة',
-      timestamp: 'منذ ساعتين',
-      isRead: false
-    },
-    {
-      id: 'notif-2',
-      requestId: 'req-202',
-      title: 'نقل طرد مستندات وعقود رسمية عاجلة من دبي إلى رأس الخيمة',
-      pickupEmirate: 'دبي',
-      deliveryEmirate: 'رأس الخيمة',
-      timestamp: 'منذ 4 ساعات',
-      isRead: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<DriverNotification[]>([]);
 
   // Real-time Customer Notifications Store (When drivers submit offers)
   const [customerNotifications, setCustomerNotifications] = useState<CustomerNotification[]>([]);
@@ -301,11 +282,12 @@ export function App() {
     // Initial fetch from DB Service (Central Supabase + Local Fallback)
     const loadInitialData = async () => {
       try {
-        const [loadedDrivers, loadedCustomers, loadedRequests, platformSettings] = await Promise.all([
+        const [loadedDrivers, loadedCustomers, loadedRequests, platformSettings, loadedNotifs] = await Promise.all([
           dbService.getDrivers(),
           dbService.getCustomers(),
           dbService.getRequests(),
-          dbService.fetchPlatformSettings()
+          dbService.fetchPlatformSettings(),
+          dbService.getDriverNotifications()
         ]);
         if (loadedDrivers && loadedDrivers.length > 0) {
           setDrivers(loadedDrivers);
@@ -315,6 +297,9 @@ export function App() {
         }
         if (loadedRequests && loadedRequests.length > 0) {
           setRequests(prev => mergeRequestLists(prev, loadedRequests));
+        }
+        if (loadedNotifs && loadedNotifs.length > 0) {
+          setNotifications(loadedNotifs);
         }
         if (platformSettings) {
           if (platformSettings.subscriptionPrice !== undefined && platformSettings.subscriptionPrice !== null) {
@@ -352,13 +337,21 @@ export function App() {
           },
           ...prev.filter(n => n.requestId !== newReq.id)
         ]);
-        sendDeviceNotification({
-          title: `🔔 طلب توصيل جديد: من ${newReq.pickupEmirate} إلى ${newReq.deliveryEmirate}`,
-          body: `${newReq.title} (${newReq.packageWeight || 'طرد'}) - اضغط لتقديم عرض سعرك فوراً!`,
-          tag: `new-req-${newReq.id}`,
-          soundType: 'new_request',
-          url: '/?action=driver_portal'
-        });
+
+        const savedDriverId = localStorage.getItem('wasel_active_driver_id');
+        const localDrivers = dbService.getLocalDrivers();
+        const activeDrv = localDrivers.find(d => d.id === savedDriverId);
+
+        // Notify ONLY active drivers registered in the pickup emirate
+        if (activeDrv && activeDrv.subscriptionStatus === 'active' && (!activeDrv.emirate || activeDrv.emirate === newReq.pickupEmirate)) {
+          sendDeviceNotification({
+            title: `🔔 طلب توصيل جديد في ${newReq.pickupEmirate || 'إمارتك'}: إلى ${newReq.deliveryEmirate || ''}`,
+            body: `${newReq.title || 'طرد جديد'} (${newReq.pickupArea || ''}) - اضغط لتقديم عرض سعرك فوراً!`,
+            tag: `new-req-${newReq.id}`,
+            soundType: 'new_request',
+            url: '/?action=driver_portal'
+          });
+        }
       } else if (event.type === 'NEW_OFFER' && event.payload) {
         const newOffer: DriverOffer = event.payload;
         dbService.addOrUpdateLocalOffer(newOffer);
@@ -569,13 +562,20 @@ export function App() {
                 });
 
                 if (payload.eventType === 'INSERT') {
-                  sendDeviceNotification({
-                    title: `🔔 طلب توصيل جديد: من ${newReq.pickupEmirate || ''} إلى ${newReq.deliveryEmirate || ''}`,
-                    body: `${newReq.title || 'طرد جديد'} - اضغط لتقديم عرض سعرك فوراً!`,
-                    tag: `new-req-${newReq.id}`,
-                    soundType: 'new_request',
-                    url: '/?action=driver_portal'
-                  });
+                  const savedDriverId = localStorage.getItem('wasel_active_driver_id');
+                  const localDrivers = dbService.getLocalDrivers();
+                  const activeDrv = localDrivers.find(d => d.id === savedDriverId);
+
+                  // Notify ONLY active drivers registered in the pickup emirate
+                  if (activeDrv && activeDrv.subscriptionStatus === 'active' && (!activeDrv.emirate || activeDrv.emirate === newReq.pickupEmirate)) {
+                    sendDeviceNotification({
+                      title: `🔔 طلب توصيل جديد في ${newReq.pickupEmirate || 'إمارتك'}: إلى ${newReq.deliveryEmirate || ''}`,
+                      body: `${newReq.title || 'طرد جديد'} (${newReq.pickupArea || ''}) - اضغط لتقديم عرض سعرك فوراً!`,
+                      tag: `new-req-${newReq.id}`,
+                      soundType: 'new_request',
+                      url: '/?action=driver_portal'
+                    });
+                  }
                 }
               } else {
                 const latestReqs = await dbService.getRequests();
@@ -702,6 +702,7 @@ export function App() {
                   {
                     id: notif.id || `notif-${Date.now()}`,
                     requestId: notif.request_id,
+                    driverId: notif.driver_id,
                     title: notif.title,
                     message: notif.message,
                     pickupEmirate: notif.pickup_emirate,
@@ -714,13 +715,16 @@ export function App() {
                 ]);
 
                 if (isAcceptance) {
-                  sendDeviceNotification({
-                    title: notif.title,
-                    body: notif.message || 'وافق العميل على عرضك! اضغط للتواصل المباشر عبر واتساب.',
-                    tag: `accept-${notif.request_id}`,
-                    soundType: 'new_offer',
-                    url: '/?action=driver_portal'
-                  });
+                  const savedDriverId = localStorage.getItem('wasel_active_driver_id');
+                  if (savedDriverId && (!notif.driver_id || notif.driver_id === savedDriverId)) {
+                    sendDeviceNotification({
+                      title: notif.title,
+                      body: notif.message || 'وافق العميل على عرضك! اضغط للتواصل المباشر عبر واتساب.',
+                      tag: `accept-${notif.request_id}`,
+                      soundType: 'new_offer',
+                      url: '/?action=driver_portal'
+                    });
+                  }
                 }
               }
             }
@@ -739,11 +743,12 @@ export function App() {
       if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
       try {
-        const [refreshedRequests, refreshedDrivers, refreshedCustomers, platformSettings] = await Promise.all([
+        const [refreshedRequests, refreshedDrivers, refreshedCustomers, platformSettings, refreshedNotifs] = await Promise.all([
           dbService.getRequests(),
           dbService.getDrivers(),
           dbService.getCustomers(),
-          dbService.fetchPlatformSettings()
+          dbService.fetchPlatformSettings(),
+          dbService.getDriverNotifications()
         ]);
         if (refreshedRequests && refreshedRequests.length > 0) {
           setRequests(prev => mergeRequestLists(prev, refreshedRequests));
@@ -758,6 +763,12 @@ export function App() {
           setCustomers(prev => {
             const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedCustomers);
             return isDifferent ? refreshedCustomers : prev;
+          });
+        }
+        if (refreshedNotifs && refreshedNotifs.length > 0) {
+          setNotifications(prev => {
+            const isDifferent = JSON.stringify(prev) !== JSON.stringify(refreshedNotifs);
+            return isDifferent ? refreshedNotifs : prev;
           });
         }
         if (platformSettings) {
@@ -927,7 +938,7 @@ export function App() {
     showToast('🔒 تم إغلاق لوحة الإدارة وتأمين الحساب');
   };
 
-  // Customer creates a new request -> AUTOMATIC BROADCAST TO ALL DRIVERS (Device Push + Sound)
+  // Customer creates a new request -> AUTOMATIC BROADCAST TO ALL ELIGIBLE DRIVERS IN PICKUP EMIRATE
   const handleCreateRequest = async (reqData: Omit<DeliveryRequest, 'id' | 'createdAt' | 'offers' | 'status'>) => {
     const now = Date.now();
     const newId = `req-${now}`;
@@ -944,9 +955,9 @@ export function App() {
     // 1. Add new request in UI (guaranteed newest first and non-flickering)
     setRequests(prev => mergeRequestLists(prev, [newReq]));
 
-    // 2. Broadcast Instant Notification to all registered drivers
+    // 2. Broadcast Instant Notification for drivers in pickup emirate
     const newNotif: DriverNotification = {
-      id: `notif-${Date.now()}`,
+      id: `notif-${now}`,
       requestId: newId,
       title: newReq.title,
       pickupEmirate: newReq.pickupEmirate,
@@ -958,19 +969,10 @@ export function App() {
     setNotifications(prev => [newNotif, ...prev]);
     setIsNewRequestOpen(false);
 
-    // 3. Dispatch Native System Web Notification & Audio Alert for all drivers
-    await sendDeviceNotification({
-      title: `🔔 طلب توصيل جديد: من ${newReq.pickupEmirate} إلى ${newReq.deliveryEmirate}`,
-      body: `${newReq.title} (${newReq.packageWeight || 'طرد'}) - اضغط لتقديم عرض سعرك فوراً!`,
-      tag: `new-req-${newId}`,
-      soundType: 'new_request',
-      url: '/?action=driver_portal'
-    });
-
-    // 4. Persist to Supabase Database
+    // 3. Persist to Supabase Database (will trigger realtime WebSocket broadcast to all drivers in the pickup emirate)
     await dbService.createRequest(newReq);
 
-    showToast('📣 تم نشر طلب التوصيل بنجاح وإرسال إشعار فوري لجميع السائقين المسجلين بالموقع!');
+    showToast(`📣 تم نشر طلب التوصيل بنجاح وبثه فوراً لجميع السائقين في ${newReq.pickupEmirate}!`);
   };
 
   // Driver submits an offer with WhatsApp & Call numbers -> AUTOMATIC ALERT TO CUSTOMER (Device Push + Sound)
@@ -1128,8 +1130,9 @@ export function App() {
   };
 
   // Mark driver notification read
-  const handleMarkNotificationRead = (id: string) => {
+  const handleMarkNotificationRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    await dbService.markNotificationRead(id);
   };
 
   // Mark customer notification read
@@ -1376,6 +1379,39 @@ export function App() {
 
   const customerTotalOffersCount = customerFilteredRequests.reduce((acc: number, r: DeliveryRequest) => acc + (r.offers ? r.offers.length : 0), 0);
 
+  // Filter notifications specifically relevant to the logged-in driver (their pickup emirate or their accepted offers)
+  const driverFilteredNotifications = useMemo(() => {
+    if (!currentDriver) return [];
+    return notifications.filter((n: DriverNotification) => {
+      // 1. Direct offer acceptance for this driver
+      if (n.type === 'offer_accepted' || n.title?.includes('مبروك') || n.message?.includes('وافق')) {
+        if (n.driverId && n.driverId === currentDriver.id) return true;
+        if (n.requestId) {
+          const targetReq = requests.find(r => r.id === n.requestId);
+          if (targetReq && targetReq.selectedOfferId) {
+            return targetReq.offers?.some(o => o.id === targetReq.selectedOfferId && o.driverId === currentDriver.id);
+          }
+        }
+        return false;
+      }
+      // 2. Direct exemption / suspended notices for this driver
+      if (n.type === 'exemption_reminder' || n.type === 'suspended_notice') {
+        return n.id?.includes(currentDriver.id);
+      }
+      // 3. New delivery request notifications -> ONLY IF IN DRIVER'S REGISTERED EMIRATE
+      if (n.pickupEmirate) {
+        return !currentDriver.emirate || n.pickupEmirate === currentDriver.emirate;
+      }
+      return false;
+    });
+  }, [notifications, currentDriver, requests]);
+
+  // Open delivery requests count specifically in the driver's registered emirate
+  const driverOpenRequestsCount = useMemo(() => {
+    if (!currentDriver) return requests.filter(r => r.status === 'open').length;
+    return requests.filter(r => r.status === 'open' && (!currentDriver.emirate || r.pickupEmirate === currentDriver.emirate)).length;
+  }, [requests, currentDriver]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F9FC] text-[#142F52] font-sans selection:bg-[#159B7A] selection:text-white">
       
@@ -1416,9 +1452,9 @@ export function App() {
           setDriverSection(sec);
         }}
         unreadNotificationsCount={customerFilteredNotifications.filter((n: CustomerNotification) => !n.isRead).length}
-        unreadDriverNotificationsCount={notifications.filter(n => !n.isRead).length}
+        unreadDriverNotificationsCount={driverFilteredNotifications.filter((n: DriverNotification) => !n.isRead).length}
         totalOffersCount={customerTotalOffersCount}
-        openRequestsCount={requests.filter(r => r.status === 'open').length}
+        openRequestsCount={driverOpenRequestsCount}
       />
 
       {/* Main Content Viewport */}
@@ -1519,7 +1555,7 @@ export function App() {
             <DriverView
               driver={currentDriver}
               requests={requests}
-              notifications={notifications}
+              notifications={driverFilteredNotifications}
               selectedSection={driverSection}
               onSelectSection={setDriverSection}
               onOpenSubscription={() => setIsSubscriptionOpen(true)}
