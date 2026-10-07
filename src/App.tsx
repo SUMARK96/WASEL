@@ -3,7 +3,7 @@ import type { AppScreen, DriverProfile, CustomerProfile, DeliveryRequest, Driver
 import { dbService, onSyncEvent, onRealtimeStatusChange, getRealtimeStatus } from './services/dbService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { calculateOneMonthExpiry, getDaysUntilExpiry } from './utils/subscriptionUtils';
-import { initNotificationService, sendDeviceNotification } from './utils/pushNotificationService';
+import { initNotificationService, sendDeviceNotification, subscribeDriverToPush } from './utils/pushNotificationService';
 import { areRequestListsEqual, mergeRequestLists, sortOffersDeterministically, sortRequestsNewestFirst } from './utils/requestUtils';
 
 import { Header, type CustomerHeaderSection, type DriverHeaderSection } from './components/Header';
@@ -881,6 +881,13 @@ export function App() {
   }, [drivers]);
 
   const currentDriver = drivers.find(d => d.id === activeDriverId) || null;
+
+  // Automatically register driver for Web Push background notifications (Even when browser is closed)
+  useEffect(() => {
+    if (currentDriver && currentDriver.subscriptionStatus === 'active') {
+      subscribeDriverToPush(currentDriver.id, currentDriver.emirate || 'أبوظبي').catch(() => {});
+    }
+  }, [currentDriver]);
 
   // Customer Authentication & Profile Handlers
   const handleCustomerLoginSuccess = (customer: CustomerProfile) => {

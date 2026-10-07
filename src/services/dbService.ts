@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_DRIVERS, INITIAL_CUSTOMERS, INITIAL_REQUESTS, INITIAL_EXEMPTION_CODES, UNIFIED_SUBSCRIPTION_PLAN } from '../data/mockData';
 import type { DeliveryRequest, DriverProfile, CustomerProfile, DriverOffer, ExemptionCode, DriverNotification } from '../types';
 import { sortRequestsNewestFirst, getRequestTimestamp, sortOffersDeterministically } from '../utils/requestUtils';
+import { dispatchBackgroundPushForNewOrder } from '../utils/pushNotificationService';
 
 // Keys for local backup
 const STORAGE_KEY_REQUESTS = 'wasel_requests_v3';
@@ -839,6 +840,18 @@ export const dbService = {
         console.warn('Supabase createRequest failed:', err);
       }
     }
+
+    // 3. Dispatch Serverless Background Web Push to all drivers in the pickup emirate (Closed app / PWA background)
+    dispatchBackgroundPushForNewOrder({
+      id: reqWithTimestamp.id,
+      title: reqWithTimestamp.title,
+      pickupEmirate: reqWithTimestamp.pickupEmirate,
+      pickupArea: reqWithTimestamp.pickupArea,
+      deliveryEmirate: reqWithTimestamp.deliveryEmirate,
+      deliveryArea: reqWithTimestamp.deliveryArea,
+      packageType: reqWithTimestamp.packageType,
+      urgency: reqWithTimestamp.urgency
+    }).catch(e => console.warn('Background push dispatch error:', e));
   },
 
   // ==================== DRIVER OFFERS ====================

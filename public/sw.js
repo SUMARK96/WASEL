@@ -1,7 +1,7 @@
 // Service Worker for WASEL Platform (واصل)
 // Dynamic versioning ensures instant cache invalidation on every production release
 
-const SW_VERSION = 'wasel-sw-v2.1';
+const SW_VERSION = 'wasel-sw-v2.2';
 const CACHE_NAME = `wasel-cache-${SW_VERSION}`;
 const ASSETS_TO_CACHE = [
   '/',

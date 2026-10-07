@@ -373,3 +373,130 @@ export const sendDeviceNotification = async ({
     return false;
   }
 };
+
+// VAPID Public Key for Web Push Protocol
+export const VAPID_PUBLIC_KEY = 'BLIVpAu0VpJ45isb-RKcuWGUxWsH2f9_INv7epsPHqO4LPoWU8G8Db5CtTPbvomZ3BTrnyAuzLueZ22aOUTKA_o';
+
+// Convert base64 url-safe string to Uint8Array for PushManager
+export const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
+
+// Register driver device with browser push service (Works when app is closed / in background)
+export const subscribeDriverToPush = async (driverId: string, emirate: string): Promise<boolean> => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('Push manager not supported on this browser/device');
+    return false;
+  }
+
+  try {
+    const reg = swRegistration || (await navigator.serviceWorker.ready);
+    if (!reg) return false;
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey as unknown as BufferSource
+      });
+    }
+
+    if (sub) {
+      const subJson = sub.toJSON();
+      // Send to serverless API to save for background push notifications
+      fetch('/api/subscribe-driver-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'subscribe',
+          driverId,
+          emirate: emirate || 'أبوظبي',
+          subscription: subJson
+        })
+      }).catch(err => console.warn('Could not register push subscription with API:', err));
+
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn('Push subscription failed:', err);
+    return false;
+  }
+};
+
+// Unsubscribe driver from push notifications
+export const unsubscribeDriverFromPush = async (driverId: string): Promise<boolean> => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return false;
+  }
+
+  try {
+    const reg = swRegistration || (await navigator.serviceWorker.ready);
+    if (!reg) return false;
+
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      const subJson = sub.toJSON();
+      fetch('/api/subscribe-driver-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'unsubscribe',
+          driverId,
+          subscription: subJson
+        })
+      }).catch(() => {});
+
+      await sub.unsubscribe();
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn('Unsubscribe push error:', err);
+    return false;
+  }
+};
+
+// Trigger server-side background web push for all drivers in the pickup emirate (Even when app is closed)
+export const dispatchBackgroundPushForNewOrder = async (order: {
+  id: string;
+  title: string;
+  pickupEmirate: string;
+  pickupArea?: string;
+  deliveryEmirate: string;
+  deliveryArea?: string;
+  packageType?: string;
+  urgency?: string;
+}) => {
+  try {
+    const res = await fetch('/api/send-driver-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requestId: order.id,
+        title: order.title,
+        pickupEmirate: order.pickupEmirate,
+        pickupArea: order.pickupArea || '',
+        deliveryEmirate: order.deliveryEmirate,
+        deliveryArea: order.deliveryArea || '',
+        packageType: order.packageType || 'طرد',
+        urgency: order.urgency || 'عادي'
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    console.log('📡 Background Web Push dispatched for drivers in', order.pickupEmirate, data);
+    return data;
+  } catch (err) {
+    console.warn('Could not dispatch background push:', err);
+    return null;
+  }
+};
+

@@ -101,20 +101,36 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- 6. إنشاء الفهارس لتسريع البحث (Indexes)
+-- 6. جدول اشتراكات إشعارات الخلفية للسائقين (Driver Push Subscriptions Table)
+CREATE TABLE IF NOT EXISTS public.driver_push_subscriptions (
+    id TEXT PRIMARY KEY,
+    driver_id TEXT NOT NULL REFERENCES public.drivers(id) ON DELETE CASCADE,
+    emirate TEXT NOT NULL,
+    endpoint TEXT UNIQUE NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    subscription_json TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 7. إنشاء الفهارس لتسريع البحث (Indexes)
 CREATE INDEX IF NOT EXISTS idx_requests_status ON public.delivery_requests(status);
 CREATE INDEX IF NOT EXISTS idx_requests_emirates ON public.delivery_requests(pickup_emirate, delivery_emirate);
 CREATE INDEX IF NOT EXISTS idx_offers_request_id ON public.driver_offers(request_id);
 CREATE INDEX IF NOT EXISTS idx_offers_driver_id ON public.driver_offers(driver_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_request ON public.driver_notifications(request_id);
 CREATE INDEX IF NOT EXISTS idx_chat_request ON public.chat_messages(request_id);
+CREATE INDEX IF NOT EXISTS idx_push_subs_emirate ON public.driver_push_subscriptions(emirate);
+CREATE INDEX IF NOT EXISTS idx_push_subs_driver ON public.driver_push_subscriptions(driver_id);
 
--- 7. تفعيل الحماية والوصول (Enable Row Level Security)
+-- 8. تفعيل الحماية والوصول (Enable Row Level Security)
 ALTER TABLE public.drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.delivery_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.driver_offers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.driver_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.driver_push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- سياسات الوصول العام المفتوح (Public Read & Write Policies for Platform)
 CREATE POLICY "Allow public read access for drivers" ON public.drivers FOR SELECT USING (true);
@@ -136,8 +152,14 @@ CREATE POLICY "Allow public update for notifications" ON public.driver_notificat
 CREATE POLICY "Allow public read access for chat" ON public.chat_messages FOR SELECT USING (true);
 CREATE POLICY "Allow public insert for chat" ON public.chat_messages FOR INSERT WITH CHECK (true);
 
--- 8. تفعيل النقل اللحظي (Realtime Replication)
+CREATE POLICY "Allow public read access for push subs" ON public.driver_push_subscriptions FOR SELECT USING (true);
+CREATE POLICY "Allow public insert for push subs" ON public.driver_push_subscriptions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update for push subs" ON public.driver_push_subscriptions FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete for push subs" ON public.driver_push_subscriptions FOR DELETE USING (true);
+
+-- 9. تفعيل النقل اللحظي (Realtime Replication)
 ALTER PUBLICATION supabase_realtime ADD TABLE public.delivery_requests;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.driver_offers;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.driver_notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
+

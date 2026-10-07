@@ -9,7 +9,8 @@ import {
   setNotificationEnabledFlag,
   isNotificationBannerDismissed,
   setNotificationBannerDismissedFlag,
-  shouldHideNotificationBanner
+  shouldHideNotificationBanner,
+  subscribeDriverToPush
 } from '../utils/pushNotificationService';
 
 interface NotificationBannerProps {
@@ -64,6 +65,10 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({ userRole
     if (granted) {
       setPermission('granted');
       setNotificationEnabledFlag(true);
+      const savedDriverId = localStorage.getItem('wasel_active_driver_id');
+      if (savedDriverId) {
+        subscribeDriverToPush(savedDriverId, 'أبوظبي').catch(() => {});
+      }
     } else {
       setPermission(getNotificationPermissionState());
     }
